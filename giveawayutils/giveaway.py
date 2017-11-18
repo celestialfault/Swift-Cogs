@@ -29,7 +29,7 @@ class Giveaway:
 
         reactions = message.reactions
         if emoji:
-            reactions = filter(lambda r: r.id == emoji.id, reactions)
+            reactions = filter(lambda r: str(r) == str(emoji), reactions)
 
         if len(reactions) == 0:
             return await ctx.send("❌ There's no reactions matching that emoji")
