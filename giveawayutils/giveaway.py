@@ -1,4 +1,3 @@
-import asyncio
 import discord
 from discord.ext import commands
 
@@ -41,16 +40,6 @@ class Giveaway:
             for user in u:
                 users.append(user)
 
-        embed = discord.Embed(color=discord.Colour.gold(),
-                              description="**Randomly selecting from {} users in {} reaction(s)!**"
-                              .format(len(users), len(reactions)))
-        _msg = await ctx.send(embed=embed)
-        await asyncio.sleep(2)
-
-        random_react = randint(0, len(reactions) - 1)
-        random_react = reactions[random_react]
-
-        users = await random_react.users().flatten()
         random_user = randint(0, len(users) - 1)
         random_user = users[random_user]
 
@@ -58,4 +47,3 @@ class Giveaway:
                               title="And the winner is...",
                               description="🎉 {}! 🎉".format(random_user.mention))
         await ctx.send(embed=embed)
-        await _msg.delete()
