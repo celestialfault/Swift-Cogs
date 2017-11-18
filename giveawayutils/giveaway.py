@@ -17,9 +17,9 @@ class Giveaway:
 
     @commands.command(name="randomreaction", aliases=["randomreact"])
     @checks.mod_or_permissions(manage_messages=True)
-    async def random_reaction(self, ctx: commands.Context, message: int, emoji: discord.Emoji=None):
+    async def random_reaction(self, ctx: commands.Context, message: int):
         """
-        Selects a random user's reaction, with an optional filter for a server emoji
+        Selects a random user's reaction on a message
         """
         try:
             message = await ctx.get_message(message)
@@ -28,11 +28,8 @@ class Giveaway:
                                   "\n\n*(Tip: The message needs to be in the same channel this command is ran in)*")
 
         reactions = message.reactions
-        if emoji:
-            reactions = filter(lambda r: str(r) == str(emoji), reactions)
-
         if len(reactions) == 0:
-            return await ctx.send("❌ There's no reactions matching that emoji")
+            return await ctx.send("❌ That message has no reactions")
 
         users = []
         for reaction in reactions:
