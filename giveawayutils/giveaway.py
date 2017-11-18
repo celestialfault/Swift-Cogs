@@ -32,10 +32,15 @@ class Giveaway:
             return await ctx.send("❌ That message has no reactions")
 
         users = []
+        # noinspection SpellCheckingInspection
+        userids = []
         for reaction in reactions:
             u = await reaction.users().flatten()
             for user in u:
+                if user.id in userids:
+                    continue
                 users.append(user)
+                userids.append(user.id)
 
         random_user = randint(0, len(users) - 1)
         random_user = users[random_user]
