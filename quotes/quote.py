@@ -12,5 +12,5 @@ class Quote:
         self.author = self.guild.get_member(kwargs["author_id"])
         self.message_author = self.guild.get_member(kwargs["message_author_id"])
         self.text = kwargs["text"]
-        self.id = kwargs.get("id", -1)
+        self.id = kwargs["id"]
         self.timestamp = datetime.fromtimestamp(kwargs.get("timestamp", 0))
