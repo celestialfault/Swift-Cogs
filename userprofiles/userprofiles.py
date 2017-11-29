@@ -127,11 +127,11 @@ class UserProfile:
     @userset.command(name="about")
     async def _user_about(self, ctx: commands.Context, *, about: str=None):
         """
-        Sets your About Me message, maximum of 400 characters
+        Sets your About Me message, maximum of 550 characters
 
-        Any text beyond 400 characters is trimmed off
+        Any text beyond 550 characters is trimmed off
         """
-        about = escape(about, mass_mentions=True)[:400]
+        about = escape(about, mass_mentions=True)[:550]
         await self.config.user(ctx.author).about.set(about)
         if about is None:
             await ctx.send("✅ Cleared your about me", delete_after=15)
