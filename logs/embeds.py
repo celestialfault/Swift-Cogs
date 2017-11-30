@@ -274,6 +274,38 @@ async def embed_role_delete(role: Role) -> Embed:
     return embed
 
 
+permission_names = {
+    "administrator": "Administrator",
+    "kick_members": "Kick Members",
+    "ban_members": "Ban Members",
+    "manage_guild": "Manage Server",
+    "manage_channels": "Manage Channels",
+    "add_reactions": "Add Reactions",
+    "create_instant_invite": "Create Instant Invite",
+    "view_audit_log": "View Audit Log",
+    "read_messages": "Read Messages",
+    "send_messages": "Send Messages",
+    "send_tts_messages": "Send TTS Messages",
+    "manage_messages": "Manage Messages",
+    "embed_links": "Embed Links",
+    "attach_files": "Attach Files",
+    "read_message_history": "Read Message History",
+    "mention_everyone": "Mention Everyone",
+    "external_emojis": "Use External Emojis",
+    "connect": "Connect",
+    "speak": "Speak",
+    "mute_members": "Mute Members",
+    "deafen_members": "Deafen Members",
+    "move_members": "Move Members",
+    "use_voice_activation": "Use Voice Activation",
+    "change_nickname": "Change Nickname",
+    "manage_nicknames": "Manage Nicknames",
+    "manage_roles": "Manage Roles",
+    "manage_webhooks": "Manage Webhooks",
+    "manage_emojis": "Manage Emojis"
+}
+
+
 async def embed_role_update(before: Role, after: Role) -> Optional[Embed]:
     embed = Embed(colour=Colour.blue())
     embed.set_author(name="Role updated", icon_url=after.guild.icon_url)
@@ -291,6 +323,21 @@ async def embed_role_update(before: Role, after: Role) -> Optional[Embed]:
                         value="**❯** From **{}**\n"
                               "**❯** To **{}**".format(before_colour, after_colour),
                         inline=False)
+    if before.permissions.value != after.permissions.value:
+        added_permissions = [permission_names[perm] if perm in permission_names else perm
+                             for perm, val in after.permissions
+                             if val and not getattr(before.permissions, perm)]
+        removed_permissions = [permission_names[perm] if perm in permission_names else perm
+                               for perm, val in after.permissions
+                               if not val and getattr(before.permissions, perm)]
+        if len(added_permissions) > 0:
+            embed.add_field(name="Permissions granted",
+                            value=", ".join(added_permissions),
+                            inline=False)
+        if len(removed_permissions) > 0:
+            embed.add_field(name="Permissions denied",
+                            value=", ".join(removed_permissions),
+                            inline=False)
     if before.position != after.position:
         embed.add_field(name="Position changed",
                         value="**❯** From **{}**\n"

@@ -169,7 +169,7 @@ class Logs:
     #     Members     #
     ###################
 
-    @logset.group(name="member")
+    @logset.group(name="member", aliases=["members"])
     async def logset_member(self, ctx: RedContext):
         """
         Manage member event logging
@@ -233,7 +233,7 @@ class Logs:
         else:
             await ctx.send("✅ Disabled guild update logging", delete_after=15)
 
-    @logset_guild.group(name="roles")
+    @logset_guild.group(name="role", aliases=["roles"])
     async def logset_guild_roles(self, ctx: RedContext):
         """
         Manage role event logging
@@ -274,7 +274,7 @@ class Logs:
         else:
             await ctx.send("✅ Disabled role update logging", delete_after=15)
 
-    @logset_guild.group(name="channel")
+    @logset_guild.group(name="channel", aliases=["channels"])
     async def logset_guild_channel(self, ctx: RedContext):
         """
         Manage channel event logging
@@ -319,7 +319,7 @@ class Logs:
     #    Messages     #
     ###################
 
-    @logset.group(name="message")
+    @logset.group(name="message", aliases=["messages"])
     async def logset_message(self, ctx: RedContext):
         """
         Manage message event logging
@@ -455,7 +455,7 @@ class Logs:
         if not ctx.invoked_subcommand or (ctx.invoked_subcommand and ctx.invoked_subcommand.name == "global"):
             await ctx.send_help()
 
-    @logset_global.group(name="guild")
+    @logset_global.group(name="guild", aliases=["server"])
     async def logset_global_guild(self, ctx: RedContext):
         """
         Manage guild join and leave notifications
