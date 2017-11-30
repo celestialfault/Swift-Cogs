@@ -18,6 +18,13 @@ class Logs:
         self.bot = bot
         self.config = Config.get_conf(self, identifier=5678913563, force_registration=True)
 
+        defaults_global = {
+            "channels": {
+                "join": None,
+                "leave": None
+            }
+        }
+
         defaults_guild = {
             "ignored": False,
             "channels": {
@@ -32,9 +39,10 @@ class Logs:
                 "update": False
             },
             "guild": {
-                # "role_create": False,
-                # "role_delete": False,
-                # "role_update": False,
+                "update": False,
+                "role_create": False,
+                "role_delete": False,
+                "role_update": False,
                 "channel_create": False,
                 "channel_delete": False,
                 "channel_update": False
@@ -54,6 +62,7 @@ class Logs:
             "ignored": False
         }
 
+        self.config.register_global(**defaults_global)
         self.config.register_guild(**defaults_guild)
         self.config.register_member(**defaults_member_channel)
         self.config.register_channel(**defaults_member_channel)
@@ -179,6 +188,17 @@ class Logs:
         else:
             await ctx.send("✅ Disabled member join logging", delete_after=15)
 
+    @logset_member.command(name="leave")
+    async def logset_member_leave(self, ctx: RedContext, toggle: bool=None):
+        """
+        Toggles member leave logging
+        """
+        toggle = await toggle_setting(self.config.guild(ctx.guild).members.leave, toggle)
+        if toggle:
+            await ctx.send("✅ Enabled member leave logging", delete_after=15)
+        else:
+            await ctx.send("✅ Disabled member leave logging", delete_after=15)
+
     @logset_member.command(name="update")
     async def logset_member_update(self, ctx: RedContext, toggle: bool=None):
         """
@@ -202,7 +222,18 @@ class Logs:
         if not ctx.invoked_subcommand or (ctx.invoked_subcommand and ctx.invoked_subcommand.name == "guild"):
             await ctx.send_help()
 
-    @logset_guild.group(name="roles", hidden=True)
+    @logset_guild.command(name="update")
+    async def logset_guild_update(self, ctx: RedContext, toggle: bool=None):
+        """
+        Toggles guild update logging
+        """
+        toggle = await toggle_setting(self.config.guild(ctx.guild).guild.update, toggle)
+        if toggle:
+            await ctx.send("✅ Enabled guild update logging", delete_after=15)
+        else:
+            await ctx.send("✅ Disabled guild update logging", delete_after=15)
+
+    @logset_guild.group(name="roles")
     async def logset_guild_roles(self, ctx: RedContext):
         """
         Manage role event logging
@@ -301,8 +332,7 @@ class Logs:
         """
         Toggles message edit logs
         """
-        toggle = toggle if toggle is not None else not await self.config.guild(ctx.guild).messages.edit()
-        await self.config.guild(ctx.guild).messages.edit.set(toggle)
+        toggle = await toggle_setting(self.config.guild(ctx.guild).messages.edit, toggle)
         if toggle:
             await ctx.send("✅ Enabled message edit logging", delete_after=15)
         else:
@@ -313,8 +343,7 @@ class Logs:
         """
         Toggles message deletion logs
         """
-        toggle = toggle if toggle is not None else not await self.config.guild(ctx.guild).messages.delete()
-        await self.config.guild(ctx.guild).messages.delete.set(toggle)
+        toggle = await toggle_setting(self.config.guild(ctx.guild).messages.delete, toggle)
         if toggle:
             await ctx.send("✅ Enabled message deletion logging", delete_after=15)
         else:
@@ -382,8 +411,7 @@ class Logs:
         """
         Toggles a user's logging ignore status
         """
-        toggle = not await self.config.member(member).ignored()
-        await self.config.member(member).ignored.set(toggle)
+        toggle = toggle_setting(self.config.member(member).ignored)
         member_name = escape(str(member), mass_mentions=True, formatting=True)
         if toggle:
             await ctx.send("✅ **{}** is now ignored from logging".format(member_name))
@@ -395,8 +423,7 @@ class Logs:
         """
         Ignores a channel from logging
         """
-        toggle = not await self.config.channel(channel).ignored()
-        await self.config.channel(channel).ignored.set(toggle)
+        toggle = toggle_setting(self.config.channel(channel).ignored)
         if toggle:
             await ctx.send("✅ All events in {} will no longer be logged".format(channel.mention))
         else:
@@ -408,14 +435,55 @@ class Logs:
         """
         Ignores an entire guild from logging
         """
-        if not guild:
-            guild = ctx.guild
-        toggle = not await self.config.guild(guild).ignored()
-        await self.config.guild(guild).ignored.set(toggle)
+        guild = guild or ctx.guild
+        toggle = toggle_setting(self.config.guild(guild).ignored)
         if toggle:
             await ctx.send("✅ Now ignoring `{}`".format(guild.name), delete_after=15)
         else:
             await ctx.send("✅ No longer ignoring `{}`".format(guild.name), delete_after=15)
+
+    ###################
+    #     Globals     #
+    ###################
+
+    @logset.group(name="global")
+    @checks.is_owner()
+    async def logset_global(self, ctx: RedContext):
+        """
+        Manage global bot log settings
+        """
+        if not ctx.invoked_subcommand or (ctx.invoked_subcommand and ctx.invoked_subcommand.name == "global"):
+            await ctx.send_help()
+
+    @logset_global.group(name="guild")
+    async def logset_global_guild(self, ctx: RedContext):
+        """
+        Manage guild join and leave notifications
+        """
+        if not ctx.invoked_subcommand or (ctx.invoked_subcommand and ctx.invoked_subcommand.name == "guild"):
+            await ctx.send_help()
+
+    @logset_global_guild.command(name="join")
+    async def logset_global_guild_join(self, ctx: RedContext, channel: discord.TextChannel=None):
+        """
+        Log when the bot is added to a guild in the specified channel
+        """
+        await self.config.channels.join.set(channel.id if channel else None)
+        if channel:
+            await ctx.send("✅ Set guild join notification channel to {}".format(channel.mention))
+        else:
+            await ctx.send("✅ Cleared previously set guild join notification channel")
+
+    @logset_global_guild.command(name="leave")
+    async def logset_global_guild_leave(self, ctx: RedContext, channel: discord.TextChannel=None):
+        """
+        Log when the bot is added to a guild in the specified channel
+        """
+        await self.config.channels.leave.set(channel.id if channel else None)
+        if channel:
+            await ctx.send("✅ Set guild leave notification channel to {}".format(channel.mention))
+        else:
+            await ctx.send("✅ Cleared previously set guild leave notification channel")
 
     ###################
     #    Listeners    #
@@ -493,3 +561,35 @@ class Logs:
         log_channel = self.bot.get_channel(await self.config.guild(member.guild).channels.voice())
         await send_log_message(log_channel, embed_voice, member=member, before=before, after=after,
                                config=self.config.guild(member.guild).voice)
+
+    async def on_guild_role_create(self, role: discord.Role):
+        if not await self.config.guild(role.guild).guild.role_create():
+            return
+        log_channel = self.bot.get_channel(await self.config.guild(role.guild).channels.guild())
+        await send_log_message(log_channel, embed_role_create, role=role)
+
+    async def on_guild_role_delete(self, role: discord.Role):
+        if not await self.config.guild(role.guild).guild.role_delete():
+            return
+        log_channel = self.bot.get_channel(await self.config.guild(role.guild).channels.guild())
+        await send_log_message(log_channel, embed_role_delete, role=role)
+
+    async def on_guild_role_update(self, before: discord.Role, after: discord.Role):
+        if not await self.config.guild(after.guild).guild.role_update():
+            return
+        log_channel = self.bot.get_channel(await self.config.guild(after.guild).channels.guild())
+        await send_log_message(log_channel, embed_role_update, before=before, after=after)
+
+    async def on_guild_join(self, guild: discord.Guild):
+        log_channel = self.bot.get_channel(await self.config.channels.join())
+        await send_log_message(log_channel, embed_guild_join, guild=guild)
+
+    async def on_guild_remove(self, guild: discord.Guild):
+        log_channel = self.bot.get_channel(await self.config.channels.leave())
+        await send_log_message(log_channel, embed_guild_leave, guild=guild)
+
+    async def on_guild_update(self, before: discord.Guild, after: discord.Guild):
+        if not await self.config.guild(after).guild.update():
+            return
+        log_channel = self.bot.get_channel(await self.config.guild(after).channels.guild())
+        await send_log_message(log_channel, embed_guild_update, before=before, after=after)
