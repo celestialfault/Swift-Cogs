@@ -1,4 +1,5 @@
 import asyncio
+from datetime import timedelta
 
 import discord
 from discord.ext import commands
@@ -24,13 +25,16 @@ class UserProfile:
         self.config.register_user(**self.defaults_user)
 
     async def get_role(self, member: discord.Member, spaces: int=0):
-        _msg = ""
         if member.bot:
-            _msg += (" "*spaces) + "🤖 **Bot**\n"
-        elif await self.bot.is_owner(member):
+            return (" "*spaces) + "🤖 **Bot**\n"
+
+        _msg = ""
+        if await self.bot.is_owner(member):
             _msg = (" "*spaces) + "🛠 **Bot Owner**\n"
 
-        if await self.bot.is_admin(member):
+        if member.guild.owner.id == member.id:
+            _msg += (" "*spaces) + "🔑 Guild Owner"
+        elif await self.bot.is_admin(member):
             _msg += (" "*spaces) + "🔨 Server Administrator"
         elif await self.bot.is_mod(member):
             _msg += (" "*spaces) + "🛡 Server Moderator"
@@ -71,10 +75,8 @@ class UserProfile:
             game_type = "watching"
 
         # Join/creation dates
-        since_joined = (ctx.message.created_at - user.joined_at).days
-        since_created = (ctx.message.created_at - user.created_at).days
-        user_joined = user.joined_at.strftime("%d %b %Y %H:%M:%S")
-        user_created = user.created_at.strftime("%d %b %Y %H:%M:%S")
+        since_joined = await td_format(ctx.message.created_at - user.joined_at)
+        since_created = await td_format(ctx.message.created_at - user.created_at)
 
         member_number = sorted(ctx.guild.members,
                                key=lambda m: m.joined_at).index(user) + 1
@@ -85,22 +87,17 @@ class UserProfile:
 
         _status = "**{status}**, {game_type} **{game}**" if user.game else "**{status}**"
         status = _status.format(status=status, game=game, game_type=game_type)
-        embed.add_field(name="Status", value=status, inline=False)
+        embed.add_field(name="❯ Status", value=status, inline=False)
 
-        embed.add_field(name="Roles", inline=False, value="**❯** Bot:\n"
-                                                          "{bot_roles}\n\n"
-                                                          "**❯** Server:\n"
-                                                          "    {server_roles}"
-                                                          "".format(server_roles=roles,
-                                                                    bot_roles=await self.get_role(user, 4)))
-        embed.add_field(name="Joined", inline=False, value="**❯** Server:\n"
-                                                           "    **{server_date}** ({server_days} days ago)\n\n"
-                                                           "**❯** Discord:\n"
-                                                           "    **{discord_date}** ({discord_days} days ago)"
-                                                           "".format(server_date=user_joined,
-                                                                     server_days=since_joined,
-                                                                     discord_date=user_created,
-                                                                     discord_days=since_created))
+        embed.add_field(name="❯ Bot Roles", value=await self.get_role(user), inline=False)
+        embed.add_field(name="❯ Guild Roles", value=roles, inline=False)
+
+        embed.add_field(name="❯ Joined Discord",
+                        value="{} ago".format(since_created),
+                        inline=False)
+        embed.add_field(name="❯ Joined Guild",
+                        value="{} ago".format(since_joined),
+                        inline=False)
 
         # User profile data
         if user_info["country"]:
@@ -221,6 +218,31 @@ class UserProfile:
         await self.config.user(user).set(self.defaults_user)
         await ctx.send("✅ Profile reset.", delete_after=15)
         await check_msg.delete()
+
+
+# ~~stolen~~ borrowed from StackOverflow
+# https://stackoverflow.com/a/13756038
+async def td_format(td_object: timedelta) -> str:
+    seconds = int(td_object.total_seconds())
+    periods = [
+        ('year', 60 * 60 * 24 * 365),
+        ('month', 60 * 60 * 24 * 30),
+        ('day', 60 * 60 * 24),
+        ('hour', 60 * 60),
+        ('minute', 60),
+        ('second', 1)
+    ]
+
+    strings = []
+    for period_name, period_seconds in periods:
+        if seconds >= period_seconds:
+            period_value, seconds = divmod(seconds, period_seconds)
+            if period_value == 1:
+                strings.append("%s %s" % (period_value, period_name))
+            else:
+                strings.append("%s %ss" % (period_value, period_name))
+
+    return ", ".join(strings)
 
 
 async def is_url(url: str) -> bool:
