@@ -77,7 +77,7 @@ class Logs:
         """
         Manage log channels
         """
-        if ctx.invoked_subcommand.name == "logchannel":
+        if ctx.invoked_subcommand and ctx.invoked_subcommand.name == "logchannel":
             await ctx.send_help()
 
     @logset_channel.command(name="all")
@@ -165,7 +165,7 @@ class Logs:
         """
         Manage member event logging
         """
-        if ctx.invoked_subcommand.name == "member":
+        if ctx.invoked_subcommand and ctx.invoked_subcommand.name == "member":
             await ctx.send_help()
 
     @logset_member.command(name="join")
@@ -199,7 +199,7 @@ class Logs:
         """
         Manage guild event logging
         """
-        if ctx.invoked_subcommand.name == "guild":
+        if ctx.invoked_subcommand and ctx.invoked_subcommand.name == "guild":
             await ctx.send_help()
 
     @logset_guild.group(name="roles", hidden=True)
@@ -248,7 +248,7 @@ class Logs:
         """
         Manage channel event logging
         """
-        if ctx.invoked_subcommand.name == "channel":
+        if ctx.invoked_subcommand and ctx.invoked_subcommand.name == "channel":
             await ctx.send_help()
 
     @logset_guild_channel.command(name="create")
@@ -293,7 +293,7 @@ class Logs:
         """
         Manage message event logging
         """
-        if ctx.invoked_subcommand.name == "message":
+        if ctx.invoked_subcommand and ctx.invoked_subcommand.name == "message":
             await ctx.send_help()
 
     @logset_message.command(name="edit")
@@ -329,7 +329,7 @@ class Logs:
         """
         Manage voice event logging
         """
-        if ctx.invoked_subcommand.name == "voice":
+        if ctx.invoked_subcommand and ctx.invoked_subcommand.name == "voice":
             await ctx.send_help()
 
     @logset_voice.command(name="channel", aliases=["join", "part", "joinpart"])
@@ -374,7 +374,7 @@ class Logs:
         """
         Ignore channels and members from logging
         """
-        if ctx.invoked_subcommand.name == "ignore":
+        if ctx.invoked_subcommand and ctx.invoked_subcommand.name == "ignore":
             await ctx.send_help()
 
     @logset_ignore.command(name="member")
@@ -456,7 +456,7 @@ class Logs:
         await send_log_message(log_channel, embed_member_leave, member=member)
 
     async def on_member_update(self, before: Member, after: Member):
-        if await is_ignored(self.config, after, after.guild, after.channel):
+        if await is_ignored(self.config, after, after.guild, None):
             return
         if not await self.config.guild(after.guild).members.update():
             return
