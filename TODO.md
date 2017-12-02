@@ -1,10 +1,13 @@
-- [x] User Profiles
-    - [ ] Setup internationalization
-- [x] Quotes
-    - [ ] Replace emoji shorthand such as `:x:` with the actual emoji
-    - [ ] Try to get rid of the terrible `to_list` workaround
-    - [ ] Setup internationalization
-- [x] Giveaway Utils
-- [ ] Warnings (if warnings aren't added to the core Mod cog)
-- [ ] Permission Breakdown
-- [ ] RNDStatus?
+- [ ] Red v2 cog ports
+  - [x] User Profiles
+  - [x] Quotes
+  - [ ] Permission Breakdown
+  - [ ] Warnings (if warnings aren't added to the core Mod cog)
+  - [ ] Starboard (if I don't lose my will to live first)
+- [ ] Bot management util cogs
+  - [x] Cog Whitelist
+  - [x] Require Role
+- [ ] Moderation utility cogs
+  - [x] Logs
+- [ ] Misc cogs
+  - [ ] Giveaways

@@ -1,5 +1,3 @@
-# odinair's Red Cogs
+# odinair's Red v3 Cogs
 
-These cogs are meant for Red v3 - they won't work on v2.
-
-It's also worth taking into account that most of these either don't work just yet, or are very early on in their development cycle.
+These cogs require [Red v3](https://github.com/Cog-Creators/Red-DiscordBot/tree/V3/develop/) to function - they are **not** compatible with Red v2
