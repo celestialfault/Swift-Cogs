@@ -1,0 +1,4 @@
+{
+  "author": ["odinair"],
+  "description": "Set a list of cogs that requires a per-guild whitelist from the bot owner to use"
+}
