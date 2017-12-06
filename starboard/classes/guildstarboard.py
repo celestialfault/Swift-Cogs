@@ -24,6 +24,7 @@ class GuildStarboard(StarboardBase):
         self._config = config
         self.bot = bot
         self._star_cache = {}
+        # TODO: Implement a starboard block/blacklist
 
     @property
     def config(self) -> Group:
@@ -52,18 +53,31 @@ class GuildStarboard(StarboardBase):
             self._star_cache[message.id] = star
         return self._star_cache[message.id]
 
-    async def message_by_id(self, message_id: int, data: dict=None):
+    async def message_by_id(self, message_id: int) -> Optional[Star]:
         """
         Retrieve a Star object by it's message ID
+
+        This requires the message
         """
-        async with self.config.messages() as messages:
-            for message in messages:
-                if message["message_id"] == message_id:
-                    if data:
-                        # Ensure we have the bare minimum we need to find this message again
-                        data["message_id"] = message_id
-                        messages[messages.index(message)] = data
-                    return message
+        if message_id in self._star_cache:
+            return self._star_cache[message_id]
+        messages = await self.config.messages()
+        message = discord.utils.find(lambda msg: msg["message_id"] == message_id, messages)
+        if not message:
+            return None
+        channel = self.bot.get_channel(message["channel_id"])
+        if not channel:
+            return None
+        try:
+            message = await channel.get_message(message_id)
+        except discord.NotFound:
+            return None
+        except discord.Forbidden:
+            return None
+        except discord.HTTPException:
+            raise
+        else:
+            return await self.message(message)
 
     async def channel(self, channel: discord.TextChannel=None, clear: bool=False) -> Optional[discord.TextChannel]:
         if channel or clear:

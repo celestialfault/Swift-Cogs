@@ -4,13 +4,17 @@ import discord
 from discord.ext import commands
 from redbot.core import Config, checks
 from redbot.core.bot import Red, RedContext
-from redbot.core.utils.chat_formatting import info, error, warning, box
+from redbot.core.utils.chat_formatting import error, warning, box
 
 from .classes.exceptions import *
 from .classes.starboardbase import StarboardBase
 
 
 class Starboard(StarboardBase):
+    """
+    The poor man's channel pins
+    """
+
     def __init__(self, bot: Red, config: Config):
         super().__init__()
         self.bot = bot
@@ -20,7 +24,7 @@ class Starboard(StarboardBase):
     @commands.guild_only()
     async def _star(self, ctx: RedContext, message_id: int):
         """
-        Star a entry by it's ID
+        Star a message in the current channel by it's ID
         """
         try:
             message = await ctx.get_message(message_id)
@@ -46,7 +50,7 @@ class Starboard(StarboardBase):
     @commands.guild_only()
     async def _unstar(self, ctx: RedContext, message_id: int):
         """
-        Unstars a message by it's ID
+        Unstars a message in the current channel by it's ID
         """
         try:
             message = await ctx.get_message(message_id)
@@ -71,8 +75,8 @@ class Starboard(StarboardBase):
             else:
                 await ctx.tick()
 
-    # TODO: Implement message hiding
-    @commands.group(name="stars", hidden=True)
+    @commands.group(name="stars")
+    @commands.guild_only()
     @checks.mod_or_permissions(manage_messages=True)
     async def _stars(self, ctx: RedContext):
         """
@@ -82,12 +86,30 @@ class Starboard(StarboardBase):
             await ctx.send_help()
 
     @_stars.command(name="hide")
-    async def _stars_hide(self, ctx: RedContext):
-        raise NotImplementedError
+    async def _stars_hide(self, ctx: RedContext, message_id: int):
+        star = await self.starboard(ctx.guild).message_by_id(message_id)
+        if not star:
+            await ctx.send(error("That message hasn't been starred"))
+            return
+        try:
+            await star.hide()
+        except HideException:
+            await ctx.send(error("That message is already hidden"))
+        else:
+            await ctx.tick()
 
     @_stars.command(name="unhide")
-    async def _stars_unhide(self, ctx: RedContext):
-        raise NotImplementedError
+    async def _stars_unhide(self, ctx: RedContext, message_id: int):
+        star = await self.starboard(ctx.guild).message_by_id(message_id)
+        if not star:
+            await ctx.send(error("That message hasn't been starred"))
+            return
+        try:
+            await star.unhide()
+        except HideException:
+            await ctx.send(error("That message hasn't been hidden"))
+        else:
+            await ctx.tick()
 
     @commands.group(name="starboard")
     @checks.admin_or_permissions(manage_channels=True)

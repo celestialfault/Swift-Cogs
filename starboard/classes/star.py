@@ -45,6 +45,12 @@ class Star(StarboardBase):
         return embed
 
     async def setup(self, *, auto_create: bool = False):
+        """
+        Setup the current Star object
+
+        You shouldn't run this directly, as it's already done for you if you retrieve these with StarboardBase.message
+        or GuildStarboard.message
+        """
         messages = await self.guild.config.messages()
         self._entry = discord.utils.find(lambda entry: entry["message_id"] == self.message.id, messages)
         if not self._entry and auto_create:
@@ -112,6 +118,20 @@ class Star(StarboardBase):
         if member.id not in self.members:
             raise StarException("The passed member hasn't starred this message")
         del self.members[self.members.index(member.id)]
+        await self.update()
+
+    async def hide(self):
+        if self.hidden:
+            raise HideException("This message is already hidden")
+        self.hidden = True
+        await self.update()
+        if self.starboard_message:
+            await self.starboard_message.delete()
+
+    async def unhide(self):
+        if not self.hidden:
+            raise HideException("This message currently isn't hidden")
+        self.hidden = False
         await self.update()
 
     async def update_starboard_message(self):
