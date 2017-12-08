@@ -4,9 +4,10 @@ import discord
 from discord.ext import commands
 from redbot.core import Config, checks
 from redbot.core.bot import Red, RedContext
-from redbot.core.utils.chat_formatting import error, warning, box
+from redbot.core.utils.chat_formatting import error, warning
 
 from .classes.exceptions import *
+from .checks import allowed_starboard
 from .classes.starboardbase import StarboardBase
 
 
@@ -16,12 +17,12 @@ class Starboard(StarboardBase):
     """
 
     def __init__(self, bot: Red, config: Config):
-        super().__init__()
         self.bot = bot
         self.config = config
 
     @commands.command(name="star")
     @commands.guild_only()
+    @allowed_starboard()
     async def _star(self, ctx: RedContext, message_id: int):
         """
         Star a message in the current channel by it's ID
@@ -33,7 +34,7 @@ class Starboard(StarboardBase):
         except discord.Forbidden:
             await ctx.send(error("I'm not allowed to retrieve message logs"))
         except discord.HTTPException:
-            await ctx.send(error("An error occured while attempting to retrieve that message"))
+            await ctx.send(error("An error occurred while attempting to retrieve that message"))
         else:
             message = await self.message(message, auto_create=True)
             try:
@@ -43,11 +44,18 @@ class Starboard(StarboardBase):
                     warning("You've already starred that message\n\n(you can use `{}unstar` to remove your star)"
                             .format(ctx.prefix)),
                     delete_after=15)
+            except BlockedAuthorException:
+                await ctx.send(error("The author of that message has been blocked from using this guild's starboard"),
+                               delete_after=15)
+            except BlockedException:
+                await ctx.send(error("You have been blocked from using this guild's starboard"),
+                               delete_after=15)
             else:
                 await ctx.tick()
 
     @commands.command(name="unstar")
     @commands.guild_only()
+    @allowed_starboard()
     async def _unstar(self, ctx: RedContext, message_id: int):
         """
         Unstars a message in the current channel by it's ID
@@ -59,7 +67,7 @@ class Starboard(StarboardBase):
         except discord.Forbidden:
             await ctx.send(error("I'm not allowed to retrieve message logs"))
         except discord.HTTPException:
-            await ctx.send(error("An error occured while attempting to retrieve that message"))
+            await ctx.send(error("An error occurred while attempting to retrieve that message"))
         else:
             message = await self.message(message)
             if not message.entry_exists:
@@ -72,6 +80,12 @@ class Starboard(StarboardBase):
                     warning("You haven't starred that message\n\n(you can use `{}star` to star it)"
                             .format(ctx.prefix)),
                     delete_after=15)
+            except BlockedAuthorException:
+                await ctx.send(error("The author of that message has been blocked from using this guild's starboard"),
+                               delete_after=15)
+            except BlockedException:
+                await ctx.send(error("You have been blocked from using this guild's starboard"),
+                               delete_after=15)
             else:
                 await ctx.tick()
 
@@ -128,39 +142,80 @@ class Starboard(StarboardBase):
             await self.starboard(ctx.guild).channel(channel=channel)
         await ctx.tick()
 
-    @_starboard.group(name="debug")
-    @checks.is_owner()
-    async def _starboard_debug(self, ctx: RedContext):
+    @_starboard.command(name="stars", aliases=["minstars"])
+    async def _starboard_minstars(self, ctx: RedContext, stars: int):
         """
-        Starboard debug tools
+        Set the amount of stars required for a message to be sent to this guild's starboard
         """
-        if not ctx.invoked_subcommand or ctx.invoked_subcommand.name == "debug":
-            await ctx.send_help()
+        if stars < 1:
+            await ctx.send(error("The amount of stars must be a non-zero number"))
+            return
+        if stars > len(ctx.guild.members):
+            await ctx.send(error("There aren't enough members in this server to reach that amount of stars"))
+            return
+        await self.starboard(ctx.guild).minstars(stars)
+        await ctx.tick()
 
-    @_starboard_debug.command(name="message")
-    async def _debug_message(self, ctx: RedContext, message_id: int):
+    @_starboard.command(name="block", aliases=["blacklist", "ban"])
+    async def _starboard_block(self, ctx: RedContext, *, member: discord.Member):
+        """
+        Block the passed user from using this guild's starboard
+        """
+        if await self.bot.is_owner(member):  # prevent blocking of the bot owner
+            await ctx.send(error("You aren't allowed to block that member"))
+            return
+        elif ctx.guild.owner.id == ctx.author.id:  # allow guild owners to block admins and mods
+            pass
+        elif await self.bot.is_admin(member):  # prevent blocking of admins
+            await ctx.send(error("You aren't allowed to block that member"))
+            return
+        elif await self.bot.is_mod(member) and not await self.bot.is_admin(ctx.author):
+            # prevent mods blocking other moderators, but allow admins to block mods
+            await ctx.send(error("You aren't allowed to block that member"))
+            return
         starboard = self.starboard(ctx.guild)
-        data = await starboard.message_by_id(message_id)
-        await ctx.send(box(text=data, lang="python"))
+        if await starboard.block(member):
+            await ctx.tick()
+        else:
+            await ctx.send(error("That user is already blocked from using this guild's starboard"))
+
+    @_starboard.command(name="unblock", aliases=["unblacklist", "unban"])
+    async def _starboard_unblock(self, ctx: RedContext, *, member: discord.Member):
+        """
+        Unblocks the passed user from using this guild's starboard
+        """
+        starboard = self.starboard(ctx.guild)
+        if await starboard.unblock(member):
+            await ctx.tick()
+        else:
+            await ctx.send(error("That user isn't blocked from using this guild's starboard"))
 
     async def on_reaction_add(self, reaction: discord.Reaction, user: Union[discord.User, discord.Member]):
         if not str(reaction.emoji) == "⭐" or not isinstance(user, discord.Member):
             return
         message = reaction.message
+        if await self.starboard(message.guild).is_blocked(user):
+            return
         message = await self.message(message, auto_create=True)
         try:
             await message.add(user)
         except StarException:
+            pass
+        except BlockedException:
             pass
 
     async def on_reaction_remove(self, reaction: discord.Reaction, user: Union[discord.User, discord.Member]):
         if not str(reaction.emoji) == "⭐" or not isinstance(user, discord.Member):
             return
         message = reaction.message
+        if await self.starboard(message.guild).is_blocked(user):
+            return
         message = await self.message(message)
         if not message or not message.user_count:
             return
         try:
             await message.remove(user)
         except StarException:
+            pass
+        except BlockedException:
             pass

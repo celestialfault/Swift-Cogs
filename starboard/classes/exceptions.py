@@ -1,6 +1,9 @@
-class StarboardException(Exception):
+from discord.ext.commands import CommandError
+
+
+class StarboardException(CommandError):
     """
-    Super exception for all Starboard exceptions
+    Root exception class for all Starboard cog exceptions
     """
     pass
 
@@ -22,5 +25,19 @@ class NoStarboardEntry(StarboardException):
 class HideException(StarboardException):
     """
     Raised if a message either already isn't hidden or has been hidden
+    """
+    pass
+
+
+class BlockedException(StarboardException):
+    """
+    Raised if a passed member is blocked from using a guild's starboard
+    """
+    pass
+
+
+class BlockedAuthorException(BlockedException):
+    """
+    Raised if the message author is blocked from using a guild's starboard
     """
     pass

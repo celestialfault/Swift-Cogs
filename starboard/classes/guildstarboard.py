@@ -18,23 +18,21 @@ class GuildStarboard(StarboardBase):
       bot.get_cog("Starboard").starboard(guild)
     """
 
+    _star_cache = {}
+    _blocked_users = None
+    _min_stars = None
+
     def __init__(self, guild: discord.Guild, config: Config, bot: Red):
-        super().__init__()
         self.guild = guild
         self._config = config
         self.bot = bot
-        self._star_cache = {}
-        # TODO: Implement a starboard block/blacklist
 
     @property
     def config(self) -> Group:
-        """
-        Get the guild's config
-        """
         return self._config.guild(self.guild)
 
-    async def add_entry(self, message_id: int, channel_id: int, members: Iterable[int]=None, starboard_message: int=None,
-                        hidden: bool=False) -> None:
+    async def add_entry(self, message_id: int, channel_id: int, members: Iterable[int]=None,
+                        starboard_message: int=None, hidden: bool=False) -> None:
         if members is None:
             members = []
         async with self.config.messages() as messages:
@@ -47,6 +45,13 @@ class GuildStarboard(StarboardBase):
             })
 
     async def message(self, message: discord.Message, *, auto_create: bool=False) -> Star:
+        """
+        Returns the Star object for the passed message
+
+        :param message: The message to get a Star object for
+        :param auto_create: Whether or not to automatically create the starboard entry if it doesn't exist
+        :return: The message's Star object
+        """
         if message.id not in self._star_cache:
             star = Star(self, message)
             await star.setup(auto_create=auto_create)
@@ -57,7 +62,10 @@ class GuildStarboard(StarboardBase):
         """
         Retrieve a Star object by it's message ID
 
-        This requires the message
+        This requires the message to have been starred at least once
+
+        :param message_id: The snowflake ID of the message to retrieve
+        :return: Optional[Star]
         """
         if message_id in self._star_cache:
             return self._star_cache[message_id]
@@ -80,6 +88,13 @@ class GuildStarboard(StarboardBase):
             return await self.message(message)
 
     async def channel(self, channel: discord.TextChannel=None, clear: bool=False) -> Optional[discord.TextChannel]:
+        """
+        Set or clear the current guild's starboard
+
+        :param channel: The channel to set the current starboard to - to clear, pass None and set clear to True
+        :param clear: Whether or not to clear the current channel - pass None as the channel with this value
+        :return: Optional[discord.TextChannel]
+        """
         if channel or clear:
             await self.config.channel.set(channel.id if channel else None)
             return
@@ -93,6 +108,42 @@ class GuildStarboard(StarboardBase):
         :return: Optional[int] - Amount of stars required
         """
         if amount is not None:
+            if amount <= 0:
+                raise ValueError("Amount must be a non-zero number")
             await self.config.min_stars.set(amount)
+            self._min_stars = amount
             return
-        return await self.config.min_stars()
+        if self._min_stars is None:
+            self._min_stars = await self.config.min_stars()
+        return self._min_stars
+
+    async def is_blocked(self, member: discord.Member) -> bool:
+        """
+        Returns if the passed member is blocked from using the starboard
+        """
+        if self._blocked_users is None:
+            async with self.config.blocks() as blocks:
+                self._blocked_users = list(blocks)
+        return member.id in self._blocked_users
+
+    async def block(self, member: discord.Member) -> bool:
+        """
+        Blocks the passed member from using the guild's starboard
+        """
+        if await self.is_blocked(member):
+            return False
+        async with self.config.blocks() as blocks:
+            self._blocked_users.append(member.id)
+            blocks.append(member.id)
+        return True
+
+    async def unblock(self, member: discord.Member) -> bool:
+        """
+        Unblocks the passed member from using the guild's starboard
+        """
+        if not await self.is_blocked(member):
+            return False
+        async with self.config.blocks() as blocks:
+            del self._blocked_users[self._blocked_users.index(member.id)]
+            blocks.remove(member.id)
+        return True
