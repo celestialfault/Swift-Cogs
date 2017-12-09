@@ -9,7 +9,7 @@ from redbot.core.utils.chat_formatting import escape
 
 from typing import Iterable
 
-from sharedutils.sharedutils import td_format, difference, normalize
+from .utils import td_format, difference, normalize
 
 
 def setup(_bot: Red, _config: Config):
