@@ -1,42 +1,54 @@
-from asyncio import iscoroutinefunction
+from typing import Optional
 
-from redbot.core.config import Config, Value
-from discord.abc import GuildChannel, Messageable
-from discord import Guild, TextChannel, Member
+from redbot.core import RedContext
+from redbot.core.config import Value, Group
+from discord import Guild
 
+from .formatters import *
 
-async def toggle_setting(setting: Value, toggle: bool = None):
-    """
-    Toggles a specific Value object, optionally to a specific bool value
-    """
-    toggle = toggle if toggle is not None else not await setting()
-    await setting.set(toggle)
-    return toggle
+_guilds = {}
 
 
-async def validate_log_channel(channel: GuildChannel, guild: Guild) -> bool:
-    """
-    Checks to validate a log channel
-    """
-    if channel is None:
-        return True
-    return isinstance(channel, TextChannel) and channel.guild.id == guild.id
+async def cmd_help(ctx: RedContext, cmd: str):
+    if not ctx.invoked_subcommand or ctx.invoked_subcommand.name == cmd:
+        await ctx.send_help()
 
 
-async def send_log_message(log_channel: GuildChannel, embed_func, **args):
-    """
-    Log message handler
-    """
-    if not log_channel or not isinstance(log_channel, Messageable):
-        return
-    embed = await embed_func(**args) if iscoroutinefunction(embed_func) else embed_func(**args)
-    if not embed:
-        return
-    await log_channel.send(embed=embed)
+async def toggle(value: Value):
+    _val = not await value()
+    await value.set(_val)
+    return _val
 
 
-async def is_ignored(config: Config, member: Member, guild: Guild, channel: GuildChannel=None) -> bool:
-    return (await config.guild(guild).ignored()
-            or member and (member.bot or await config.member(member).ignored())
-            or (await config.channel(channel).ignored() if channel and isinstance(channel, TextChannel) else False)
-            or False)
+async def diff_box(list1, list2):
+    msg = "```diff\n"
+    msg += "+ Enabled"
+    msg += "\n"
+    msg += ", ".join(list1)
+    msg += "\n\n- Disabled\n"
+    msg += ", ".join(list2)
+    msg += "\n```"
+    return msg
+
+
+async def set_formatter(format_type: str, config_val: Value, guild: Guild):
+    await config_val.set(format_type)
+    if guild.id in _guilds:
+        del _guilds[guild.id]
+
+
+async def get_formatter(guild: Guild, config: Group) -> Optional[FormatterBase]:
+    if guild.id in _guilds:
+        return _guilds[guild.id]
+    else:
+        _format = await config.format()
+        if _format == "TEXT":
+            cls = TextFormatter
+        elif _format == "EMBED":
+            cls = EmbedFormatter
+        else:
+            _guilds[guild.id] = None
+            return None
+        formatter = cls(guild=guild)
+        _guilds[guild.id] = formatter
+        return formatter
