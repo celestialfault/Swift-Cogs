@@ -59,13 +59,17 @@ class FormatterBase:
             if not item:
                 continue
             if isinstance(item, discord.Embed):
-                await log_channel.send(embed=item)
+                try:
+                    await log_channel.send(embed=item)
+                except discord.Forbidden:
+                    return
             elif isinstance(item, str):
                 await log_channel.send(item)
             else:
                 raise ValueError("Found an unexpected %s, expected Embed or str" % item.__class__.__name__)
 
-    def format(self, title: str, text: str, **kwargs):
+    def format(self, title: str, text: str, *, emoji: str, colour: discord.Colour, member: discord.Member=None,
+               timestamp: datetime=None):
         raise NotImplementedError
 
     async def members_join(self, member: discord.Member):
@@ -75,15 +79,14 @@ class FormatterBase:
         else:
             account_age = account_age + " old"
         return [self.format("Member joined", "**{}** joined the server\nAccount is {}".format(
-            escape(str(member), formatting=True, mass_mentions=True), account_age),
-                            emoji="\N{WAVING HAND SIGN}", colour=discord.Colour.green())]
+                escape(str(member), formatting=True, mass_mentions=True), account_age),
+            emoji="\N{WAVING HAND SIGN}", colour=discord.Colour.green(), member=member)]
 
     async def members_leave(self, member: discord.Member):
         return [self.format("Member left", "**{}** left after being a member for {}".format(
-            escape(str(member),
-                   formatting=True, mass_mentions=True),
-            td_format(member.joined_at - datetime.utcnow())),
-                            emoji="\N{DOOR}", colour=discord.Colour.red())]
+                escape(str(member), formatting=True, mass_mentions=True),
+                td_format(member.joined_at - datetime.utcnow())),
+            emoji="\N{DOOR}", colour=discord.Colour.red(), member=member)]
 
     async def members_update(self, before: discord.Member, after: discord.Member):
         settings = await self.config.members.update()
@@ -92,12 +95,12 @@ class FormatterBase:
             msgs.append(self.format("Member updated", "Member **{}** changed their name to **{}**".format(
                 escape(str(before), formatting=True, mass_mentions=True),
                 escape(str(after), formatting=True, mass_mentions=True)
-            ), user=after, emoji="\N{MEMO}", colour=discord.Colour.blurple()))
+            ), emoji="\N{MEMO}", colour=discord.Colour.blurple(), member=after))
         if (before.nick != after.nick) and settings["nickname"]:
             msgs.append(self.format("Member updated", "Member **{}**'s nickname has been changed to to **{}**".format(
                 escape(str(after), formatting=True, mass_mentions=True),
                 escape(after.nick, formatting=True, mass_mentions=True)
-            ), user=after, emoji="\N{MEMO}", colour=discord.Colour.blurple()))
+            ), emoji="\N{MEMO}", colour=discord.Colour.blurple(), member=after))
         if (before.roles != after.roles) and settings["roles"]:
             diff = difference(before.roles, after.roles, check_val=False)
             added = diff["added"]
@@ -107,13 +110,13 @@ class FormatterBase:
                     escape(str(after), mass_mentions=True, formatting=True),
                     "s" if len(added) > 1 else "",
                     escape(", ".join([x.name for x in added]), formatting=True, mass_mentions=True)
-                ), user=after, emoji="\N{BUSTS IN SILHOUETTE}", colour=discord.Colour.green()))
+                ), emoji="\N{BUSTS IN SILHOUETTE}", colour=discord.Colour.green(), member=after))
             if len(removed) > 0:
                 msgs.append(self.format("Member roles updated", "Member **{}** lost role{} **{}**".format(
                     escape(str(after), mass_mentions=True, formatting=True),
                     "s" if len(removed) > 1 else "",
                     escape(", ".join([x.name for x in removed]), formatting=True, mass_mentions=True)
-                ), user=after, emoji="\N{BUSTS IN SILHOUETTE}", colour=discord.Colour.orange()))
+                ), emoji="\N{BUSTS IN SILHOUETTE}", colour=discord.Colour.orange(), member=after))
         return msgs
 
     async def guild_update(self, before: discord.Guild, after: discord.Guild):
@@ -164,25 +167,39 @@ class FormatterBase:
         return [self.format("Channel deleted", "Channel {} has been deleted".format(channel.name),
                             emoji="\N{WASTEBASKET}", colour=discord.Colour.red())]
 
-    # noinspection PyUnresolvedReferences
     async def channels_update(self, before: discord.abc.GuildChannel, after: discord.abc.GuildChannel):
         settings = await self.config.channels.update()
         msgs = []
+        # shh pycharm, there's no need to be upset
+        # noinspection PyUnresolvedReferences
         if (before.name != after.name) and settings["name"]:
+            # noinspection PyUnresolvedReferences
             msgs.append(self.format("Channel updated", "Channel **{}** name changed to **{}**".format(
                 escape(before.name, formatting=True, mass_mentions=True),
                 escape(after.name, formatting=True, mass_mentions=True)
             ), emoji="\N{NAME BADGE}", colour=discord.Colour.blurple()))
-        if isinstance(before, TextChannel) and isinstance(after, TextChannel):
+        if isinstance(before, discord.TextChannel) and isinstance(after, discord.TextChannel):
             if (before.topic != after.topic) and settings["topic"]:
                 msgs.append(self.format("Channel updated", "Channel **{}** topic changed to:\n**{}**".format(
                     escape(after.name, formatting=True, mass_mentions=True),
                     escape(after.topic, formatting=True, mass_mentions=True)
                 ), emoji="\N{NEWSPAPER}", colour=discord.Colour.blurple()))
+        elif isinstance(before, discord.VoiceChannel) and isinstance(after, discord.VoiceChannel):
+            if (before.bitrate != after.bitrate) and "bitrate" in settings and settings["bitrate"]:
+                msgs.append(self.format("Channel updated", "Channel **{}** bitrate changed to {}".format(
+                    escape(after.name, formatting=True, mass_mentions=True),
+                    str(after.bitrate)[:-3] + " kbps"
+                ), emoji="\N{MEMO}", colour=discord.Colour.blurple()))
+            if (before.user_limit != after.user_limit) and "user_limit" in settings and settings["user_limit"]:
+                msgs.append(self.format("Channel updated", "User limit for channel **{}** has been {}".format(
+                    escape(after.name, formatting=True, mass_mentions=True),
+                    "changed to " + after.user_limit
+                    if after.user_limit > 0 else "removed"
+                ), emoji="\N{MEMO}", colour=discord.Colour.blurple()))
         if before.category != after.category:
             msgs.append(self.format("Channel updated", "Channel **{}** moved to category **{}**".format(
                 escape(after.name, formatting=True, mass_mentions=True),
-                escape(after.category.name if category else "Uncategorized", mass_mentions=True, formatting=True)),
+                escape(after.category.name if after.category else "Uncategorized", mass_mentions=True, formatting=True)),
                                     emoji="\N{CLASSICAL BUILDING}", colour=discord.Colour.blurple()))
         return msgs
 
@@ -232,6 +249,11 @@ class FormatterBase:
                                                                                                   guild="server")
                                                                                         for x in removed])),
                                         emoji="\N{MEMO}", colour=discord.Colour.blurple()))
+        if (before.colour != after.colour) and "colour" in settings and settings["colour"]:
+            msgs.append(self.format("Role updated", "Role **{}** colour changed to `{}`".format(
+                escape(after.name, formatting=True, mass_mentions=True),
+                str(after.colour)
+            ), emoji="\N{MEMO}", colour=discord.Colour.blurple()))
         return msgs
 
     async def roles_create(self, role: discord.Role):
@@ -254,7 +276,7 @@ class FormatterBase:
             escape(str(message.author), formatting=True, mass_mentions=True),
             escape(message.content, mass_mentions=True),
             attach),
-                            emoji="\N{WASTEBASKET}", colour=discord.Colour.red())]
+                            emoji="\N{WASTEBASKET}", colour=discord.Colour.red(), member=message.author)]
 
     # noinspection PyUnusedLocal
     async def messages_edit(self, before: discord.Message, after: discord.Message):
@@ -263,7 +285,7 @@ class FormatterBase:
         return [self.format("Message edited", "**Author:** {}\n\n**New content:**\n{}".format(
             escape(str(after.author), formatting=True, mass_mentions=True),
             escape(after.content, mass_mentions=True)),
-                            emoji="\N{MEMO}", colour=discord.Colour.blurple())]
+                            emoji="\N{MEMO}", colour=discord.Colour.blurple(), member=after.author)]
 
     async def voice_update(self, before: discord.VoiceState, after: discord.VoiceState, member: discord.Member):
         settings = await self.config.voice()

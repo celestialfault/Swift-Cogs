@@ -4,7 +4,7 @@ from .logs import Logs
 from .formatters.base import setup as setup_formatter
 
 defaults_guild = {
-    "format": "TEXT",
+    "format": "EMBED",
     "log_channels": {
         "roles": None,
         "guild": None,
@@ -21,7 +21,8 @@ defaults_guild = {
             "permissions": False,
             "hoist": False,
             "mention": False,
-            "position": False
+            "position": False,
+            "colour": False
         }
     },
     "guild": {
@@ -51,7 +52,9 @@ defaults_guild = {
             "name": False,
             "topic": False,
             "position": False,
-            "category": False
+            "category": False,
+            "bitrate": False,
+            "user_limit": False
         }
     },
     "voice": {

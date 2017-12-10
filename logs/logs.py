@@ -5,13 +5,7 @@ from redbot.core.bot import Red, RedContext
 from redbot.core import checks, Config
 from redbot.core.utils.chat_formatting import info
 
-from .utils import (
-    toggle,
-    get_formatter,
-    set_formatter,
-    cmd_help,
-    diff_box
-)
+from .utils import toggle, get_formatter, set_formatter, cmd_help, group_set
 
 
 class Logs:
@@ -33,7 +27,7 @@ class Logs:
 
     @logset_logchannel.command(name="all")
     async def logchannel_all(self, ctx: RedContext, channel: discord.TextChannel=None):
-        """Set or clear all log type channels at once"""
+        """Set or clear all log channels at once"""
         channel = channel.id if channel else None
         # Half-assed workarounds 101
         channels = self.config.guild(ctx.guild).log_channels.defaults
@@ -94,25 +88,14 @@ class Logs:
         """Set guild update logging
 
         Available log types:
-
-        2FA, VERIFICATION_LEVEL, NAME, AFK, OWNER
+        2fa, verification, name, owner, afk
 
         Example:
-            !logset guild NAME OWNER
+            !logset guild name owner
         -> Logs guild name and owner changes, but not AFK, verification level or 2FA requirement changes"""
-        async with self.config.guild(ctx.guild).guild() as settings:
-            items = {"2FA": "2fa", "VERIFICATION_LEVEL": "verification",
-                     "NAME": "name", "OWNER": "owner", "AFK": "afk"}
-            for item in items:
-                if item in types:
-                    settings[items[item]] = True
-                else:
-                    settings[items[item]] = False
-            msg = "{}\n" \
-                  "{}".format(info("Updated guild update log settings"),
-                              await diff_box([x for x in items if settings[items[x]]],
-                                             [x for x in items if not settings[items[x]]]))
-            await ctx.send(msg)
+        _set = await group_set(types, self.config.guild(ctx.guild).guild)
+        msg = "{}\n{}".format(info("Updated guild update log settings"), _set)
+        await ctx.send(msg)
 
     @logset.group(name="channel")
     async def logset_channel(self, ctx: RedContext):
@@ -142,48 +125,28 @@ class Logs:
         """Set channel update logging
 
         Available log types:
-
-        NAME, TOPIC, POSITION, CATEGORY
+        name, topic, position, category, bitrate, user_limit
 
         Example:
-            !logset guild NAME TOPIC
-        -> Logs channel name and topic changes, but not position or parent category changes"""
-        items = {"NAME": "name", "TOPIC": "topic", "POSITION": "position", "CATEGORY": "category"}
-        async with self.config.guild(ctx.guild).channels.update() as settings:
-            for item in items:
-                if item in types:
-                    settings[items[item]] = True
-                else:
-                    settings[items[item]] = False
-            msg = "{}\n" \
-                  "{}".format(info("Updated channel update log settings"),
-                              await diff_box([x for x in items if settings[items[x]]],
-                                             [x for x in items if not settings[items[x]]]))
-            await ctx.send(msg)
+            !logset channel update name topic bitrate
+        -> Logs channel name, bitrate and topic changes, but not position, user limit, or parent category changes"""
+        _set = await group_set(types, self.config.guild(ctx.guild).channels.update)
+        msg = "{}\n{}".format(info("Updated channel update log settings"), _set)
+        await ctx.send(msg)
 
     @logset.command(name="message")
     async def logset_message(self, ctx: RedContext, *types):
         """Set message logging
 
         Available log types:
-
-        EDIT, DELETE
+        edit, delete
 
         Example:
-            !logset guild DELETE
+            !logset message delete
         -> Logs message deletion, but not message edits"""
-        async with self.config.guild(ctx.guild).messages() as settings:
-            items = {"EDIT": "edit", "DELETE": "delete"}
-            for item in items:
-                if item in types:
-                    settings[items[item]] = True
-                else:
-                    settings[items[item]] = False
-            msg = "{}\n" \
-                  "{}".format(info("Updated message log settings"),
-                              await diff_box([x for x in items if settings[items[x]]],
-                                             [x for x in items if not settings[items[x]]]))
-            await ctx.send(msg)
+        _set = await group_set(types, self.config.guild(ctx.guild).messages)
+        msg = "{}\n{}".format(info("Updated message log settings"), _set)
+        await ctx.send(msg)
 
     @logset.group(name="member")
     async def logset_member(self, ctx: RedContext):
@@ -213,24 +176,14 @@ class Logs:
         """Set member update logging
 
         Available log types:
-
-        NAME, NICKNAME, ROLES
+        name, nickname, roles
 
         Example:
-            !logset guild NAME ROLES
+            !logset guild name roles
         -> Logs member name and role updates, but not nickname changes"""
-        async with self.config.guild(ctx.guild).members.update() as settings:
-            items = {"NICKNAME": "nickname", "NAME": "name", "ROLES": "roles"}
-            for item in items:
-                if item in types:
-                    settings[items[item]] = True
-                else:
-                    settings[items[item]] = False
-            msg = "{}\n" \
-                  "{}".format(info("Updated member update log settings"),
-                              await diff_box([x for x in items if settings[items[x]]],
-                                             [x for x in items if not settings[items[x]]]))
-            await ctx.send(msg)
+        _set = await group_set(types, self.config.guild(ctx.guild).members.update)
+        msg = "{}\n{}".format(info("Updated member update log settings"), _set)
+        await ctx.send(msg)
 
     @logset.group(name="role")
     async def logset_role(self, ctx: RedContext):
@@ -260,53 +213,28 @@ class Logs:
         """Manage role update logging
 
         Available log types:
-
-        NAME, HOIST, MENTIONABLE, POSITION, PERMISSIONS
+        name, hoist, mention, position, permissions, colour
 
         Example:
-            !logset guild NAME PERMISSIONS
+            !logset guild name permissions
         -> Logs role name and permission changes, but not hoist/mentionable status or position changes"""
-        async with self.config.guild(ctx.guild).roles.update() as settings:
-            items = {"NAME": "name", "HOIST": "hoist", "PERMISSIONS": "permissions", "POSITION": "position",
-                     "MENTIONABLE": "mention"}
-            for item in items:
-                if item in types:
-                    settings[items[item]] = True
-                else:
-                    settings[items[item]] = False
-            msg = "{}\n" \
-                  "{}".format(info("Updated role update log settings"),
-                              await diff_box([x for x in items if settings[items[x]]],
-                                             [x for x in items if not settings[items[x]]]))
-            await ctx.send(msg)
+        _set = await group_set(types, self.config.guild(ctx.guild).roles.update)
+        msg = "{}\n{}".format(info("Updated role update log settings"), _set)
+        await ctx.send(msg)
 
     @logset.command(name="voice")
     async def logset_voice(self, ctx: RedContext, *types):
         """Manage voice status logging
 
         Available types:
-
-        JOIN, PART, SWITCH, SELFMUTE, SERVERMUTE, SELFDEAF, SERVERDEAF
+        join, leave, switch, selfmute, servermute, selfdeaf, serverdeaf
 
         Example:
-            !logset voice SERVERDEAF SERVERMUTE JOIN
+            !logset voice join servermute serverdeaf
         -> Logs channel joining, server mute and deafening, but not self mute/deafens, channel switching or leaving"""
-        async with self.config.guild(ctx.guild).voice() as settings:
-            items = {
-                "JOIN": "join", "PART": "leave", "SWITCH": "switch",
-                "SELFMUTE": "selfmute", "SERVERMUTE": "servermute",
-                "SELFDEAF": "selfdeaf", "SERVERDEAF": "serverdeaf"
-            }
-            for item in items:
-                if item in types:
-                    settings[items[item]] = True
-                else:
-                    settings[items[item]] = False
-            msg = "{}\n" \
-                  "{}".format(info("Updated voice logging settings"),
-                              await diff_box([x for x in items if settings[items[x]]],
-                                             [x for x in items if not settings[items[x]]]))
-            await ctx.send(msg)
+        _set = await group_set(types, self.config.guild(ctx.guild).voice)
+        msg = "{}\n{}".format(info("Updated voice status log settings"), _set)
+        await ctx.send(msg)
 
     @logset.command(name="reset")
     async def logset_reset(self, ctx: RedContext):
