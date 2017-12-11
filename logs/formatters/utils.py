@@ -1,5 +1,7 @@
+import discord
+
 from datetime import timedelta
-from typing import Iterable
+from typing import Iterable, Optional, Union
 
 
 # ~~stolen~~ borrowed from StackOverflow
@@ -50,3 +52,29 @@ def normalize(text: str, *, title_case: bool=True, **kwargs):
     if title_case:
         text = text.title()
     return text
+
+
+def find_check(**kwargs) -> Optional[Union[discord.Member, discord.TextChannel, discord.Guild]]:
+    if kwargs.get('after', None):
+        return extract_check(kwargs.get('after', None))
+    elif kwargs.get('member', None):
+        return extract_check(kwargs.get('member', None))
+    elif kwargs.get('guild', None):
+        return extract_check(kwargs.get('guild', None))
+    elif kwargs.get('channel', None):
+        return extract_check(kwargs.get('channel', None))
+    else:
+        return None
+
+
+def extract_check(obj) -> Optional[Union[discord.Member, discord.TextChannel, discord.Guild]]:
+    if isinstance(obj, discord.Member):
+        return obj
+    elif isinstance(obj, discord.Message):
+        return obj.author
+    elif isinstance(obj, discord.Guild):
+        return obj
+    elif isinstance(obj, discord.TextChannel):
+        return obj
+    else:
+        return None

@@ -3,7 +3,7 @@ from discord.ext import commands
 
 from redbot.core.bot import Red, RedContext
 from redbot.core import checks, Config
-from redbot.core.utils.chat_formatting import info
+from redbot.core.utils.chat_formatting import info, error
 
 from .utils import toggle, get_formatter, set_formatter, cmd_help, group_set
 
@@ -91,10 +91,12 @@ class Logs:
         2fa, verification, name, owner, afk
 
         Example:
-            !logset guild name owner
-        -> Logs guild name and owner changes, but not AFK, verification level or 2FA requirement changes"""
-        _set = await group_set(types, self.config.guild(ctx.guild).guild)
-        msg = "{}\n{}".format(info("Updated guild update log settings"), _set)
+        **❯** **!logset guild name owner**
+        **❯** Toggles logging of guild name changes and ownership changes
+        """
+        changed, _set = await group_set(types, self.config.guild(ctx.guild).guild, ["2fa", "verification", "name",
+                                                                                    "owner", "afk"])
+        msg = "{}{}".format(info("Updated guild update log settings\n") if changed else "", _set)
         await ctx.send(msg)
 
     @logset.group(name="channel")
@@ -128,10 +130,13 @@ class Logs:
         name, topic, position, category, bitrate, user_limit
 
         Example:
-            !logset channel update name topic bitrate
-        -> Logs channel name, bitrate and topic changes, but not position, user limit, or parent category changes"""
-        _set = await group_set(types, self.config.guild(ctx.guild).channels.update)
-        msg = "{}\n{}".format(info("Updated channel update log settings"), _set)
+        **❯** **!logset channel update name topic bitrate**
+        **❯** Toggles logging of channel name, bitrate and topic changes
+        """
+        changed, _set = await group_set(types, self.config.guild(ctx.guild).channels.update, ["name", "topic",
+                                                                                              "position", "category",
+                                                                                              "bitrate", "user_limit"])
+        msg = "{}{}".format(info("Updated channel update log settings\n") if changed else "", _set)
         await ctx.send(msg)
 
     @logset.command(name="message")
@@ -142,10 +147,11 @@ class Logs:
         edit, delete
 
         Example:
-            !logset message delete
-        -> Logs message deletion, but not message edits"""
-        _set = await group_set(types, self.config.guild(ctx.guild).messages)
-        msg = "{}\n{}".format(info("Updated message log settings"), _set)
+        **❯** **!logset message edit**
+        **❯** Toggles logging of message edits
+        """
+        changed, _set = await group_set(types, self.config.guild(ctx.guild).messages, ["edit", "delete"])
+        msg = "{}{}".format(info("Updated message log settings\n") if changed else "", _set)
         await ctx.send(msg)
 
     @logset.group(name="member")
@@ -179,10 +185,12 @@ class Logs:
         name, nickname, roles
 
         Example:
-            !logset guild name roles
-        -> Logs member name and role updates, but not nickname changes"""
-        _set = await group_set(types, self.config.guild(ctx.guild).members.update)
-        msg = "{}\n{}".format(info("Updated member update log settings"), _set)
+        **❯** **!logset member update name roles**
+        **❯** Toggles logging of member name and role updates
+        """
+        changed, _set = await group_set(types, self.config.guild(ctx.guild).members.update, ["name", "nickname",
+                                                                                             "roles"])
+        msg = "{}{}".format(info("Updated member update log settings\n") if changed else "", _set)
         await ctx.send(msg)
 
     @logset.group(name="role")
@@ -216,10 +224,13 @@ class Logs:
         name, hoist, mention, position, permissions, colour
 
         Example:
-            !logset guild name permissions
-        -> Logs role name and permission changes, but not hoist/mentionable status or position changes"""
-        _set = await group_set(types, self.config.guild(ctx.guild).roles.update)
-        msg = "{}\n{}".format(info("Updated role update log settings"), _set)
+        **❯** **!logset role update name permissions**
+        **❯** Toggles logging of role name and permission changes
+        """
+        changed, _set = await group_set(types, self.config.guild(ctx.guild).roles.update, ["name", "hoist", "mention",
+                                                                                           "position", "permissions",
+                                                                                           "colour"])
+        msg = "{}{}".format(info("Updated role update log settings\n") if changed else "", _set)
         await ctx.send(msg)
 
     @logset.command(name="voice")
@@ -230,11 +241,106 @@ class Logs:
         join, leave, switch, selfmute, servermute, selfdeaf, serverdeaf
 
         Example:
-            !logset voice join servermute serverdeaf
-        -> Logs channel joining, server mute and deafening, but not self mute/deafens, channel switching or leaving"""
-        _set = await group_set(types, self.config.guild(ctx.guild).voice)
-        msg = "{}\n{}".format(info("Updated voice status log settings"), _set)
+        **❯** !logset voice join servermute serverdeaf
+        **❯** Toggles logging of channel joining, server mute and deafening
+        """
+        changed, _set = await group_set(types, self.config.guild(ctx.guild).voice, ["join", "switch", "leave",
+                                                                                    "selfmute", "selfdeaf",
+                                                                                    "servermute", "serverdeaf"])
+        msg = "{}{}".format(info("Updated voice status log settings\n") if changed else "", _set)
         await ctx.send(msg)
+
+    @logset.group(name="ignore")
+    async def logset_ignore(self, ctx: RedContext):
+        """Manage ignore settings"""
+        await cmd_help(ctx, "ignore")
+
+    @logset_ignore.command(name="guild")
+    @checks.is_owner()
+    async def logset_ignore_guild(self, ctx: RedContext, guild_id: int=None):
+        """Ignore the current or specified guild"""
+        guild = ctx.guild if not guild_id else self.bot.get_guild(guild_id)
+        if not guild:
+            await ctx.send(error("I couldn't find that guild"))
+            return
+        await self.config.channel(guild).ignored.set(True)
+        await ctx.send("Now ignoring guild **{}**".format(guild.name))
+
+    @logset_ignore.command(name="member")
+    async def logset_ignore_member(self, ctx: RedContext, member: discord.Member):
+        """Ignore a specified member from logging"""
+        await self.config.member(member).ignored.set(True)
+        await ctx.send("Now ignoring member **{}**".format(str(member)))
+
+    @logset_ignore.command(name="channel")
+    async def logset_ignore_channel(self, ctx: RedContext, channel: discord.TextChannel=None):
+        """Ignore a specified text channel from logging"""
+        await self.config.channel(channel or ctx.channel).ignored.set(True)
+        await ctx.send("Now ignoring channel {}".format((channel or ctx.channel).mention))
+
+    @logset_ignore.command(name="category")
+    async def logset_ignore_category(self, ctx: RedContext, category: discord.CategoryChannel):
+        """Ignore all channels in a category from logging"""
+        ignored = []
+        for channel in category.channels:
+            if not isinstance(channel, discord.TextChannel):
+                continue
+            await self.config.channel(channel).ignored.set(True)
+            ignored.append(channel)
+        if not ignored:
+            await ctx.send(error("Failed to ignore any channels in that category\n\n"
+                                 "(I'm only able to ignore text channels)"))
+            return
+        _ignored = ["**❯** " + x.mention for x in ignored]
+        ignored = "\n".join(_ignored)
+        await ctx.send(info("Successfully ignored the following channel{}:\n\n{}").format(
+            "s" if len(_ignored) > 1 else "", ignored))
+
+    @logset.group(name="unignore")
+    async def logset_unignore(self, ctx: RedContext):
+        """Remove a previous ignore"""
+        await cmd_help(ctx, "unignore")
+
+    @logset_unignore.command(name="guild")
+    @checks.is_owner()
+    async def logset_unignore_guild(self, ctx: RedContext, guild_id: int=None):
+        """Unignore the current or specified guild"""
+        guild = ctx.guild if not guild_id else self.bot.get_guild(guild_id)
+        if not guild:
+            await ctx.send(error("I couldn't find that guild"))
+            return
+        await self.config.channel(guild).ignored.set(False)
+        await ctx.send("No longer ignoring guild **{}**".format(guild.name))
+
+    @logset_unignore.command(name="member")
+    async def logset_unignore_member(self, ctx: RedContext, member: discord.Member):
+        """Unignore a specified member from logging"""
+        await self.config.member(member).ignored.set(False)
+        await ctx.send("No longer ignoring member **{}**".format(str(member)))
+
+    @logset_unignore.command(name="channel")
+    async def logset_unignore_channel(self, ctx: RedContext, channel: discord.TextChannel):
+        """Unignore a specified text channel from logging"""
+        await self.config.channel(channel or ctx.channel).ignored.set(False)
+        await ctx.send("No longer ignoring channel {}".format((channel or ctx.channel).mention))
+
+    @logset_unignore.command(name="category")
+    async def logset_unignore_category(self, ctx: RedContext, category: discord.CategoryChannel):
+        """Unignore all channels in a category from logging"""
+        ignored = []
+        for channel in category.channels:
+            if not isinstance(channel, discord.TextChannel):
+                continue
+            await self.config.channel(channel).ignored.set(False)
+            ignored.append(channel)
+        if not ignored:
+            await ctx.send(error("Failed to unignore any channels in that category\n\n"
+                                 "(I'm only able to ignore text channels)"))
+            return
+        _ignored = ["**❯** " + x.mention for x in ignored]
+        ignored = "\n".join(_ignored)
+        await ctx.send(info("No longer ignoring the following channel{}:\n\n{}").format(
+            "s" if len(_ignored) > 1 else "", ignored))
 
     @logset.command(name="reset")
     async def logset_reset(self, ctx: RedContext):

@@ -5,6 +5,7 @@ from .formatters.base import setup as setup_formatter
 
 defaults_guild = {
     "format": "EMBED",
+    "ignored": False,
     "log_channels": {
         "roles": None,
         "guild": None,
@@ -72,5 +73,7 @@ defaults_guild = {
 def setup(bot: Red):
     config = Config.get_conf(Logs, identifier=35908345472, force_registration=True)
     config.register_guild(**defaults_guild)
+    config.register_channel(ignored=False)
+    config.register_member(ignored=False)
     setup_formatter(bot, config)
     bot.add_cog(Logs(bot, config))

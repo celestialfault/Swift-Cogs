@@ -7,9 +7,9 @@ from redbot.core.bot import Red
 from redbot.core import Config
 from redbot.core.utils.chat_formatting import escape
 
-from typing import Iterable
+from typing import Iterable, Union, Optional
 
-from .utils import td_format, difference, normalize
+from .utils import td_format, difference, normalize, find_check
 
 
 def setup(_bot: Red, _config: Config):
@@ -30,7 +30,23 @@ class FormatterBase:
     async def log_channel(self, group: str):
         return bot.get_channel(await self.config.log_channels.get_attr(group))
 
+    async def is_ignored(self, check: Union[discord.Member, discord.TextChannel, discord.Guild]=None) -> Optional[bool]:
+        if await self.config.ignored():
+            return True
+
+        if check is None:
+            return False
+
+        if isinstance(check, discord.Member):
+            return await config.member(check).ignored()
+        elif isinstance(check, discord.TextChannel):
+            return await config.channel(check).ignored()
+        else:
+            return False
+
     async def send_log_message(self, log_group: str, log_type: str, **kwargs):
+        if await self.is_ignored(find_check(**kwargs)):
+            return
         log_func = "{}_{}".format(log_group, log_type)
         try:
             formatter = self.__getattribute__(log_func)
