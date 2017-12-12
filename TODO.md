@@ -1,14 +1,14 @@
+- [ ] I18n (because this isn't going to be terrible clearly)
 - [ ] Red v2 cog ports
   - [x] User Profiles
   - [x] Quotes
   - [ ] Permission Breakdown
   - [ ] Warnings (if warnings aren't added to the core Mod cog)
   - [x] Starboard
-    - [ ] Message hiding
 - [x] Bot management cogs
   - [x] Cog Whitelist
   - [x] Require Role
 - [x] Moderation utility cogs
   - [x] Logs
-- [ ] Misc cogs
-  - [ ] Giveaways
+- [x] Misc cogs
+  - [x] Giveaways
