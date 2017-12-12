@@ -1,5 +1,0 @@
-{
-  "author": ["odinair"],
-  "description": "Shared utility functions for all of odinair's cogs",
-  "type": "SHARED_LIBRARY"
-}
