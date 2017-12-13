@@ -1,4 +1,6 @@
 {
   "author": ["odinair"],
-  "description": "Random bot playing statuses.\n\nDue to how the status switching works, this doesn't respect manually set statuses, nor does it support the Streaming, Listening to or Watching statuses.\nSorry; go get another cog for those features."
+  "description": "Random bot playing statuses.\n\nDue to how the status switching works, this doesn't respect manually set statuses, nor does it support the Streaming, Listening to or Watching statuses.\nSorry; go get another cog for those features.",
+  "short": "Random bot playing statuses",
+  "type": "COG"
 }

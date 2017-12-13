@@ -1,4 +1,6 @@
 {
   "author": ["odinair"],
-  "description": "Giveaways!"
+  "description": "Giveaways!",
+  "short": "Giveaways!",
+  "type": "COG"
 }

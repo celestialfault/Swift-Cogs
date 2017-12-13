@@ -1,4 +1,6 @@
 {
   "author": ["odinair"],
-  "description": "Save and retrieve quotes"
+  "description": "Save and retrieve quotes",
+  "short": "Save and retrieve quotes",
+  "type": "COG"
 }
