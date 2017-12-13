@@ -1,7 +1,8 @@
-- [ ] I18n (because this isn't going to be terrible clearly)
+- [ ] I18n
 - [ ] Red v2 cog ports
   - [x] User Profiles
   - [x] Quotes
+  - [x] RNDStatus
   - [ ] Permission Breakdown
   - [ ] Warnings (if warnings aren't added to the core Mod cog)
   - [x] Starboard
