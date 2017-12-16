@@ -1,11 +1,12 @@
 import asyncio
+from typing import List
 
 import discord
 from discord.ext import commands
 
 from redbot.core.bot import Red, RedContext
 from redbot.core import Config, checks
-from redbot.core.utils.chat_formatting import error
+from redbot.core.utils.chat_formatting import error, pagify
 
 from random import choice
 
@@ -20,14 +21,14 @@ class RNDStatus:
 
     @commands.group(name="rndstatus")
     @checks.is_owner()
-    async def _rndstatus(self, ctx: RedContext):
+    async def rndstatus(self, ctx: RedContext):
         """Manage random statuses"""
         if not ctx.invoked_subcommand:
             await ctx.send_help()
 
-    @_rndstatus.command(name="delay")
-    async def _rndstatus_delay(self, ctx: RedContext, delay: int):
-        """Set the amount of time required to pass in seconds
+    @rndstatus.command(name="delay")
+    async def rndstatus_delay(self, ctx: RedContext, delay: int):
+        """Set the amount of time required to pass in seconds to change the bot's playing status
 
         Minimum amount of seconds between changes is 60
         Default delay is every 5 minutes, or every 300 seconds"""
@@ -37,17 +38,22 @@ class RNDStatus:
         await self.config.delay.set(delay)
         await ctx.tick()
 
-    @_rndstatus.command(name="add")
-    async def _rndstatus_add(self, ctx: RedContext, *, status: str):
+    @rndstatus.command(name="add")
+    async def rndstatus_add(self, ctx: RedContext, *, status: str):
         """Add a random status
 
         Available replacement strings:
 
-        {TOTAL_MEMBERS} - replaced with the amount of members that the bot can see globally
-        {GUILDS} - replaced with the amount of guilds the bot is in
-        {SHARDS} - replaced with the total amount of shards the bot has
-        {COMMANDS} - replaced with the amount of commands loaded
-        {COGS} - replaced with the amount of cogs loaded"""
+        **{MEMBERS}**
+            Replaced with the amount of members that the bot can see in every guild
+        **{GUILDS}**
+            Replaced with the amount of guilds the bot is in
+        **{SHARDS}**
+            Replaced with the total amount of shards the bot has loaded
+        **{COMMANDS}**
+            Replaced with the amount of commands loaded
+        **{COGS}**
+            Replaced with the amount of cogs loaded"""
         async with self.config.statuses() as statuses:
             if status.lower() in [x.lower() for x in statuses]:
                 await ctx.send(error("That status already exists"))
@@ -55,8 +61,8 @@ class RNDStatus:
             statuses.append(status)
             await ctx.tick()
 
-    @_rndstatus.command(name="remove", aliases=["delete"])
-    async def _rndstatus_remove(self, ctx: RedContext, status: int):
+    @rndstatus.command(name="remove", aliases=["delete"])
+    async def rndstatus_remove(self, ctx: RedContext, status: int):
         """Remove a status by ID
 
         You can retrieve the ID for a status with [p]rndstatus list"""
@@ -67,51 +73,47 @@ class RNDStatus:
             del statuses[status - 1]
             await ctx.tick()
 
-    @_rndstatus.command(name="list")
-    async def _rndstatus_list(self, ctx: RedContext):
+    @rndstatus.command(name="list")
+    async def rndstatus_list(self, ctx: RedContext):
         """Lists all set statuses"""
-        # I don't exactly see anyone getting enough statuses to reach the length required for a second page
-        # But hey, I wanted to use send_interactive at least once
         statuses = list(await self.config.statuses())
-        status_str = []
-        current = []
-        for item in statuses:
-            if len("\n".join(current)) > 1500:
-                status_str.append("\n".join(current))
-                current = ""
-            current.append("{}: \"{}\"".format(statuses.index(item) + 1, item.replace("\"", "\\\"")))
-        if len(current) > 0:
-            status_str.append(",\n".join(current))
-        await ctx.send_interactive(messages=status_str, box_lang="python")
+        status_list = ["{}: {}".format(statuses.index(x) + 1, x) for x in statuses]
+        await ctx.send_interactive(messages=pagify("\n".join(status_list), delims=["\n"], escape_mass_mentions=True),
+                                   box_lang="python")
 
-    @_rndstatus.command(name="clear")
-    async def _rndstatus_clear(self, ctx: RedContext):
+    @rndstatus.command(name="clear")
+    async def rndstatus_clear(self, ctx: RedContext):
         """Clears all set statuses"""
         await self.config.statuses.set([])
         await self.bot.change_presence(game=None)
         await ctx.tick()
 
-    async def timer(self):
-        while self == self.bot.get_cog("RNDStatus"):
-            statuses = await self.config.statuses()
-            if statuses:
-                game = choice(list(await self.config.statuses()))
-                members = 0
-                for guild in self.bot.guilds:
-                    # noinspection PyUnusedLocal
-                    for member in guild.members:
-                        members += 1
+    async def _update_status(self, statuses: List[str]):
+        if statuses:
+            game = choice(statuses)
+            members = 0
+            for guild in self.bot.guilds:
+                for _ in guild.members:
+                    members += 1
+            try:
                 game = game.format(
                     GUILDS=len(self.bot.guilds),
                     SHARDS=self.bot.shard_count,
                     COGS=len(self.bot.cogs),
                     COMMANDS=len(self.bot.all_commands),
-                    TOTAL_MEMBERS=members
+                    MEMBERS=members
                 )
-                game = discord.Game(name=game)
-                await self.bot.change_presence(game=game,
-                                               # Hacky workaround for the user status
-                                               # If this isn't provided, discord.py clears the set status
-                                               # This depends on the bot being in at least one guild
-                                               status=self.bot.guilds[0].me.status)
+            except KeyError:
+                return
+            game = discord.Game(name=game)
+            await self.bot.change_presence(game=game,
+                                           # If this isn't provided, discord.py sets the bot's status to Online,
+                                           # ignoring any previously set status - this depends on the bot being
+                                           # in at least one guild
+                                           status=self.bot.guilds[0].me.status)
+
+    async def timer(self):
+        while self == self.bot.get_cog("RNDStatus"):
+            statuses = await self.config.statuses()
+            await self._update_status(list(statuses))
             await asyncio.sleep(int(await self.config.delay()))
