@@ -1,14 +1,13 @@
+from typing import Union
+
 import discord
 from discord.ext import commands
 
 from redbot.core.bot import Red
 from redbot.core import Config, RedContext, checks
+from redbot.core.utils.chat_formatting import error, info, bold, warning
 
-from typing import Union
-
-from redbot.core.utils.chat_formatting import error, info, bold
-
-from .classes.base import GiveawayBase
+from .base import GiveawayBase
 
 
 class Giveaway(GiveawayBase):
@@ -22,13 +21,13 @@ class Giveaway(GiveawayBase):
         if not ctx.invoked_subcommand:
             await ctx.send_help()
 
-    @_giveaway.command(name="new", aliases=["start"])
+    @_giveaway.command(name="new", aliases=["start", "create"])
     async def _giveaway_new(self, ctx: RedContext, *, description: str):
         """Create a new giveaway"""
-        if await self.guild_config(ctx.guild).mod_only() and\
-                not await self.bot.is_mod(ctx.author) and not await self.bot.is_owner(ctx.author):
-            await ctx.send(error("You aren't authorized to create giveaways in this guild"))
-            return
+        if await self.guild_config(ctx.guild).mod_only():
+            if not await self.bot.is_owner(ctx.author) and not await self.bot.is_mod(ctx.author):
+                await ctx.send(error("You aren't authorized to create giveaways in this guild"))
+                return
         __len = len(await self.get_giveaways(ctx.guild, ctx.channel))
         if __len >= 50:
             await ctx.send(error("Failed to create giveaway - there's 50 currently ongoing giveaways in this channel"))
@@ -43,19 +42,20 @@ class Giveaway(GiveawayBase):
         await msg.add_reaction("\N{PARTY POPPER}")
         # create the giveaway
         await self.giveaway_message(msg, creator=ctx.author, auto_create=True, description=description)
-        if await self.guild_config(ctx.guild).pin_messages():
+        if ctx.channel.permissions_for(ctx.guild.me).manage_messages:
+            if await self.guild_config(ctx.guild).pin_messages():
+                try:
+                    await msg.pin()
+                except (discord.NotFound, discord.HTTPException):
+                    pass
             try:
-                await msg.pin()
-            except (discord.NotFound, discord.Forbidden, discord.HTTPException):
+                # try to delete the command message
+                await ctx.message.delete()
+            except discord.HTTPException:
                 pass
-        try:
-            # try to delete the command message
-            await ctx.message.delete()
-        except (discord.Forbidden, discord.HTTPException):
-            pass
 
     @_giveaway.command(name="list")
-    async def _giveaway_list(self, ctx: RedContext, page: int=1, guild: bool=False):
+    async def _giveaway_list(self, ctx: RedContext, page: int = 1, guild: bool = False):
         """Lists all currently ongoing giveaways in this channel, or the entire guild if guild is passed"""
         per_page = 20
         page = page - 1
@@ -75,7 +75,8 @@ class Giveaway(GiveawayBase):
                     channels[item["channel_id"]] = []
                 channels[item["channel_id"]].append(item)
         else:
-            channels[ctx.channel.id] = list(await self.get_giveaways(ctx.guild, ctx.channel))[skip:skip+per_page]
+            channels[ctx.channel.id] = list(
+                await self.get_giveaways(ctx.guild, ctx.channel, only_ongoing=True))[skip:skip + per_page]
         for channel in channels:
             msg += "\n\n**❯** Channel {}:\n\n".format(self.bot.get_channel(channel).mention)
             msg += ", ".join([bold("#" + str(guild_giveaways.index(x) + 1)) for x in channels[channel]]
@@ -92,8 +93,12 @@ class Giveaway(GiveawayBase):
             await ctx.send(error("That giveaway doesn't exist"))
             return
         giveaway = giveaways[giveaway - 1]
-        giveaway = await self.giveaway_message(
-            await self.bot.get_channel(giveaway["channel_id"]).get_message(giveaway["message_id"]))
+        try:
+            giveaway = await self.giveaway_message(
+                await self.bot.get_channel(giveaway["channel_id"]).get_message(giveaway["message_id"]))
+        except discord.NotFound:
+            await ctx.send(error("The message for that giveaway has been deleted"))
+            return
         embed = discord.Embed(colour=discord.Colour.blurple() if not giveaway.ended else discord.Colour.red())
         giveaways = await self.guild_config(ctx.guild).giveaways()
         giveaway_entry = discord.utils.find(lambda entry: entry["message_id"] == giveaway.message.id, giveaways)
@@ -107,31 +112,44 @@ class Giveaway(GiveawayBase):
         await ctx.send(embed=embed)
 
     @_giveaway.command(name="end")
-    async def _giveaway_end(self, ctx: RedContext, giveaway: int, choose_winner: bool=True):
+    async def _giveaway_end(self, ctx: RedContext, giveaway: int, choose_winner: bool = True):
         """End a currently running giveaway"""
         giveaways = await self.get_giveaways(ctx.guild)
         if len(giveaways) < giveaway:
             await ctx.send(error("That giveaway doesn't exist"))
             return
+        giveaway_id = giveaway
         giveaway = giveaways[giveaway - 1]
-        giveaway = await self.giveaway_message(
-            await self.bot.get_channel(giveaway["channel_id"]).get_message(giveaway["message_id"]))
+        try:
+            giveaway = await self.giveaway_message(
+                await self.bot.get_channel(giveaway["channel_id"]).get_message(giveaway["message_id"]))
+        except discord.NotFound:
+            # Only allow moderators to end a giveaway if the message was deleted
+            if await self.bot.is_owner(ctx.author):
+                pass
+            elif await self.bot.is_mod(ctx.author):
+                pass
+            else:
+                await ctx.send(error("The message for that giveaway has been deleted"))
+                return
+            await ctx.send(warning("The message for that giveaway has been deleted - "
+                                   "ending the giveaway without choosing a winner."))
+            giveaways[giveaway_id - 1]["ended"] = True
+            await self.guild_config(ctx.guild).giveaways.set(giveaways)
+            await ctx.tick()
+            return
         if giveaway.ended:
             await ctx.send(error("That giveaway has already ended"))
             return
-        if giveaway.creator:
-            if isinstance(giveaway.creator, discord.Member):
-                creator = giveaway.creator.id
+        creator = giveaway.creator.id if isinstance(giveaway.creator, discord.Member) else giveaway.creator
+        if ctx.author.id != creator:
+            if await self.bot.is_owner(ctx.author):
+                pass
+            elif await self.bot.is_mod(ctx.author):
+                pass
             else:
-                creator = giveaway.creator
-            if ctx.author.id != creator:
-                if await self.bot.is_owner(ctx.author):
-                    pass
-                elif await self.bot.is_mod(ctx.author):
-                    pass
-                else:
-                    await ctx.send(error("You aren't allowed to end that giveaway"))
-                    return
+                await ctx.send(error("You aren't allowed to end that giveaway"))
+                return
         await giveaway.end(choose_winner=choose_winner)
         winner = giveaway.winner
         if winner:
@@ -139,10 +157,7 @@ class Giveaway(GiveawayBase):
         else:
             description = "No one won the giveaway."
         embed = discord.Embed(colour=discord.Colour.blurple(), description=description)
-        giveaways = await self.guild_config(ctx.guild).giveaways()
-        giveaway_entry = discord.utils.find(lambda entry: entry["message_id"] == giveaway.message.id, giveaways)
-        index = giveaways.index(giveaway_entry)
-        embed.set_author(name="Giveaway #{}".format(index + 1),
+        embed.set_author(name="Giveaway #{}".format(giveaway.index + 1),
                          icon_url=ctx.author.avatar_url)
         await ctx.send(embed=embed)
 

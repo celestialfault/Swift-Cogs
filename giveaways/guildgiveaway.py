@@ -70,6 +70,26 @@ class GuildGiveaway:
         await GiveawayBase.create_entry(self.message, self.creator, description=description)
         self.description = description
         self.entrants = []
+        giveaways = list(await self.config.giveaways())
+        entry = discord.utils.find(lambda _entry: _entry["message_id"] == self.message.id, giveaways)
+        self.index = giveaways.index(entry)
+
+    async def update_message(self):
+        ended_footer = "**Winner**: {}"
+        ongoing_footer = "React with \N{PARTY POPPER} to enter!"
+        desc_footer = ongoing_footer if not self.ended else ended_footer.format(self.winner.mention
+                                                                                if self.winner else None)
+        description = "{}\n\n{}".format(self.description, desc_footer)
+        embed = discord.Embed(colour=discord.Colour.red() if self.ended else discord.Colour.blurple())
+        embed.description = description
+        embed.set_author(name="Giveaway #{}".format(self.index + 1), icon_url=self.creator.avatar_url)
+        embed.set_footer(text="Giveaway started by {}".format(str(self.creator)))
+        await self.message.edit(embed=embed)
+
+        if self.channel.permissions_for(self.message.guild.me).manage_messages and self.ended:
+            await self.message.clear_reactions()
+            if self.message.pinned:
+                await self.message.unpin()
 
     async def save(self):
         async with self.config.giveaways() as giveaways:
@@ -92,9 +112,6 @@ class GuildGiveaway:
         if choose_winner:
             self.choose_winner()
         self.ended = True
-        if self.message.pinned:
-            try:
-                await self.message.unpin()
-            except discord.Forbidden:
-                pass
         await self.save()
+        if self.message:
+            await self.update_message()

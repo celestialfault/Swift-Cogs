@@ -3,7 +3,7 @@ import discord
 from redbot.core.bot import Red
 from redbot.core import Config
 
-from .giveaway import GuildGiveaway
+from .guildgiveaway import GuildGiveaway
 
 _cache = {}
 
@@ -58,8 +58,9 @@ class GiveawayBase:
             return None
 
     @staticmethod
-    async def get_giveaways(guild: discord.Guild, channel: discord.TextChannel = None):
-        def __filter(item):
-            return not item["ended"] and item["channel_id"] == channel.id if channel else True
+    async def get_giveaways(guild: discord.Guild, channel: discord.TextChannel = None, only_ongoing: bool = False):
+        def check(item):
+            return (not item["ended"] if only_ongoing else True)\
+                   and (item["channel_id"] == channel.id if channel else True)
 
-        return list(filter(__filter, await GiveawayBase.guild_config(guild).giveaways()))
+        return list(filter(check, await GiveawayBase.guild_config(guild).giveaways()))
