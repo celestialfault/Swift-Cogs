@@ -1,13 +1,11 @@
-from typing import Optional, Iterable, Tuple
+from datetime import timedelta
+
+import discord
 
 from redbot.core import RedContext
 from redbot.core.config import Value, Group
-from discord import Guild
-from redbot.core.utils.chat_formatting import box
 
-from .formatters import *
-
-_guilds = {}  # Formatter cache
+from typing import Optional, Iterable, Tuple, Union
 
 
 async def cmd_help(ctx: RedContext, cmd: str) -> None:
@@ -20,18 +18,28 @@ async def cmd_help(ctx: RedContext, cmd: str) -> None:
 
 async def toggle(value: Value) -> bool:
     """Toggles a single Value object. This assumes that the Value is of a bool"""
-    _val = not await value()
+    # Parameter self is unfilled :Thinkies:
+    # noinspection PyArgumentList
+    _val = await value()
+    if not isinstance(_val, bool) and _val is not None:
+        raise TypeError("Value object does not return a bool or None value")
+    _val = not _val
     await value.set(_val)
     return _val
 
 
-async def group_set(set_items: Iterable[str], group: Group, slots: list = None) -> Tuple[bool, str]:
-    """Group toggle. Preserves currently-set values if they aren't specified in set_items"""
+async def group_set(set_items: Iterable[str], group: Group, slots: list = None,
+                    preserve: bool = True) -> Tuple[bool, discord.Embed]:
+    """
+    Group settings toggle.
+    If preserve is set to False, all settings that aren't specified are reset to their default values.
+    """
     # dear future adventurers: there be dragons here
     # (turn back while you still can)
     slots = [x.lower() for x in slots or group.defaults]
     set_items = [x.lower() for x in set_items if x.lower() in slots]
-    settings = await group()
+    # noinspection PyArgumentList
+    settings = await group() if preserve else group.defaults
     _settings = dict(settings)
     for item in slots:
         if item in set_items:
@@ -39,40 +47,85 @@ async def group_set(set_items: Iterable[str], group: Group, slots: list = None) 
         else:
             settings[item] = settings[item] if item in settings else False
     await group.set(settings)
-    return _settings != settings, await diff_box([x for x in settings if settings[x]],
-                                                 [x for x in settings if not settings[x]])
+    return _settings != settings, await status_embed([x for x in settings if settings[x]],
+                                                     [x for x in settings if not settings[x]])
 
 
-async def diff_box(list1, list2) -> str:
-    """Returns the two lists in a box with Enabled and Disabled headers respectively"""
-    msg = "+ Enabled"
-    msg += "\n"
-    msg += ", ".join(list1 if list1 else ["None"])
-    msg += "\n\n- Disabled\n"
-    msg += ", ".join(list2 if list2 else ["None"])
-    return box(msg, lang="diff")
+async def status_embed(list1: list, list2: list) -> discord.Embed:
+    embed = discord.Embed(colour=discord.Colour.blurple())
+    embed.add_field(name="Enabled", value=", ".join(list1 if list1 else ["None"]), inline=False)
+    embed.add_field(name="Disabled", value=", ".join(list2 if list2 else ["None"]), inline=False)
+    return embed
 
 
-async def set_formatter(format_type: str, config_val: Value, guild: Guild):
-    """Set the format type for the specified guild"""
-    await config_val.set(format_type)
-    if guild.id in _guilds:
-        del _guilds[guild.id]
+# ~~stolen~~ borrowed from StackOverflow
+# https://stackoverflow.com/a/13756038
+def td_format(td_object: timedelta) -> str:
+    seconds = int(td_object.total_seconds())
+    periods = [
+        ('year', 60 * 60 * 24 * 365),
+        ('month', 60 * 60 * 24 * 30),
+        ('day', 60 * 60 * 24),
+        ('hour', 60 * 60),
+        ('minute', 60),
+        ('second', 1)
+    ]
+
+    strings = []
+    for period_name, period_seconds in periods:
+        if seconds >= period_seconds:
+            period_value, seconds = divmod(seconds, period_seconds)
+            if period_value == 1:
+                strings.append("%s %s" % (period_value, period_name))
+            else:
+                strings.append("%s %ss" % (period_value, period_name))
+
+    return ", ".join(strings)
 
 
-async def get_formatter(guild: Guild, config: Group) -> Optional[FormatterBase]:
-    """Get the formatter for the specified guild"""
-    if guild.id in _guilds:
-        return _guilds[guild.id]
+def difference(list1: Iterable, list2: Iterable, *, check_val: bool=False) -> Tuple[list, list]:
+    """Returns a tuple of lists based on the Iterable items passed in
+
+    If check_val is True, this checks for True-ish items"""
+    if check_val:
+        # Only include items that evaluate to True
+        list1 = [x for x, val in list1 if val]
+        list2 = [x for x, val in list2 if val]
+
+    added = [x for x in list2 if x not in list1]
+    removed = [x for x in list1 if x not in list2]
+    return added, removed
+
+
+def normalize(text, *, title_case: bool=True, **kwargs):
+    text = str(text)
+    text = text.replace("_", " ")
+    for item in kwargs:
+        text = text.replace(item, kwargs[item])
+    if title_case:
+        text = text.title()
+    return text
+
+
+def find_check(**kwargs) -> Optional[Union[discord.Member, discord.TextChannel, discord.Guild]]:
+    if kwargs.get('after', None):
+        return extract_check(kwargs.get('after'))
+    elif kwargs.get('created', None):
+        return extract_check(kwargs.get('created'))
+    elif kwargs.get('deleted', None):
+        return extract_check(kwargs.get('deleted'))
     else:
-        _format = await config.format()
-        if _format == "TEXT":
-            cls = TextFormatter
-        elif _format == "EMBED":
-            cls = EmbedFormatter
-        else:
-            _guilds[guild.id] = None
-            return None
-        formatter = cls(guild=guild)
-        _guilds[guild.id] = formatter
-        return formatter
+        return None
+
+
+def extract_check(obj) -> Optional[Union[discord.Member, discord.TextChannel, discord.Guild]]:
+    if isinstance(obj, discord.Member):
+        return obj
+    elif isinstance(obj, discord.Message):
+        return obj.author
+    elif isinstance(obj, discord.Guild):
+        return obj
+    elif isinstance(obj, discord.TextChannel):
+        return obj
+    else:
+        return None

@@ -1,7 +1,7 @@
 from redbot.core import Config
 from redbot.core.bot import Red
+
 from .logs import Logs
-from .formatters.base import setup as setup_formatter
 
 defaults_guild = {
     "format": "EMBED",
@@ -31,6 +31,8 @@ defaults_guild = {
         "2fa": False,
         "verification": False,
         "afk": False,
+        "region": False,
+        "content_filter": False,
         "owner": False
     },
     "messages": {
@@ -71,6 +73,7 @@ defaults_guild = {
 
 
 def setup(bot: Red):
+    from .guildlog import setup as setup_formatter
     config = Config.get_conf(Logs, identifier=35908345472, force_registration=True)
     config.register_guild(**defaults_guild)
     config.register_channel(ignored=False)
