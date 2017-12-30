@@ -239,7 +239,7 @@ class Starboard(StarboardBase):
 
     async def on_message_delete(self, message: discord.Message):
         if not message.guild:
-            pass
+            return
         msg = await self.message(message)
         if msg and msg.exists:
             try:
