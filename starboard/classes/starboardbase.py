@@ -12,7 +12,11 @@ class StarboardBase:
             guild_cache[guild.id] = GuildStarboard(guild, config, bot)
         return guild_cache[guild.id]
 
-    async def message(self, message: discord.Message, *, auto_create: bool=False):
+    @staticmethod
+    def guild_starboard_cache():
+        return guild_cache
+
+    async def message(self, message: discord.Message, auto_create: bool=False):
         if not message.guild:
             raise ValueError("Message must be in a Guild")
         return await self.starboard(message.guild).message(message, auto_create=auto_create)

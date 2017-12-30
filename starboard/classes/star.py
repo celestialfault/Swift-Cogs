@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import discord
 
 from .exceptions import *
@@ -5,11 +7,7 @@ from .starboardbase import StarboardBase
 
 
 class Star(StarboardBase):
-    """
-    Starboard wrapper for a Message object
-
-    Don't create this directly - use GuildStarboard.message to create this
-    """
+    """Starboard message"""
 
     def __init__(self, guild, message: discord.Message):
         from .guildstarboard import GuildStarboard
@@ -22,40 +20,53 @@ class Star(StarboardBase):
         self.starboard_message = None
         self.members = []
         self.hidden = False
+        self.last_update = datetime.utcnow()
         # Do not modify this directly - modify the above values
         self._entry = None
 
     @property
-    def user_count(self):
+    def user_count(self) -> int:
         return len(self.members)
 
     @property
-    def entry_exists(self):
+    def exists(self) -> bool:
         return self._entry is not None
 
     @property
-    def embed(self):
-        embed = discord.Embed(colour=discord.Colour.gold(),
-                              timestamp=self.message.created_at)
-        embed.set_author(name=str(self.author), icon_url=self.author.avatar_url)
-        has_content = False
+    def can_star(self) -> bool:
         if self.message.content:
-            embed.description = self.message.content
-            has_content = True
+            return True
+        if self.message.attachments and len(self.message.attachments) > 0:
+            return True
+        return False
+
+    def __repr__(self):
+        return "<Star stars={0} hidden={1} starboard_msg={2!r} message={3!r}>".format(
+            self.user_count,
+            self.hidden,
+            self.starboard_message,
+            self.message
+        )
+
+    @property
+    def embed(self):
+        if not self.can_star:
+            return None
+        embed = discord.Embed(colour=discord.Colour.gold(),
+                              timestamp=self.message.created_at,
+                              description=self.message.content)
+        embed.set_author(name=str(self.author), icon_url=self.author.avatar_url)
         if self.message.attachments and len(self.message.attachments) > 0:
             embed.set_image(url=self.message.attachments[0].proxy_url)
-            has_content = True
-        if not has_content:
-            return None
         return embed
 
-    async def setup(self, *, auto_create: bool = False):
-        """
-        Setup the current Star object
+    async def setup(self, auto_create: bool = False):
+        """Setup the current Star object
 
-        You shouldn't run this directly, as it's already done for you if you retrieve this with StarboardBase.message
-        or GuildStarboard.message
-        """
+        You shouldn't need to run this directly, as it's already done for you if you retrieve this with
+        either StarboardBase.message or GuildStarboard.message"""
+        if self._entry:
+            raise RuntimeError("Cannot re-instantiate an already created Star object")
         messages = await self.starboard.config.messages()
         self._entry = discord.utils.find(lambda entry: entry["message_id"] == self.message.id, messages)
         if not self._entry and auto_create:
@@ -65,32 +76,32 @@ class Star(StarboardBase):
             self.hidden = self._entry["hidden"]
             if self._entry["starboard_message"]:
                 channel = await self.starboard.channel()
-                if channel:
-                    self.starboard_message = await channel.get_message(self._entry["starboard_message"])
+                if channel and self._entry["starboard_message"] is not None:
+                    try:
+                        self.starboard_message = await channel.get_message(self._entry["starboard_message"])
+                    except discord.NotFound:
+                        self.starboard_message = None
+                        # force an update to clear the starboard message data
+                        await self.update()
 
     async def create(self):
-        """
-        Creates the message's starboard entry
+        """Creates the message's starboard entry
 
-        This is useful if you didn't pass auto_create when creating the Star object
-        """
+        This is useful if you didn't pass auto_create when creating the Star object"""
         if self._entry:
             raise StarboardException("This message already has an entry")
         self._entry = dict(message_id=self.message.id, channel_id=self.message.channel.id, members=[],
                            starboard_message=None, hidden=False)
         async with self.starboard.config.messages() as messages:
             messages.append(self._entry)
+        self.last_update = datetime.utcnow()
 
     async def update(self):
-        """
-        Updates the star's guild starboard entry
-        """
-        # noinspection PyBroadException
+        """Updates the star's guild starboard entry"""
         try:
             await self.update_starboard_message()
-        except Exception as e:
+        except (discord.HTTPException, discord.Forbidden) as e:
             print(e)
-            pass
         self._entry["members"] = self.members
         self._entry["starboard_message"] = self.starboard_message.id if self.starboard_message else None
         self._entry["hidden"] = self.hidden
@@ -98,16 +109,19 @@ class Star(StarboardBase):
             for message in messages:
                 if message["message_id"] == self.message.id:
                     messages[messages.index(message)] = self._entry
+                    break
 
-    async def add(self, member: discord.Member) -> None:
-        """
-        Adds a member's star
+    async def add_star(self, member: discord.Member) -> None:
+        """Adds a member's star
 
         :param member: discord.Member - a member to add the star for
-        :return: None
-        :raises: StarException - if the member has already starred this message
-        :raises: BlockedException - if the passed member is blocked from the guild's starboard
+        :raises StarException: If the member has already starred this message
+        :raises BlockedException: If the passed member is blocked from the guild's starboard
+        :raises BlockedAuthorException: If the author of the message is blocked from using the guild's starboard
+        :raises StarboardException: If this message cannot be starred due to lack of content or attachments
         """
+        if not self.can_star:
+            raise NoMessageContent()
         if member.id in self.members:
             raise StarException("The passed member already starred this message")
         if await self.starboard.is_blocked(self.author):
@@ -117,12 +131,10 @@ class Star(StarboardBase):
         self.members.append(member.id)
         await self.update()
 
-    async def remove(self, member: discord.Member) -> None:
-        """
-        Removes a member's star
+    async def remove_star(self, member: discord.Member) -> None:
+        """Removes a member's star
 
         :param member: discord.Member - a member to remove the star for
-        :return: None
         :raises: StarException - if the member hasn't starred this message
         :raises: BlockedException - if the passed member is blocked from the guild's starboard
         """
@@ -135,6 +147,9 @@ class Star(StarboardBase):
         self.members.remove(member.id)
         await self.update()
 
+    def has_starred(self, member: discord.Member) -> bool:
+        return member.id in self.members
+
     async def hide(self):
         if self.hidden:
             raise HideException("This message is already hidden")
@@ -146,7 +161,7 @@ class Star(StarboardBase):
 
     async def unhide(self):
         if not self.hidden:
-            raise HideException("This message currently isn't hidden")
+            raise HideException("This message isn't currently hidden")
         self.hidden = False
         await self.update()
 

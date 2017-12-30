@@ -8,9 +8,13 @@ class StarboardException(CommandError):
     pass
 
 
+class NoMessageContent(StarboardException):
+    pass
+
+
 class StarException(StarboardException):
     """
-    Raised if a member has already starred or hasn't starred a message
+    Raised if a member has already starred or hasn't starred a message, or if the message passed cannot be starred
     """
     pass
 

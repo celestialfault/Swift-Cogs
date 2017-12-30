@@ -1,22 +1,18 @@
-from typing import Optional, Iterable
-
 import discord
+
 from redbot.core import Config
 from redbot.core.bot import Red
 from redbot.core.config import Group
+
+from datetime import datetime, timedelta
+from typing import Optional, Iterable
 
 from .star import Star
 from .starboardbase import StarboardBase
 
 
 class GuildStarboard(StarboardBase):
-    """
-    Starboard for a specified Guild.
-
-    Don't create this directly - use the starboard function from any class that extends StarboardBase
-    For example:
-      bot.get_cog("Starboard").starboard(guild)
-    """
+    """Starboard for a specific Guild"""
 
     _star_cache = {}
     _blocked_users = None
@@ -31,6 +27,38 @@ class GuildStarboard(StarboardBase):
     def config(self) -> Group:
         return self._config.guild(self.guild)
 
+    def __repr__(self):
+        return "<GuildStarboard guild={0!r}>".format(self.guild)
+
+    def is_cached(self, message: discord.Message) -> bool:
+        """Check if the message specified is in the star cache"""
+        return message.id in self._star_cache
+
+    def remove_from_cache(self, message: discord.Message) -> bool:
+        """Remove the specified message from the guild's star cache"""
+        if not self.is_cached(message):
+            return False
+        del self._star_cache[message.id]
+        return True
+
+    async def purge_cache(self, seconds_since_update: int=30 * 60) -> int:
+        """
+        Purge the guild's starboard cache based on the entry's last updated timestamp
+        :param seconds_since_update: The amount of seconds that must have passed since the last update.
+        Set this to 0 to clear all cache entries
+        :return: The amount of entries cleared from the cache
+        """
+        check_ts = (datetime.utcnow() - timedelta(seconds=seconds_since_update)).timestamp()
+        check_ts = datetime.fromtimestamp(check_ts)
+        cache_copy = self._star_cache.copy()
+        purged = 0
+        for item in cache_copy:
+            item = cache_copy[item]
+            if item.last_update < check_ts:
+                self.remove_from_cache(item.message)
+                purged += 1
+        return purged
+
     async def add_entry(self, message_id: int, channel_id: int, members: Iterable[int]=None,
                         starboard_message: int=None, hidden: bool=False) -> None:
         if members is None:
@@ -44,7 +72,7 @@ class GuildStarboard(StarboardBase):
                 "hidden": hidden
             })
 
-    async def message(self, message: discord.Message, *, auto_create: bool=False) -> Star:
+    async def message(self, message: discord.Message, auto_create: bool=False) -> Star:
         """
         Returns the Star object for the passed message
 
@@ -94,8 +122,11 @@ class GuildStarboard(StarboardBase):
         :param channel: The channel to set the current starboard to - to clear, pass None and set clear to True
         :param clear: Whether or not to clear the current channel - pass None as the channel with this value
         :return: Optional[discord.TextChannel]
+        :raises ValueError: Raised if the passed channel is not in the current Guild
         """
         if channel or clear:
+            if channel and channel.guild.id != self.guild.id:
+                raise ValueError("Passed TextChannel object is not in the current Guild")
             await self.config.channel.set(channel.id if channel else None)
             return
         return self.bot.get_channel(await self.config.channel())
@@ -121,6 +152,8 @@ class GuildStarboard(StarboardBase):
         """
         Returns if the passed member is blocked from using the starboard
         """
+        if member.bot:  # implicitly block bots from using the starboard
+            return True
         if self._blocked_users is None:
             async with self.config.blocks() as blocks:
                 self._blocked_users = list(blocks)
@@ -145,5 +178,5 @@ class GuildStarboard(StarboardBase):
             return False
         async with self.config.blocks() as blocks:
             del self._blocked_users[self._blocked_users.index(member.id)]
-            blocks.remove(member.id)
+            blocks.remove_star(member.id)
         return True
