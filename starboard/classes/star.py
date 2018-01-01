@@ -21,12 +21,23 @@ class Star(StarboardBase):
         self.members = []
         self.hidden = False
         self.last_update = datetime.utcnow()
-        # Do not modify this directly - modify the above values
-        self._entry = None
+        # Do not modify these values directly
+        self._entry = None  # Modify the above values and use Star.update() instead of modifying this one directly
+        self._in_queue = False
 
     @property
     def user_count(self) -> int:
         return len(self.members)
+
+    @property
+    def in_queue(self):
+        return self._in_queue
+
+    @in_queue.setter
+    def in_queue(self, queue: bool):
+        self._in_queue = queue
+        if queue:
+            self.starboard.queue.put_nowait(self)
 
     @property
     def exists(self) -> bool:
@@ -41,11 +52,12 @@ class Star(StarboardBase):
         return False
 
     def __repr__(self):
-        return "<Star stars={0} hidden={1} starboard_msg={2!r} message={3!r}>".format(
+        return "<Star stars={0} hidden={1} starboard_msg={2!r} message={3!r} update_queued={4}>".format(
             self.user_count,
             self.hidden,
             self.starboard_message,
-            self.message
+            self.message,
+            self.in_queue
         )
 
     @property
@@ -98,10 +110,7 @@ class Star(StarboardBase):
 
     async def update(self):
         """Updates the star's guild starboard entry"""
-        try:
-            await self.update_starboard_message()
-        except (discord.HTTPException, discord.Forbidden) as e:
-            print(e)
+        self.in_queue = True
         self._entry["members"] = self.members
         self._entry["starboard_message"] = self.starboard_message.id if self.starboard_message else None
         self._entry["hidden"] = self.hidden
@@ -166,12 +175,10 @@ class Star(StarboardBase):
         await self.update()
 
     async def update_starboard_message(self):
+        self.in_queue = False
         if self.hidden:
             return
         min_stars = await self.starboard.min_stars()
-        # This (read: no buffer delay on updating the starboard message) might be a terrible idea
-        # But this was made in one night, so hey, what's the worst that could happen?
-        # [ not pictured: an entire planet blowing up ]
         if not self.starboard_message:
             if self.user_count >= min_stars:
                 embed = self.embed

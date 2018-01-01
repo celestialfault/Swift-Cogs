@@ -1,4 +1,5 @@
 import asyncio
+from asyncio import QueueEmpty
 from typing import Union
 
 import discord
@@ -18,7 +19,8 @@ class Starboard(StarboardBase):
     def __init__(self, bot: Red, config: Config):
         self.bot = bot
         self.config = config
-        self.bot.loop.create_task(self.timer())
+        self.bot.loop.create_task(self.cache_cleanup())
+        self.bot.loop.create_task(self.starboard_queue())
 
     @commands.command(name="star")
     @commands.guild_only()
@@ -27,6 +29,10 @@ class Starboard(StarboardBase):
         """
         Star a message in the current channel by it's ID
         """
+        starboard = self.starboard(ctx.guild)
+        if await starboard.channel() is None:
+            await ctx.send(warning("This guild does not have a starboard channel setup"))
+            return
         try:
             message = await ctx.get_message(message_id)
         except discord.NotFound:
@@ -62,6 +68,10 @@ class Starboard(StarboardBase):
         """
         Unstars a message in the current channel by it's ID
         """
+        starboard = self.starboard(ctx.guild)
+        if await starboard.channel() is None:
+            await ctx.send(warning("This guild does not have a starboard channel setup"))
+            return
         try:
             message = await ctx.get_message(message_id)
         except discord.NotFound:
@@ -137,6 +147,7 @@ class Starboard(StarboardBase):
 
     @_starboard.command(name="channel")
     async def _starboard_channel(self, ctx: RedContext, channel: discord.TextChannel=None):
+        """Set or clear the guild's starboard channel"""
         if channel and channel.guild.id != ctx.guild.id:
             await ctx.send(error("That channel isn't in this guild"))
             return
@@ -199,7 +210,8 @@ class Starboard(StarboardBase):
         if not str(reaction.emoji) == "⭐" or not isinstance(user, discord.Member):
             return
         message = reaction.message
-        if await self.starboard(message.guild).is_blocked(user):
+        starboard = self.starboard(message.guild)
+        if await starboard.channel() is None or await self.starboard(message.guild).is_blocked(user):
             return
         message = await self.message(message, auto_create=True)
         try:
@@ -215,7 +227,8 @@ class Starboard(StarboardBase):
         if not str(reaction.emoji) == "⭐" or not isinstance(user, discord.Member):
             return
         message = reaction.message
-        if await self.starboard(message.guild).is_blocked(user):
+        starboard = self.starboard(message.guild)
+        if await starboard.channel() is None or await self.starboard(message.guild).is_blocked(user):
             return
         message = await self.message(message)
         if not message or not message.user_count:
@@ -235,7 +248,7 @@ class Starboard(StarboardBase):
             return
         if self.starboard(after.guild).is_cached(after):
             # Force a re-cache of the updated message contents
-            self.starboard(after.guild).remove_from_cache(after)
+            await self.starboard(after.guild).remove_from_cache(after)
 
     async def on_message_delete(self, message: discord.Message):
         if not message.guild:
@@ -247,11 +260,27 @@ class Starboard(StarboardBase):
             except HideException:
                 pass
         # Remove the message from the cache
-        self.starboard(message.guild).remove_from_cache(message)
+        await self.starboard(message.guild).remove_from_cache(message)
 
-    async def timer(self):
+    def __unload(self):
+        self.bot.loop.create_task(self.empty_starboard_queue())
+
+    async def cache_cleanup(self):
         while self == self.bot.get_cog("Starboard"):  # Purge guild Star object caches every 5 minutes
             for starboard in self.guild_starboard_cache():
                 starboard = self.guild_starboard_cache()[starboard]
                 await starboard.purge_cache()
             await asyncio.sleep(300)
+
+    async def empty_starboard_queue(self):
+        for starboard in self.guild_starboard_cache():
+            starboard = self.guild_starboard_cache()[starboard]
+            try:
+                await starboard.handle_queue()
+            except QueueEmpty:
+                continue
+
+    async def starboard_queue(self):
+        while self == self.bot.get_cog("Starboard"):
+            await self.empty_starboard_queue()
+            await asyncio.sleep(3)

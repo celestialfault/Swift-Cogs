@@ -1,3 +1,6 @@
+import asyncio
+from asyncio import Queue
+
 import discord
 
 from redbot.core import Config
@@ -22,23 +25,27 @@ class GuildStarboard(StarboardBase):
         self.guild = guild
         self._config = config
         self.bot = bot
+        self.queue = Queue()
 
     @property
     def config(self) -> Group:
         return self._config.guild(self.guild)
 
     def __repr__(self):
-        return "<GuildStarboard guild={0!r}>".format(self.guild)
+        return "<GuildStarboard guild={0!r} cache_size={1}>".format(self.guild, len(self._star_cache))
 
     def is_cached(self, message: discord.Message) -> bool:
         """Check if the message specified is in the star cache"""
         return message.id in self._star_cache
 
-    def remove_from_cache(self, message: discord.Message) -> bool:
+    async def remove_from_cache(self, message: discord.Message) -> bool:
         """Remove the specified message from the guild's star cache"""
         if not self.is_cached(message):
             return False
-        del self._star_cache[message.id]
+        _message = await self.message(message)
+        if _message.in_queue:
+            await _message.update_starboard_message()
+        self._star_cache.pop(message.id)
         return True
 
     async def purge_cache(self, seconds_since_update: int=30 * 60) -> int:
@@ -55,9 +62,22 @@ class GuildStarboard(StarboardBase):
         for item in cache_copy:
             item = cache_copy[item]
             if item.last_update < check_ts:
-                self.remove_from_cache(item.message)
+                await self.remove_from_cache(item.message)
                 purged += 1
         return purged
+
+    async def handle_queue(self):
+        if self.queue.empty():
+            return
+        while not self.queue.empty():
+            item = self.queue.get_nowait()
+            if not isinstance(item, Star):
+                continue
+            if not item.in_queue:
+                # Avoid re-updating messages after they've been removed from the cache
+                continue
+            await item.update_starboard_message()
+            asyncio.sleep(0.5)
 
     async def add_entry(self, message_id: int, channel_id: int, members: Iterable[int]=None,
                         starboard_message: int=None, hidden: bool=False) -> None:
@@ -122,7 +142,7 @@ class GuildStarboard(StarboardBase):
         :param channel: The channel to set the current starboard to - to clear, pass None and set clear to True
         :param clear: Whether or not to clear the current channel - pass None as the channel with this value
         :return: Optional[discord.TextChannel]
-        :raises ValueError: Raised if the passed channel is not in the current Guild
+        :raises ValueError: Raised if the passed channel is not in this GuildStarboard's specified Guild
         """
         if channel or clear:
             if channel and channel.guild.id != self.guild.id:
@@ -178,5 +198,5 @@ class GuildStarboard(StarboardBase):
             return False
         async with self.config.blocks() as blocks:
             del self._blocked_users[self._blocked_users.index(member.id)]
-            blocks.remove_star(member.id)
+            blocks.remove(member.id)
         return True
