@@ -295,7 +295,7 @@ class Logs:
     @logset.command(name="reset")
     async def logset_reset(self, ctx: RedContext):
         """Reset the guild's log settings"""
-        await self.config.guild(ctx.guild).clear()
+        await self.config.guild(ctx.guild).set(self.config.guild(ctx.guild).defaults)
         await ctx.tick()
 
     @staticmethod

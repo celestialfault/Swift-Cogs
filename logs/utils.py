@@ -75,6 +75,8 @@ async def group_set(set_items: Iterable[str], group: Group, slots: list = None) 
     set_items = [x.lower() for x in set_items if x.lower() in slots]
     # noinspection PyArgumentList
     settings = await group()
+    if not settings:
+        settings = [(x, False) for x in slots]
     for item in slots:
         if item in set_items:
             settings[item] = not settings[item] if item in settings else True
