@@ -173,7 +173,7 @@ class Logs:
         """
         slots = ["create", "delete", "name", "hoist", "mention", "position", "permissions", "colour"]
         # noinspection PyTypeChecker
-        await handle_group(ctx, slots, types, self.config.guild(ctx.guild).role, "role")
+        await handle_group(ctx, slots, types, self.config.guild(ctx.guild).roles, "role")
 
     @logset.command(name="voice")
     async def logset_voice(self, ctx: RedContext, *types):
