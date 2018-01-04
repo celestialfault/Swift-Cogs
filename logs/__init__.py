@@ -12,19 +12,18 @@ defaults_guild = {
         "messages": None,
         "members": None,
         "channels": None,
-        "voice": None
+        "voice": None,
+        "emoji": None
     },
     "roles": {
         "create": False,
         "delete": False,
-        "update": {
-            "name": False,
-            "permissions": False,
-            "hoist": False,
-            "mention": False,
-            "position": False,
-            "colour": False
-        }
+        "name": False,
+        "permissions": False,
+        "hoist": False,
+        "mention": False,
+        "position": False,
+        "colour": False
     },
     "guild": {
         "name": False,
@@ -42,33 +41,28 @@ defaults_guild = {
     "members": {
         "join": False,
         "leave": False,
-        "update": {
-            "name": False,
-            "nickname": False,
-            "roles": False
-        }
+        "name": False,
+        "nickname": False,
+        "roles": False
     },
     "channels": {
         "create": False,
         "delete": False,
-        "update": {
-            "name": False,
-            "topic": False,
-            "position": False,
-            "category": False,
-            "bitrate": False,
-            "user_limit": False
-        }
+        "name": False,
+        "topic": False,
+        "position": False,
+        "category": False,
+        "bitrate": False,
+        "user_limit": False
     },
     "voice": {
-        "join": False,
-        "leave": False,
-        "switch": False,
+        "channel": False,
         "selfmute": False,
         "servermute": False,
         "selfdeaf": False,
         "serverdeaf": False
-    }
+    },
+    "emojis": False
 }
 
 

@@ -1,11 +1,39 @@
+import re
 from datetime import timedelta
 
 import discord
+from discord.ext import commands
 
 from redbot.core import RedContext
 from redbot.core.config import Value, Group
 
 from typing import Optional, Iterable, Tuple, Union
+
+from redbot.core.utils.chat_formatting import info
+
+
+class GuildChannel(commands.IDConverter):
+    # noinspection PyShadowingNames
+    async def convert(self, ctx, argument):
+        guild = ctx.guild
+        cid = None
+        match = self._get_id_match(argument) or re.match(r'<#!?([0-9]+)>$', argument)
+
+        if match is None:  # not a channel mention
+            for channel in guild.channels:
+                if str(channel.name).lower() == argument.lower():
+                    cid = channel.id
+                    break
+
+        else:
+            try:
+                cid = int(str(argument).strip("<#>"))
+            except ValueError:
+                raise commands.BadArgument("Cannot parse channel mention `{}`".format(argument))
+
+        if cid:
+            return guild.get_channel(cid)
+        raise commands.BadArgument("Cannot find channel `{}`".format(argument))
 
 
 async def cmd_help(ctx: RedContext, cmd: str) -> None:
@@ -28,31 +56,36 @@ async def toggle(value: Value) -> bool:
     return _val
 
 
-async def group_set(set_items: Iterable[str], group: Group, slots: list = None,
-                    preserve: bool = True) -> Tuple[bool, discord.Embed]:
-    """
-    Group settings toggle.
-    If preserve is set to False, all settings that aren't specified are reset to their default values.
-    """
-    # dear future adventurers: there be dragons here
-    # (turn back while you still can)
+async def handle_group(ctx: RedContext, slots: list, types: Tuple[str], settings: Group, setting_type: str):
+    if len(types) == 0:
+        # noinspection PyArgumentList
+        _settings = await settings()
+        embed = await status_embed(list1=[x for x in _settings if _settings[x]],
+                                   list2=[x for x in _settings if not _settings[x]],
+                                   title="{} Logging".format(setting_type.title()))
+        await ctx.send(embed=embed)
+        return
+    embed = await group_set(types, settings, slots)
+    await ctx.send(info("Updated {} log settings".format(setting_type)), embed=embed)
+
+
+async def group_set(set_items: Iterable[str], group: Group, slots: list = None) -> discord.Embed:
+    """Group settings toggle"""
     slots = [x.lower() for x in slots or group.defaults]
     set_items = [x.lower() for x in set_items if x.lower() in slots]
     # noinspection PyArgumentList
-    settings = await group() if preserve else group.defaults
-    _settings = dict(settings)
+    settings = await group()
     for item in slots:
         if item in set_items:
             settings[item] = not settings[item] if item in settings else True
         else:
             settings[item] = settings[item] if item in settings else False
     await group.set(settings)
-    return _settings != settings, await status_embed([x for x in settings if settings[x]],
-                                                     [x for x in settings if not settings[x]])
+    return await status_embed([x for x in settings if settings[x]], [x for x in settings if not settings[x]])
 
 
-async def status_embed(list1: list, list2: list) -> discord.Embed:
-    embed = discord.Embed(colour=discord.Colour.blurple())
+async def status_embed(list1: list, list2: list, title: str = discord.Embed.Empty) -> discord.Embed:
+    embed = discord.Embed(colour=discord.Colour.blurple(), title=title)
     embed.add_field(name="Enabled", value=", ".join(list1 if list1 else ["None"]), inline=False)
     embed.add_field(name="Disabled", value=", ".join(list2 if list2 else ["None"]), inline=False)
     return embed
@@ -83,7 +116,7 @@ def td_format(td_object: timedelta) -> str:
     return ", ".join(strings)
 
 
-def difference(list1: Iterable, list2: Iterable, *, check_val: bool=False) -> Tuple[list, list]:
+def difference(list1: Iterable, list2: Iterable, *, check_val: bool = False) -> Tuple[list, list]:
     """Returns a tuple of lists based on the Iterable items passed in
 
     If check_val is True, this checks for True-ish items"""
@@ -97,7 +130,7 @@ def difference(list1: Iterable, list2: Iterable, *, check_val: bool=False) -> Tu
     return added, removed
 
 
-def normalize(text, *, title_case: bool=True, **kwargs):
+def normalize(text, *, title_case: bool = True, **kwargs):
     text = str(text)
     text = text.replace("_", " ")
     for item in kwargs:

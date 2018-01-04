@@ -86,7 +86,8 @@ class GuildLog:
 
         if isinstance(check, discord.Member):
             return await config.member(check).ignored()
-        elif isinstance(check, discord.TextChannel):
+        elif isinstance(check, discord.TextChannel) or isinstance(check, discord.VoiceChannel):
+            # noinspection PyTypeChecker
             return await config.channel(check).ignored()
         else:
             return False

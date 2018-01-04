@@ -1,40 +1,79 @@
+from datetime import datetime
+
 import discord
 
 from logs.logentry import LogEntry
+from logs.utils import difference
 from .base import LogType
+
+
+def format_overwrite(role_or_member, overwrite):
+    _type = "role" if isinstance(role_or_member, discord.Role) else "member"
+    return "{0} {1!s}: {2}".format(_type, role_or_member, "Passthrough"
+    if overwrite is None else "Granted" if overwrite is True else "Denied")
+
+
+def get_role_or_member(snowflake: int, guild: discord.Guild):
+    obj = guild.get_member(snowflake)
+    if not obj:
+        obj = discord.utils.get(guild.roles, id=snowflake)
+    return obj
+
+
+def format_bitrate(bitrate: int):
+    return "{} kbps".format(str(bitrate)[:-3])
+
+
+def format_userlimit(user_limit: int = None):
+    if user_limit is None or user_limit == 0:
+        return "No limit"
+    if user_limit == 1:
+        return "1 user"
+    else:
+        return str(user_limit) + " users"
 
 
 class ChannelLogType(LogType):
     name = "channels"
 
     async def update(self, before: discord.abc.GuildChannel, after: discord.abc.GuildChannel, **kwargs):
-        settings = await self.guild.config.channels.update()
+        settings = await self.guild.config.channels()
         ret = LogEntry(self)
         ret.colour = discord.Colour.blurple()
         ret.emoji = "\N{MEMO}"
         ret.title = "Channel updated"
-        ret.description = "Channel {0.mention}".format(after)
+        ret.timestamp = datetime.utcnow()
+        ret.description = "Channel: {0.mention}".format(after)
+
         # shh pycharm, all is fine
         # noinspection PyUnresolvedReferences
-        if before.name != after.name and settings["name"]:
-            ret.add_field(title="Channel Name", value="Channel name changed to **{0!s}**".format(after))
+        if before.name != after.name and settings.get("name", False):
+            # quiet now, all is ok
+            # noinspection PyUnresolvedReferences
+            ret.add_diff_field(title="Name Changed", before=before.name, after=after.name)
+
         if isinstance(before, discord.TextChannel) and isinstance(after, discord.TextChannel):
-            if before.topic != after.topic and settings["topic"]:
-                ret.add_field(title="Channel Topic", value="Channel topic changed to:\n```\n{0.topic}```".format(after))
+            if before.topic != after.topic and settings.get("topic", False):
+                ret.add_diff_field(title="Channel Topic Changed", before=before.topic, after=after.topic, box_lang="")
+
         elif isinstance(before, discord.VoiceChannel) and isinstance(after, discord.VoiceChannel):
-            if before.bitrate != after.bitrate and settings["bitrate"]:
-                ret.add_field(title="Channel Bitrate", value="Channel bitrate changed to {}".format(
-                    str(after.bitrate)[:-3] + " kbps"))
-            if before.user_limit != after.user_limit and settings["user_limit"]:
-                txt = "set to {}".format(after.user_limit) if after.user_limit else "cleared"
-                ret.add_field(title="User Limit", value="Channel user limit has been {}".format(txt))
-        if before.category != after.category and settings["category"]:
-            if after.category:
-                ret.add_field(title="Channel Category", value="Channel was moved to category {0!s}".format(
-                    after.category))
-            else:
-                ret.add_field(title="Channel Category", value="Channel was removed from category {0!s}".format(
-                    before.category))
+            if before.bitrate != after.bitrate and settings.get("bitrate", False):
+                ret.add_diff_field("Bitrate Changed",
+                                   before=format_bitrate(before.bitrate),
+                                   after=format_bitrate(after.bitrate))
+
+            if before.user_limit != after.user_limit and settings.get("user_limit", False):
+                ret.add_diff_field(title="User Limit Changed",
+                                   before=format_userlimit(before.user_limit),
+                                   after=format_userlimit(after.user_limit))
+
+        if before.category != after.category and settings.get("category", False):
+            ret.add_diff_field(title="Category Changed",
+                               before=before.category.name if before.category is not None else "Uncategorized",
+                               after=after.category.name if after.category is not None else "Uncategorized")
+
+        if before.position != after.position and settings.get("position", False):
+            ret.add_diff_field(title="Position Changed", before=before.position, after=after.position)
         return ret
 
     def create(self, created: discord.abc.GuildChannel, **kwargs):
