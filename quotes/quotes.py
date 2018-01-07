@@ -88,7 +88,7 @@ class Quotes:
             retrieved.append(quote_id)
 
     @_quote.command(name="add")
-    async def _quote_add(self, ctx: RedContext, message: str):
+    async def _quote_add(self, ctx: RedContext, *, message: str):
         """Add a quote"""
         quote = await self.add_quote(message, ctx.author, ctx.author)
         await ctx.send("✅ Quote added", embed=embed_quote(quote))
