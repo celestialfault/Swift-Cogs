@@ -6,7 +6,7 @@ from discord.ext import commands
 
 from redbot.core import Config, RedContext
 from redbot.core.bot import Red
-from redbot.core.utils.chat_formatting import escape
+from redbot.core.utils.chat_formatting import escape, warning
 
 from urllib.parse import urlparse
 
@@ -112,14 +112,28 @@ class UserProfile:
             embed.add_field(name="About Me", value=user_info.get("about"), inline=False)
         await ctx.send(embed=embed)
 
+    @commands.command(name="avatar")
+    async def avatar(self, ctx: RedContext, *, user: discord.Member = None):
+        """Get the avatar of yourself or a specified user"""
+        user = ctx.author if user is None else user
+
+        if not user.avatar_url:
+            descriptor = "That user has" if ctx.author != user else "You have"
+            await ctx.send(warning("{} no avatar!".format(descriptor)))
+            return
+
+        embed = discord.Embed(colour=user.colour, title="{0!s}'s avatar".format(user))
+        embed.set_image(url=user.avatar_url_as(static_format="png"))
+        await ctx.send(embed=embed)
+
     @commands.group(name="profile")
-    async def userset(self, ctx: RedContext):
+    async def user_profile(self, ctx: RedContext):
         """Change your user profile settings"""
         if not ctx.invoked_subcommand:
             await ctx.send_help()
 
-    @userset.command(name="about")
-    async def _user_about(self, ctx: RedContext, *, about: str = ""):
+    @user_profile.command(name="about")
+    async def user_profile_about(self, ctx: RedContext, *, about: str = ""):
         """Sets your About Me message, maximum of 600 characters
 
         Any text beyond 600 characters is trimmed off"""
@@ -131,8 +145,8 @@ class UserProfile:
             await ctx.send("\N{WHITE HEAVY CHECK MARK} Set your about me to:\n```\n{}\n```".format(about),
                            delete_after=15)
 
-    @userset.command(name="age")
-    async def _user_age(self, ctx: RedContext, age: int = None):
+    @user_profile.command(name="age")
+    async def user_profile_age(self, ctx: RedContext, age: int = None):
         """Sets your age"""
         await self.config.user(ctx.author).age.set(age)
         if age is None:
@@ -140,8 +154,8 @@ class UserProfile:
         else:
             await ctx.send("\N{WHITE HEAVY CHECK MARK} Set your age to:\n```\n{}\n```".format(age), delete_after=15)
 
-    @userset.command(name="country")
-    async def _user_country(self, ctx: RedContext, *, country: str = ""):
+    @user_profile.command(name="country")
+    async def user_profile_country(self, ctx: RedContext, *, country: str = ""):
         """Set the country you reside in
 
         Any text beyond 75 characters is trimmed off"""
@@ -153,8 +167,8 @@ class UserProfile:
             await ctx.send("\N{WHITE HEAVY CHECK MARK} Set your country to:\n```\n{}\n```".format(country),
                            delete_after=15)
 
-    @userset.command(name="gender")
-    async def _user_gender(self, ctx: RedContext, *, gender: str = ""):
+    @user_profile.command(name="gender")
+    async def user_profile_gender(self, ctx: RedContext, *, gender: str = ""):
         """Sets your gender
 
         Any text beyond 50 characters is trimmed off"""
@@ -166,8 +180,8 @@ class UserProfile:
             await ctx.send("\N{WHITE HEAVY CHECK MARK} Set your gender to:\n```\n{}\n```".format(gender),
                            delete_after=15)
 
-    @userset.command(name="reset")
-    async def _user_reset(self, ctx: RedContext, *, user: discord.User = None):
+    @user_profile.command(name="reset")
+    async def user_profile_reset(self, ctx: RedContext, *, user: discord.User = None):
         """Resets your user profile.
 
         If a user is passed in the command and the command issuer is the bot owner or a co-owner,
