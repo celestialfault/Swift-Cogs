@@ -62,15 +62,15 @@ defaults_guild = {
         "selfdeaf": False,
         "serverdeaf": False
     },
-    "emojis": False
+    "emojis": False  # TODO: Merge this into guild logging, instead of being standalone
 }
 
 
 def setup(bot: Red):
-    from .guildlog import setup as setup_formatter
+    from .guildlog import setup as setup_guildlog
     config = Config.get_conf(Logs, identifier=35908345472, force_registration=True)
     config.register_guild(**defaults_guild)
     config.register_channel(ignored=False)
     config.register_member(ignored=False)
-    setup_formatter(bot, config)
+    setup_guildlog(bot, config)
     bot.add_cog(Logs(bot, config))

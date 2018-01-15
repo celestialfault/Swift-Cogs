@@ -20,16 +20,17 @@ class EmojiLogType(LogType):
 
     def update(self, before: List[discord.Emoji], after: List[discord.Emoji], **kwargs):
         added, removed = difference(before, after)
-        ret = LogEntry(self)
-        ret.title = "Guild emojis updated"
-        ret.colour = discord.Colour.blurple()
-        ret.emoji = "\N{MEMO}"
+
+        ret = LogEntry(self, colour=discord.Colour.blurple())
+        ret.set_title(title="Guild emojis updated", emoji="\N{MEMO}")
+
         if len(added):
             ret.add_field(title="Emoji{} Added".format("s" if len(added) > 1 else ""),
                           value=", ".join(format_emoji(x) for x in added))
         if len(removed):
             ret.add_field(title="Emoji{} Removed".format("s" if len(removed) > 1 else ""),
                           value=", ".join(format_emoji(x, True) for x in removed))
+
         return ret
 
     def create(self, created, **kwargs):

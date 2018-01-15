@@ -13,12 +13,10 @@ class RoleLogType(LogType):
 
     async def update(self, before: discord.Role, after: discord.Role, **kwargs):
         settings = await self.guild.config.roles()
-        ret = LogEntry(self)
-        ret.title = "Role updated"
-        ret.timestamp = datetime.utcnow()
+        ret = LogEntry(self, colour=discord.Colour.blurple())
+        ret.set_title(title="Role Updated", emoji="\N{MEMO}")
+        ret.set_footer(footer="Role ID: {0.id}".format(after), timestamp=datetime.utcnow())
         ret.description = escape("Role: **{0!s}**".format(after), mass_mentions=True)
-        ret.emoji = "\N{MEMO}"
-        ret.colour = discord.Colour.blurple()
 
         if before.name != after.name and settings.get("name", False):
             ret.add_diff_field(title="Name Changed", before=before.name, after=after.name)
@@ -27,49 +25,46 @@ class RoleLogType(LogType):
             ret.add_diff_field(title="Position Changed", before=before.position, after=after.position)
 
         if before.colour != after.colour and settings.get("colour", False):
-            ret.add_diff_field(title="Colour Changed", before=str(before.colour), after=str(after.colour))
+            before_colour = before.colour if before.colour != discord.Colour.default() else None
+            after_colour = after.colour if after.colour != discord.Colour.default() else None
+            ret.add_diff_field(title="Colour Changed", before=before_colour, after=after_colour)
 
         if before.hoist != after.hoist and settings.get("hoist", False):
-            ret.add_field(title="Hoisted", value="Role is {} hoisted".format("now" if after.hoist else "no longer"))
+            ret.add_field(title="Hoist Status",
+                          value="Role is {} hoisted".format("now" if after.hoist else "no longer"))
 
         if before.mentionable != after.mentionable and settings.get("mention", False):
-            ret.add_field(title="Mentionable", value="Role is {} mentionable".format("now" if after.mentionable
-                                                                                     else "no longer"))
+            ret.add_field(title="Mentionable Status", value="Role is {} mentionable".format("now" if after.mentionable
+                                                                                            else "no longer"))
 
         if before.permissions.value != after.permissions.value and settings.get("permissions", False):
             added, removed = difference(before.permissions, after.permissions, check_val=True)
             if len(added) > 0:
-                ret.add_field(title="Granted Permissions",
+                ret.add_field(title="Permissions Granted",
                               value=", ".join([normalize(x, title_case=True, guild="server") for x in added]))
             if len(removed) > 0:
-                ret.add_field(title="Denied Permissions",
+                ret.add_field(title="Permissions Revoked",
                               value=", ".join([normalize(x, title_case=True, guild="server") for x in removed]))
 
         return ret
 
     def create(self, created: discord.Role, **kwargs):
-        ret = LogEntry(self)
-        ret.title = "Role created"
-        ret.emoji = "\N{LOWER LEFT BALLPOINT PEN}"
-        ret.colour = discord.Colour.green()
-        ret.require_fields = False
-        ret.timestamp = created.created_at
-        description = "Role **{0!s}** created\n" \
-                      "Hoisted: **{0.hoist}**\n" \
-                      "Mentionable: **{0.mentionable}**\n" \
-                      "Colour: **{1}**"
-        ret.description = description.format(created,
-                                             created.colour if created.colour != discord.Colour.default() else None)
+        ret = LogEntry(self, colour=discord.Colour.green(), require_fields=False)
+        ret.set_title(title="Role created", emoji="\N{LOWER LEFT BALLPOINT PEN}")
+        ret.description = "Role **{0!s}** created\n" \
+                          "Hoisted: **{0.hoist}**\n" \
+                          "Mentionable: **{0.mentionable}**\n" \
+                          "Colour: **{1}**".format(created,
+                                                   created.colour if created.colour != discord.Colour.default()
+                                                   else None)
         ret.add_field(title="With Permissions", value=", ".join([normalize(x, title_case=True, guild="server")
                                                                  for x, y in created.permissions if y]))
+        ret.set_footer(footer="Role ID: {0.id}".format(created), timestamp=created.created_at)
         return ret
 
     def delete(self, deleted: discord.Role, **kwargs):
-        ret = LogEntry(self)
-        ret.title = "Role deleted"
-        ret.emoji = "\N{WASTEBASKET}"
-        ret.colour = discord.Colour.red()
-        ret.require_fields = False
-        ret.timestamp = datetime.utcnow()
+        ret = LogEntry(self, colour=discord.Colour.red(), require_fields=False)
+        ret.set_title(title="Role deleted", emoji="\N{WASTEBASKET}")
         ret.description = "Role **{0!s}** deleted".format(deleted)
+        ret.set_footer(footer="Role ID: {0.id}".format(deleted), timestamp=datetime.utcnow())
         return ret

@@ -3,14 +3,13 @@ from datetime import datetime
 import discord
 
 from logs.logentry import LogEntry
-from logs.utils import difference
 from .base import LogType
 
 
 def format_overwrite(role_or_member, overwrite):
     _type = "role" if isinstance(role_or_member, discord.Role) else "member"
     return "{0} {1!s}: {2}".format(_type, role_or_member, "Passthrough"
-    if overwrite is None else "Granted" if overwrite is True else "Denied")
+                                   if overwrite is None else "Granted" if overwrite is True else "Denied")
 
 
 def get_role_or_member(snowflake: int, guild: discord.Guild):
@@ -38,11 +37,9 @@ class ChannelLogType(LogType):
 
     async def update(self, before: discord.abc.GuildChannel, after: discord.abc.GuildChannel, **kwargs):
         settings = await self.guild.config.channels()
-        ret = LogEntry(self)
-        ret.colour = discord.Colour.blurple()
-        ret.emoji = "\N{MEMO}"
-        ret.title = "Channel updated"
-        ret.timestamp = datetime.utcnow()
+        ret = LogEntry(self, colour=discord.Colour.blurple())
+        ret.set_title(title="Channel updated", emoji="\N{MEMO}")
+        ret.set_footer(timestamp=datetime.utcnow())
         ret.description = "Channel: {0.mention}".format(after)
 
         # shh pycharm, all is fine
@@ -77,19 +74,15 @@ class ChannelLogType(LogType):
         return ret
 
     def create(self, created: discord.abc.GuildChannel, **kwargs):
-        ret = LogEntry(self)
-        ret.colour = discord.Colour.green()
-        ret.emoji = "\N{LOWER LEFT BALLPOINT PEN}"
-        ret.title = "Channel created"
-        ret.require_fields = False
+        ret = LogEntry(self, colour=discord.Colour.green(), require_fields=False)
+        ret.set_title(title="Channel created", emoji="\N{LOWER LEFT BALLPOINT PEN}")
+        ret.set_footer(timestamp=datetime.utcnow())
         ret.description = "Channel {0.mention} created".format(created)
         return ret
 
     def delete(self, deleted: discord.abc.GuildChannel, **kwargs):
-        ret = LogEntry(self)
-        ret.colour = discord.Colour.red()
-        ret.title = "Channel deleted"
-        ret.emoji = "\N{WASTEBASKET}"
-        ret.require_fields = False
+        ret = LogEntry(self, colour=discord.Colour.red(), require_fields=False)
+        ret.set_title(title="Channel deleted", emoji="\N{WASTEBASKET}")
+        ret.set_footer(timestamp=datetime.utcnow())
         ret.description = "Channel {0!s} deleted".format(deleted)
         return ret

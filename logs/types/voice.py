@@ -10,14 +10,16 @@ class VoiceLogType(LogType):
     name = "voice"
 
     async def update(self, before: discord.VoiceState, after: discord.VoiceState, **kwargs):
-        member = kwargs.get("member")
+        try:
+            member = kwargs["member"]
+        except KeyError:  # Silently fail if the member in question wasn't given
+            return None
+
         settings = await self.guild.config.voice()
-        ret = LogEntry(self, self.guild)
-        ret.title = "Voice status updated"
-        ret.description = "Member: **{0!s}** ({0.id})".format(member)
-        ret.icon_url = member.avatar_url
-        ret.emoji = "\N{SPEAKER}"
-        ret.timestamp = datetime.utcnow()
+        ret = LogEntry(self, colour=discord.Colour.greyple())
+        ret.set_title(title="Voice status updated", icon_url=member.avatar_url, emoji="\N{SPEAKER}")
+        ret.set_footer(footer="User ID: {0.id}".format(member), timestamp=datetime.utcnow())
+        ret.description = "Member: **{0!s}**".format(member)
 
         if before.channel != after.channel and settings.get("channel", False):
             ret.add_diff_field(title="Channel Changed", before=before.channel or "Not in voice",

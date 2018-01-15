@@ -7,7 +7,7 @@ import discord
 from redbot.core import Config
 from redbot.core.bot import Red
 
-from logs.logentry import LogFormat
+from logs.logentry import LogFormat, LogEntry
 from logs.utils import extract_check, find_check
 
 
@@ -50,16 +50,11 @@ class GuildLog:
             return
         try:
             data = await log_func(**kwargs) if asyncio.iscoroutinefunction(log_func) else log_func(**kwargs)
-        except (NotImplementedError, KeyError):  # Silently swallow NotImplementedError and KeyError exceptions
+        except NotImplementedError:  # Silently swallow NotImplementedError exceptions
             return
         else:
             if data is None:
                 return
-            # TypeError: Event parser was expected to return LogEntry, instead got LogEntry
-            # ?????????????????????????????
-            if getattr(data, "add_field", None) is None and getattr(data, "format", None) is None:
-                raise TypeError("Event parser was expected to return LogEntry, instead got %s" %
-                                data.__class__.__name__)
             data = data.format(LogFormat(await self.config.format()))
             if data is None:
                 return
@@ -77,7 +72,7 @@ class GuildLog:
             return None
         return self.bot.get_channel(channel_id)
 
-    async def is_ignored(self, check: Union[discord.Member, discord.TextChannel]=None):
+    async def is_ignored(self, check: Union[discord.Member, discord.TextChannel, discord.VoiceChannel]=None):
         if await self.config.ignored():
             return True
 

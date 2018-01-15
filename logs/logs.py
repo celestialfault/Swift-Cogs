@@ -41,8 +41,8 @@ class Logs:
         channel = channel.id if channel else None
         # Half-assed workarounds 101
         channels = self.config.guild(ctx.guild).log_channels.defaults
-        for item in channels:
-            channels[item] = channel
+        if channel is not None:
+            channels = {x: channel for x in channels}
         await self.config.guild(ctx.guild).log_channels.set(channels)
         await ctx.tick()
 
