@@ -45,20 +45,7 @@ class Star(StarboardBase):
 
     @property
     def can_star(self) -> bool:
-        if self.message.content:
-            return True
-        if self.message.attachments and len(self.message.attachments) > 0:
-            return True
-        return False
-
-    def __repr__(self):
-        return "<Star stars={0} hidden={1} starboard_msg={2!r} message={3!r} update_queued={4}>".format(
-            self.user_count,
-            self.hidden,
-            self.starboard_message,
-            self.message,
-            self.in_queue
-        )
+        return self.message.content or (self.message.attachments and len(self.message.attachments) > 0)
 
     @property
     def embed(self):
@@ -72,6 +59,15 @@ class Star(StarboardBase):
             embed.set_image(url=self.message.attachments[0].proxy_url)
         return embed
 
+    def __repr__(self):
+        return "<Star stars={0} hidden={1} starboard_msg={2!r} message={3!r} update_queued={4}>".format(
+            self.user_count,
+            self.hidden,
+            self.starboard_message,
+            self.message,
+            self.in_queue
+        )
+
     async def setup(self, auto_create: bool = False):
         """Setup the current Star object
 
@@ -84,17 +80,16 @@ class Star(StarboardBase):
         if not self._entry and auto_create:
             await self.create()
         if self._entry:
-            self.members = self._entry["members"]
-            self.hidden = self._entry["hidden"]
-            if self._entry["starboard_message"]:
+            self.members = self._entry.get("members", [])
+            self.hidden = self._entry.get("hidden", False)
+            if self._entry.get("starboard_message", None) is not None:
                 channel = await self.starboard.channel()
-                if channel and self._entry["starboard_message"] is not None:
-                    try:
-                        self.starboard_message = await channel.get_message(self._entry["starboard_message"])
-                    except discord.NotFound:
-                        self.starboard_message = None
-                        # force an update to clear the starboard message data
-                        await self.update()
+                try:
+                    self.starboard_message = await channel.get_message(self._entry.get("starboard_message", None))
+                except discord.NotFound:
+                    self.starboard_message = None
+                    # force an update to clear the starboard message data
+                    await self.save()
 
     async def create(self):
         """Creates the message's starboard entry
@@ -108,11 +103,12 @@ class Star(StarboardBase):
             messages.append(self._entry)
         self.last_update = datetime.utcnow()
 
-    async def update(self):
+    async def save(self, queue_for_update: bool=True):
         """Updates the star's guild starboard entry"""
-        self.in_queue = True
+        if queue_for_update is True:
+            self.in_queue = True
         self._entry["members"] = self.members
-        self._entry["starboard_message"] = self.starboard_message.id if self.starboard_message else None
+        self._entry["starboard_message"] = self.starboard_message.id if self.starboard_message is not None else None
         self._entry["hidden"] = self.hidden
         async with self.starboard.config.messages() as messages:
             for message in messages:
@@ -133,12 +129,12 @@ class Star(StarboardBase):
             raise NoMessageContent()
         if member.id in self.members:
             raise StarException("The passed member already starred this message")
-        if await self.starboard.is_blocked(self.author):
+        if await self.starboard.is_ignored(self.author):
             raise BlockedAuthorException()
-        if await self.starboard.is_blocked(member):
+        if await self.starboard.is_ignored(member):
             raise BlockedException()
         self.members.append(member.id)
-        await self.update()
+        await self.save()
 
     async def remove_star(self, member: discord.Member) -> None:
         """Removes a member's star
@@ -149,12 +145,12 @@ class Star(StarboardBase):
         """
         if member.id not in self.members:
             raise StarException("The passed member hasn't starred this message")
-        if await self.starboard.is_blocked(self.author):
+        if await self.starboard.is_ignored(self.author):
             raise BlockedAuthorException()
-        if await self.starboard.is_blocked(member):
+        if await self.starboard.is_ignored(member):
             raise BlockedException()
         self.members.remove(member.id)
-        await self.update()
+        await self.save()
 
     def has_starred(self, member: discord.Member) -> bool:
         return member.id in self.members
@@ -163,7 +159,7 @@ class Star(StarboardBase):
         if self.hidden:
             raise HideException("This message is already hidden")
         self.hidden = True
-        await self.update()
+        await self.save()
         if self.starboard_message:
             await self.starboard_message.delete()
             self.starboard_message = None
@@ -172,7 +168,7 @@ class Star(StarboardBase):
         if not self.hidden:
             raise HideException("This message isn't currently hidden")
         self.hidden = False
-        await self.update()
+        await self.save()
 
     async def update_starboard_message(self):
         self.in_queue = False
@@ -200,3 +196,4 @@ class Star(StarboardBase):
                     return
                 await self.starboard_message.edit(content="⭐ **{}** {}".format(self.user_count, self.channel.mention),
                                                   embed=embed)
+        await self.save(False)

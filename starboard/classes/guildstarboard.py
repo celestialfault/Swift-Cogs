@@ -8,7 +8,7 @@ from redbot.core.bot import Red
 from redbot.core.config import Group
 
 from datetime import datetime, timedelta
-from typing import Optional, Iterable
+from typing import Optional, Iterable, Union
 
 from .star import Star
 from .starboardbase import StarboardBase
@@ -17,15 +17,15 @@ from .starboardbase import StarboardBase
 class GuildStarboard(StarboardBase):
     """Starboard for a specific Guild"""
 
-    _star_cache = {}
-    _blocked_users = None
-    _min_stars = None
-
     def __init__(self, guild: discord.Guild, config: Config, bot: Red):
         self.guild = guild
         self._config = config
         self.bot = bot
         self.queue = Queue()
+        self._star_cache = {}
+        self._blocked_users = None
+        self._min_stars = None
+        self._ignored_channels = None
 
     @property
     def config(self) -> Group:
@@ -65,6 +65,16 @@ class GuildStarboard(StarboardBase):
                 await self.remove_from_cache(item.message)
                 purged += 1
         return purged
+
+    async def housekeep(self):
+        """Purge no star entries from the starboard data"""
+        pruned = 0
+        async with self.config.messages() as messages:
+            for message in messages:
+                if len(message.get("members", [])) == 0:
+                    messages.remove(message)
+                    pruned += 1
+        return pruned
 
     async def handle_queue(self):
         if self.queue.empty():
@@ -135,16 +145,15 @@ class GuildStarboard(StarboardBase):
         else:
             return await self.message(message)
 
-    async def channel(self, channel: discord.TextChannel=None, clear: bool=False) -> Optional[discord.TextChannel]:
+    async def channel(self, channel: discord.TextChannel=False) -> Optional[discord.TextChannel]:
         """
         Set or clear the current guild's starboard
 
-        :param channel: The channel to set the current starboard to - to clear, pass None and set clear to True
-        :param clear: Whether or not to clear the current channel - pass None as the channel with this value
+        :param channel: The channel to set the current starboard to
         :return: Optional[discord.TextChannel]
         :raises ValueError: Raised if the passed channel is not in this GuildStarboard's specified Guild
         """
-        if channel or clear:
+        if channel is not False:
             if channel and channel.guild.id != self.guild.id:
                 raise ValueError("Passed TextChannel object is not in the current Guild")
             await self.config.channel.set(channel.id if channel else None)
@@ -168,35 +177,55 @@ class GuildStarboard(StarboardBase):
             self._min_stars = await self.config.min_stars()
         return self._min_stars
 
-    async def is_blocked(self, member: discord.Member) -> bool:
+    async def is_ignored(self, channel_or_member: Union[discord.TextChannel, discord.Member]) -> bool:
         """
-        Returns if the passed member is blocked from using the starboard
+        Returns if the passed channel or member is ignored from having messages starred
         """
-        if member.bot:  # implicitly block bots from using the starboard
-            return True
-        if self._blocked_users is None:
-            async with self.config.blocks() as blocks:
-                self._blocked_users = list(blocks)
-        return member.id in self._blocked_users
+        if isinstance(channel_or_member, discord.Member):
+            if channel_or_member.bot:  # implicitly block bots from using the starboard
+                return True
+            if self._blocked_users is None:
+                self._blocked_users = list(await self.config.blocks())
+            return channel_or_member.id in self._blocked_users
 
-    async def block(self, member: discord.Member) -> bool:
+        if self._ignored_channels is None:
+            self._ignored_channels = list(await self.config.ignored_channels())
+        return channel_or_member.id in self._ignored_channels
+
+    async def ignore_channel(self, channel: discord.TextChannel):
+        if await self.is_ignored(channel):
+            return False
+        async with self.config.ignored_channels() as ignores:
+            ignores.append(channel.id)
+            self._ignored_channels.append(channel.id)
+        return True
+
+    async def unignore_channel(self, channel: discord.TextChannel):
+        if not await self.is_ignored(channel):
+            return False
+        async with self.config.ignored_channels() as ignores:
+            ignores.remove(channel.id)
+            self._ignored_channels.remove(channel.id)
+        return True
+
+    async def block_member(self, member: discord.Member) -> bool:
         """
         Blocks the passed member from using the guild's starboard
         """
-        if await self.is_blocked(member):
+        if await self.is_ignored(member):
             return False
         async with self.config.blocks() as blocks:
-            self._blocked_users.append(member.id)
             blocks.append(member.id)
+            self._blocked_users.append(member.id)
         return True
 
-    async def unblock(self, member: discord.Member) -> bool:
+    async def unblock_member(self, member: discord.Member) -> bool:
         """
         Unblocks the passed member from using the guild's starboard
         """
-        if not await self.is_blocked(member):
+        if not await self.is_ignored(member):
             return False
         async with self.config.blocks() as blocks:
-            del self._blocked_users[self._blocked_users.index(member.id)]
             blocks.remove(member.id)
+            self._blocked_users.remove(member.id)
         return True
