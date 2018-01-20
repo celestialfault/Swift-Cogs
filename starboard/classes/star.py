@@ -57,6 +57,7 @@ class Star(StarboardBase):
         embed.set_author(name=str(self.author), icon_url=self.author.avatar_url)
         if self.message.attachments and len(self.message.attachments) > 0:
             embed.set_image(url=self.message.attachments[0].proxy_url)
+        embed.set_footer(text=str(self.message.id))
         return embed
 
     def __repr__(self):
