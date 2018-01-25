@@ -12,6 +12,8 @@ def allowed_starboard():
         if not ctx.guild:
             return True
         _starboard = starboard.starboard(ctx.guild)
+        if await _starboard.is_ignored(ctx.channel):
+            return False
         if await _starboard.is_ignored(ctx.author):
             if await _starboard.bot.is_owner(ctx.author):
                 pass

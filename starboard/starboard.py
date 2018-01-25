@@ -229,8 +229,11 @@ class Starboard(StarboardBase):
         starboard = self.starboard(ctx.guild)
         if await starboard.block_member(member):
             await ctx.tick()
-            await modlog.create_case(ctx.guild, ctx.message.created_at, "starboardblock",
-                                     member, ctx.author, reason, until=None, channel=None)
+            try:
+                await modlog.create_case(ctx.guild, ctx.message.created_at, "starboardblock",
+                                         member, ctx.author, reason, until=None, channel=None)
+            except RuntimeError:
+                pass
         else:
             await ctx.send(error("That user is already blocked from using this guild's starboard"))
 
@@ -244,8 +247,11 @@ class Starboard(StarboardBase):
         starboard = self.starboard(ctx.guild)
         if await starboard.unblock_member(member):
             await ctx.tick()
-            await modlog.create_case(ctx.guild, ctx.message.created_at, "starboardunblock",
-                                     member, ctx.author, reason, until=None, channel=None)
+            try:
+                await modlog.create_case(ctx.guild, ctx.message.created_at, "starboardunblock",
+                                         member, ctx.author, reason, until=None, channel=None)
+            except RuntimeError:
+                pass
         else:
             await ctx.send(error("That user isn't blocked from using this guild's starboard"))
 
@@ -254,12 +260,16 @@ class Starboard(StarboardBase):
             return
         message = reaction.message
         starboard = self.starboard(message.guild)
-        if await starboard.channel() is None or await self.starboard(message.guild).is_ignored(user):
+        if await starboard.channel() is None:
+            return
+        if await starboard.is_ignored(user) or starboard.is_ignored(message.channel):
             return
         message = await self.message(message, auto_create=True)
-        try:
+        try:  # Someone please remind me to never use exceptions in cogs again
             await message.add_star(user)
         except StarException:
+            pass
+        except BlockedAuthorException:
             pass
         except BlockedException:
             pass
@@ -271,7 +281,9 @@ class Starboard(StarboardBase):
             return
         message = reaction.message
         starboard = self.starboard(message.guild)
-        if await starboard.channel() is None or await self.starboard(message.guild).is_ignored(user):
+        if await starboard.channel() is None:
+            return
+        if await starboard.is_ignored(user) or starboard.is_ignored(message.channel):
             return
         message = await self.message(message)
         if not message or not message.user_count:
@@ -279,6 +291,8 @@ class Starboard(StarboardBase):
         try:
             await message.remove_star(user)
         except StarException:
+            pass
+        except BlockedAuthorException:
             pass
         except BlockedException:
             pass

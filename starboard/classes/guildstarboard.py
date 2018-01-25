@@ -67,11 +67,18 @@ class GuildStarboard(StarboardBase):
         return purged
 
     async def housekeep(self):
-        """Purge no star entries from the starboard data"""
+        """Prune useless starboard data"""
+        # Data storage framework when?
+        # Seriously please, I'm desperate
+        # Having to store this kind of stuff in a *guild-scoped Config group* shouldn't be necessary
+        # And storing all this data shouldn't have to be done in a massive json dataset ;w;
+        # (is it hard to tell that I miss being able to interact directly with mongodb like in Red v2?)
         pruned = 0
         async with self.config.messages() as messages:
             for message in messages:
                 if len(message.get("members", [])) == 0:
+                    if message.get("hidden", False):  # Preserve hidden entries regardless of if there's no stars
+                        continue
                     messages.remove(message)
                     pruned += 1
         return pruned
@@ -84,7 +91,8 @@ class GuildStarboard(StarboardBase):
             if not isinstance(item, Star):
                 continue
             if not item.in_queue:
-                # Avoid re-updating messages after they've been removed from the cache
+                # Avoid re-updating messages if they've been updated before we got to them,
+                # or if they were in the Queue more than once
                 continue
             await item.update_starboard_message()
             asyncio.sleep(0.5)

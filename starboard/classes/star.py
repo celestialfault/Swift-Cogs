@@ -9,11 +9,11 @@ from .starboardbase import StarboardBase
 class Star(StarboardBase):
     """Starboard message"""
 
-    def __init__(self, guild, message: discord.Message):
+    def __init__(self, starboard, message: discord.Message):
         from .guildstarboard import GuildStarboard
-        if not isinstance(guild, GuildStarboard):
-            raise ValueError("Expected a GuildStarboard object, received %s" % guild.__class__.__name__)
-        self.starboard = guild
+        if not isinstance(starboard, GuildStarboard):
+            raise ValueError("Expected a GuildStarboard object, received {}".format(starboard.__class__.__name__))
+        self.starboard = starboard
         self.message = message
         self.author = message.author
         self.channel = message.channel
@@ -24,6 +24,10 @@ class Star(StarboardBase):
         # Do not modify these values directly
         self._entry = None  # Modify the above values and use Star.update() instead of modifying this one directly
         self._in_queue = False
+
+    @property
+    def author_name(self):
+        return self.author.display_name
 
     @property
     def user_count(self) -> int:
@@ -45,7 +49,7 @@ class Star(StarboardBase):
 
     @property
     def can_star(self) -> bool:
-        return self.message.content or (self.message.attachments and len(self.message.attachments) > 0)
+        return self.message.content or (self.message.attachments and len(self.message.attachments) == 1)
 
     @property
     def embed(self):
@@ -54,10 +58,10 @@ class Star(StarboardBase):
         embed = discord.Embed(colour=discord.Colour.gold(),
                               timestamp=self.message.created_at,
                               description=self.message.content)
-        embed.set_author(name=str(self.author), icon_url=self.author.avatar_url)
+        embed.set_author(name=self.author_name, icon_url=self.author.avatar_url)
         if self.message.attachments and len(self.message.attachments) > 0:
             embed.set_image(url=self.message.attachments[0].proxy_url)
-        embed.set_footer(text=str(self.message.id))
+        embed.set_footer(text="Message ID: {}".format(self.message.id))
         return embed
 
     def __repr__(self):
@@ -124,7 +128,7 @@ class Star(StarboardBase):
         :raises StarException: If the member has already starred this message
         :raises BlockedException: If the passed member is blocked from the guild's starboard
         :raises BlockedAuthorException: If the author of the message is blocked from using the guild's starboard
-        :raises StarboardException: If this message cannot be starred due to lack of content or attachments
+        :raises NoMessageContent: If this message cannot be starred due to lack of content or attachments
         """
         if not self.can_star:
             raise NoMessageContent()
@@ -160,10 +164,10 @@ class Star(StarboardBase):
         if self.hidden:
             raise HideException("This message is already hidden")
         self.hidden = True
-        await self.save()
         if self.starboard_message:
             await self.starboard_message.delete()
             self.starboard_message = None
+        await self.save()
 
     async def unhide(self):
         if not self.hidden:
@@ -197,4 +201,5 @@ class Star(StarboardBase):
                     return
                 await self.starboard_message.edit(content="⭐ **{}** {}".format(self.user_count, self.channel.mention),
                                                   embed=embed)
+        # Trigger a no-queue save to make sure that the starboard message ID gets saved
         await self.save(False)
