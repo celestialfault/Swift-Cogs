@@ -80,7 +80,7 @@ class GuildLog:
                 if isinstance(item, discord.Member):
                     if item.bot:
                         return True
-                    if await config.member(checks).ignored():
+                    if await config.member(item).ignored():
                         return True
                 elif isinstance(checks, discord.TextChannel) or isinstance(checks, discord.VoiceChannel):
                     if await config.channel(item).ignored():
