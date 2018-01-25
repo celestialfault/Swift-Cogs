@@ -57,7 +57,7 @@ class Logs:
         await self.config.guild(ctx.guild).log_channels.emoji.set(channel.id if channel else None)
         await ctx.tick()
 
-    @logset_logchannel.command(name="guild")
+    @logset_logchannel.command(name="guild", aliases=["server"])
     async def logchannel_guild(self, ctx: RedContext, channel: discord.TextChannel = None):
         """Set the guild log channel"""
         await self.config.guild(ctx.guild).log_channels.guild.set(channel.id if channel else None)
@@ -98,7 +98,32 @@ class Logs:
         await self.config.guild(ctx.guild).format.set("TEXT")
         await ctx.tick()
 
-    @logset.command(name="guild")
+    @logset.group(name="check")
+    async def logset_check(self, ctx: RedContext):
+        """Change the check type for changes
+
+        This setting is most visible with voice status updates and voice channel ignores"""
+        await cmd_help(ctx, "check")
+
+    @logset_check.command(name="both")
+    async def logset_both(self, ctx: RedContext):
+        """Set logging to check both before and after values to determine ignore status"""
+        await self.config.guild(ctx.guild).check_type.set("both")
+        await ctx.tick()
+
+    @logset_check.command(name="after")
+    async def logset_after(self, ctx: RedContext):
+        """Set logging to check the after values to determine ignore status"""
+        await self.config.guild(ctx.guild).check_type.set("after")
+        await ctx.tick()
+
+    @logset_check.command(name="before")
+    async def logset_before(self, ctx: RedContext):
+        """Set logging to check the before values to determine ignore status"""
+        await self.config.guild(ctx.guild).check_type.set("before")
+        await ctx.tick()
+
+    @logset.command(name="guild", aliases=["server"])
     async def logset_guild(self, ctx: RedContext, *types):
         """Set guild update logging
 
@@ -140,6 +165,11 @@ class Logs:
         **❯** Toggles logging of message edits
 
         **NOTE:** It's recommended to notify users about the presence of message logging in public servers
+
+        Due to a limitation of discord.py's `on_message_edit|delete` events, logs will only include messages
+        that are in the bot's internal message cache; meaning if a message was pushed out of the bot's message cache
+        for any reason, such as enough messages being sent or a restart of the bot,
+        any edits or deletions won't be logged.
         """
         slots = ["edit", "delete"]
         # noinspection PyTypeChecker
@@ -150,13 +180,13 @@ class Logs:
         """Manage member logging
 
         Available log types:
-        join, leave, name, nickname, roles
+        join, leave, name, discriminator, nickname, roles
 
         Example:
-        **❯** **!logset member update join roles**
-        **❯** Toggles logging of member joining and role updates
+        **❯** **!logset member update discriminator join roles**
+        **❯** Toggles logging of member joining, discriminator changes (the #0000 after a username), and role updates
         """
-        slots = ["join", "leave", "name", "nickname", "roles"]
+        slots = ["join", "leave", "name", "discriminator", "nickname", "roles"]
         # noinspection PyTypeChecker
         await handle_group(ctx, slots, types, self.config.guild(ctx.guild).members, "member")
 
@@ -204,7 +234,7 @@ class Logs:
         """Manage ignore settings"""
         await cmd_help(ctx, "ignore")
 
-    @logset_ignore.command(name="guild")
+    @logset_ignore.command(name="guild", aliases=["server"])
     @checks.is_owner()
     async def logset_ignore_guild(self, ctx: RedContext, guild_id: int = None):
         """Ignore the current or specified guild"""
@@ -250,7 +280,7 @@ class Logs:
         """Remove a previous ignore"""
         await cmd_help(ctx, "unignore")
 
-    @logset_unignore.command(name="guild")
+    @logset_unignore.command(name="guild", aliases=["server"])
     @checks.is_owner()
     async def logset_unignore_guild(self, ctx: RedContext, guild_id: int = None):
         """Unignore the current or specified guild"""
@@ -363,14 +393,14 @@ class Logs:
     ###################
 
     async def on_message_delete(self, message: discord.Message):
-        if isinstance(message.channel, discord.DMChannel):
+        if isinstance(message.channel, discord.abc.PrivateChannel):
             return
         if not await self.config.guild(message.guild).messages.delete():
             return
         await self.get_guild_log(message.guild).log(MessageLogType, LogType.DELETE, deleted=message)
 
     async def on_message_edit(self, before: discord.Message, after: discord.Message):
-        if isinstance(after.channel, discord.DMChannel):
+        if isinstance(after.channel, discord.abc.PrivateChannel):
             return
         if not await self.config.guild(after.guild).messages.edit():
             return

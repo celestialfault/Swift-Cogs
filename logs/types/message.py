@@ -22,8 +22,8 @@ class MessageLogType(LogType):
         ret.set_footer(footer="Message ID: {0.id}".format(after), timestamp=datetime.utcnow())
         ret.description = "Message author: **{0!s}** ({0.id})".format(after.author)
 
-        ret.add_field(title="Previous content", value=before.content)
-        ret.add_field(title="New content", value=after.content)
+        ret.add_field(title="Previous Content", value=before.content)
+        ret.add_field(title="New Content", value=after.content)
         return ret
 
     def create(self, created, **kwargs):

@@ -19,22 +19,22 @@ class RoleLogType(LogType):
         ret.description = escape("Role: **{0!s}**".format(after), mass_mentions=True)
 
         if before.name != after.name and settings.get("name", False):
-            ret.add_diff_field(title="Name Changed", before=before.name, after=after.name)
+            ret.add_diff_field(title="Role Name", before=before.name, after=after.name)
 
         if before.position != after.position and settings.get("position", False):
-            ret.add_diff_field(title="Position Changed", before=before.position, after=after.position)
+            ret.add_diff_field(title="Role Position", before=before.position, after=after.position)
 
         if before.colour != after.colour and settings.get("colour", False):
             before_colour = before.colour if before.colour != discord.Colour.default() else None
             after_colour = after.colour if after.colour != discord.Colour.default() else None
-            ret.add_diff_field(title="Colour Changed", before=before_colour, after=after_colour)
+            ret.add_diff_field(title="Role Colour", before=before_colour, after=after_colour)
 
         if before.hoist != after.hoist and settings.get("hoist", False):
-            ret.add_field(title="Hoist Status",
+            ret.add_field(title="Hoisted",
                           value="Role is {} hoisted".format("now" if after.hoist else "no longer"))
 
         if before.mentionable != after.mentionable and settings.get("mention", False):
-            ret.add_field(title="Mentionable Status", value="Role is {} mentionable".format("now" if after.mentionable
+            ret.add_field(title="Mentionable", value="Role is {} mentionable".format("now" if after.mentionable
                                                                                             else "no longer"))
 
         if before.permissions.value != after.permissions.value and settings.get("permissions", False):

@@ -25,11 +25,14 @@ class MemberLogType(LogType):
         ret.set_footer(footer="User ID: {0.id}".format(after), timestamp=datetime.utcnow())
         ret.description = "Member: **{0!s}**".format(after)
 
-        if (before.name != after.name) and settings.get("name", False):
-            ret.add_diff_field(title="Username Changed", before=str(before), after=str(after))
+        if before.name != after.name and settings.get("name", False):
+            ret.add_diff_field(title="Username", before=before.name, after=after.name)
 
-        if (before.nick != after.nick) and settings.get("nickname", False):
-            ret.add_diff_field(title="Nickname Changed",
+        if before.discriminator != after.discriminator and settings.get("discriminator", False):
+            ret.add_diff_field(title="Discriminator", before=before.discriminator, after=after.discriminator)
+
+        if before.nick != after.nick and settings.get("nickname", False):
+            ret.add_diff_field(title="Nickname",
                                before=safe_escape(before.nick) if before.nick else "*No nickname*",
                                after=safe_escape(after.nick) if after.nick else "*No nickname*")
 

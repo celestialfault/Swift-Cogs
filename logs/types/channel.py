@@ -42,35 +42,32 @@ class ChannelLogType(LogType):
         ret.set_footer(timestamp=datetime.utcnow())
         ret.description = "Channel: {0.mention}".format(after)
 
-        # shh pycharm, all is fine
-        # noinspection PyUnresolvedReferences
-        if before.name != after.name and settings.get("name", False):
-            # quiet now, all is ok
-            # noinspection PyUnresolvedReferences
-            ret.add_diff_field(title="Name Changed", before=before.name, after=after.name)
+        if hasattr(before, "name") and hasattr(after, "name"):  # you win this time pycharm
+            if before.name != after.name and settings.get("name", False):
+                ret.add_diff_field(title="Channel Name", before=before.name, after=after.name)
 
         if isinstance(before, discord.TextChannel) and isinstance(after, discord.TextChannel):
             if before.topic != after.topic and settings.get("topic", False):
-                ret.add_diff_field(title="Channel Topic Changed", before=before.topic, after=after.topic, box_lang="")
+                ret.add_diff_field(title="Channel Topic", before=before.topic, after=after.topic, box_lang="")
 
         elif isinstance(before, discord.VoiceChannel) and isinstance(after, discord.VoiceChannel):
             if before.bitrate != after.bitrate and settings.get("bitrate", False):
-                ret.add_diff_field("Bitrate Changed",
+                ret.add_diff_field("Channel Bitrate",
                                    before=format_bitrate(before.bitrate),
                                    after=format_bitrate(after.bitrate))
 
             if before.user_limit != after.user_limit and settings.get("user_limit", False):
-                ret.add_diff_field(title="User Limit Changed",
+                ret.add_diff_field(title="User Limit",
                                    before=format_userlimit(before.user_limit),
                                    after=format_userlimit(after.user_limit))
 
         if before.category != after.category and settings.get("category", False):
-            ret.add_diff_field(title="Category Changed",
+            ret.add_diff_field(title="Channel Category",
                                before=before.category.name if before.category is not None else "Uncategorized",
                                after=after.category.name if after.category is not None else "Uncategorized")
 
         if before.position != after.position and settings.get("position", False):
-            ret.add_diff_field(title="Position Changed", before=before.position, after=after.position)
+            ret.add_diff_field(title="Channel Position", before=before.position, after=after.position)
         return ret
 
     def create(self, created: discord.abc.GuildChannel, **kwargs):

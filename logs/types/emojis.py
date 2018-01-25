@@ -9,9 +9,9 @@ from .base import LogType
 
 def format_emoji(emoji: discord.Emoji, removed: bool=False):
     if not removed:
-        ret = "{0!s}"
+        ret = "{0!s} ({1}**{0.name}**{1})"
     else:
-        ret = "{1}{0.name}{1}"
+        ret = "{1}**{0.name}**{1}"
     return ret.format(emoji, ":" if emoji.require_colons else "")
 
 
@@ -26,10 +26,10 @@ class EmojiLogType(LogType):
 
         if len(added):
             ret.add_field(title="Emoji{} Added".format("s" if len(added) > 1 else ""),
-                          value=", ".join(format_emoji(x) for x in added))
+                          value="\n".join(format_emoji(x) for x in added))
         if len(removed):
             ret.add_field(title="Emoji{} Removed".format("s" if len(removed) > 1 else ""),
-                          value=", ".join(format_emoji(x, True) for x in removed))
+                          value="\n".join(format_emoji(x, True) for x in removed))
 
         return ret
 

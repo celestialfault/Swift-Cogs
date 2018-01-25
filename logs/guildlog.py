@@ -35,10 +35,8 @@ class GuildLog:
         self.config = config.guild(self.guild)
 
     async def log(self, group, log_type: LogType, **kwargs):
-        check = extract_check(find_check(**kwargs))
-        if isinstance(check, discord.Member) and check.bot:
-            return
-        elif await self.is_ignored(check):
+        check = await find_check(guildlog=self, **kwargs)
+        if await self.is_ignored(check):
             return
         group = group(self)
         log_type = str(log_type)
@@ -72,17 +70,19 @@ class GuildLog:
             return None
         return self.bot.get_channel(channel_id)
 
-    async def is_ignored(self, check: Union[discord.Member, discord.TextChannel, discord.VoiceChannel]=None):
+    async def is_ignored(self, checks=None):
         if await self.config.ignored():
             return True
-
-        if check is None:
-            return False
-
-        if isinstance(check, discord.Member):
-            return await config.member(check).ignored()
-        elif isinstance(check, discord.TextChannel) or isinstance(check, discord.VoiceChannel):
-            # noinspection PyTypeChecker
-            return await config.channel(check).ignored()
-        else:
-            return False
+        if checks:
+            for item in checks:
+                if item is None:
+                    continue
+                if isinstance(item, discord.Member):
+                    if item.bot:
+                        return True
+                    if await config.member(checks).ignored():
+                        return True
+                elif isinstance(checks, discord.TextChannel) or isinstance(checks, discord.VoiceChannel):
+                    if await config.channel(item).ignored():
+                        return True
+        return False

@@ -42,6 +42,7 @@ defaults_guild = {
         "join": False,
         "leave": False,
         "name": False,
+        "discriminator": False,
         "nickname": False,
         "roles": False
     },
@@ -62,7 +63,8 @@ defaults_guild = {
         "selfdeaf": False,
         "serverdeaf": False
     },
-    "emojis": False  # TODO: Merge this into guild logging, instead of being standalone
+    "emojis": False,  # TODO: Merge this into guild logging, instead of being standalone
+    "check_type": "after"
 }
 
 

@@ -52,15 +52,14 @@ class LogEntry:
         return self
 
     def set_footer(self, footer: str=None, timestamp: datetime=None):
-        """Set the title and/or timestamp. Returns self for chaining"""
+        """Set the title and/or timestamp"""
         if footer:
             self.footer = footer
         if timestamp:
             self.timestamp = timestamp
-        return self
 
     def add_diff_field(self, title: str, before, after, description: str=None, box_lang: str=None):
-        """Adds a before and after field. Returns self for chaining"""
+        """Adds a before and after field"""
         before = str(before)
         after = str(after)
         if box_lang is not None:
@@ -69,15 +68,14 @@ class LogEntry:
             value = "**Before:** {}\n**After:** {}".format(before, after)
         if description is not None:
             value = "{}\n\n{}".format(description, value)
-        return self.add_field(title=title, value=value)
+        self.add_field(title=title, value=value)
 
     def add_field(self, title: str, value):
-        """Add a field to the current LogEntry. Returns self for chaining"""
+        """Add a field to the current LogEntry"""
         if title is None or value is None:
             return self
         value = str(value)
         self.fields.append([title, value])
-        return self
 
     def format(self, log_format: LogFormat) -> Optional[Union[str, discord.Embed]]:
         """Format the current LogEntry into a usable log message.
@@ -107,8 +105,8 @@ class LogEntry:
         elif str(log_format) == "TEXT":  # Text
             field_txt = "\n\n".join(["**❯ {}**\n{}".format(escape(x, mass_mentions=True).rstrip(),
                                                            escape(y, mass_mentions=True).rstrip())
-                                     for x, y in self.fields if x is not None and y is not None
-                                     and x.rstrip() and y.rstrip()])
+                                     for x, y in self.fields
+                                     if x is not None and y is not None and x.rstrip() and y.rstrip()])
             description = "\n{}".format(escape(self.description, mass_mentions=True)) if self.description else ""
             footer_sep = "\N{STRAIGHTNESS}" * 20
             footer = "" if not self.footer else "\n\n{}\n{}".format(footer_sep, self.footer)
