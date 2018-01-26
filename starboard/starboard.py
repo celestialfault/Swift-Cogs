@@ -262,7 +262,7 @@ class Starboard(StarboardBase):
         starboard = self.starboard(message.guild)
         if await starboard.channel() is None:
             return
-        if await starboard.is_ignored(user) or starboard.is_ignored(message.channel):
+        if await starboard.is_ignored(user) or await starboard.is_ignored(message.channel):
             return
         message = await self.message(message, auto_create=True)
         try:  # Someone please remind me to never use exceptions in cogs again
@@ -283,7 +283,7 @@ class Starboard(StarboardBase):
         starboard = self.starboard(message.guild)
         if await starboard.channel() is None:
             return
-        if await starboard.is_ignored(user) or starboard.is_ignored(message.channel):
+        if await starboard.is_ignored(user) or await starboard.is_ignored(message.channel):
             return
         message = await self.message(message)
         if not message or not message.user_count:
