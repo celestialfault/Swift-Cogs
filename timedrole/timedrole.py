@@ -47,7 +47,7 @@ class TimedRole:
             members = await self.config.all_members(ctx.guild)
         else:
             members = {member.id: await self.config.member(member)()}
-        members = {x: members[x] for x in members if members[x]}
+        members = {x: members[x] for x in members if members[x] and members[x]["roles"]}
         if not len(members):
             await ctx.send(warning("There's no timed roles currently on this server" if not member
                                    else "That member has no timed roles"))
@@ -66,7 +66,8 @@ class TimedRole:
                     "**❯** Role **{role!s}**\n      Granted by: **{granted_by!s}**\n      Expires in: **{duration}**"
                     .format(role=discord.utils.get(ctx.guild.roles, id=role["role_id"]),
                             granted_by=ctx.guild.get_member(role["granted_by"]),
-                            duration=self.td_format(duration_left)))
+                            duration=self.td_format(duration_left) if duration_left > timedelta()
+                            else "Queued for removal"))
             msg = "Member **{0!s}**:\n{1}".format(member, "\n".join(roles))
             strings.append(msg)
         await ctx.send_interactive(pagify("\n\n".join(strings), escape_mass_mentions=True))
