@@ -84,6 +84,15 @@ The poor man's channel pins
 [p]load starboard
 ```
 
+### Timed Role
+
+Add roles to users for a set amount of time, and automatically remove them after that time is up
+
+```
+[p]cog install odinair-cogs timedrole
+[p]load timedrole
+```
+
 ### User Profiles
 
 It's *almost* like Facebook, but in Discord!
