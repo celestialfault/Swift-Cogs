@@ -46,9 +46,8 @@ class GiveawayBase:
         entry = discord.utils.find(lambda _entry: _entry["message_id"] == message.id, data)
         if entry or auto_create:
             entry = entry if entry else {"creator": None}
-            creator = creator if not entry["creator"] else discord.utils.find(
-                lambda member: member.id == entry["creator"],
-                message.guild.members)
+            creator = creator if not entry.get("creator", None) else discord.utils.get(message.guild.members,
+                                                                                       id=entry["creator"])
             giveaway = GuildGiveaway(message, creator, config)
             await giveaway.setup(auto_create=auto_create, description=description)
             _cache[message.id] = giveaway

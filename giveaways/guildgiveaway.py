@@ -21,7 +21,6 @@ class GuildGiveaway:
 
     @property
     def json(self):
-        # Yes - this is TECHNICALLY a dict, but it's returned with a property named json. Don't question it.
         return {
             "creator": self.creator.id if self.creator else "Unknown",
             "message_id": self.message.id,
@@ -36,12 +35,13 @@ class GuildGiveaway:
     def choose_winner(self):
         if not len(self.entrants):
             return None
+
         winner = None
         # attempt to find a winner 10 times before giving up
         attempts = 0
         while not winner and attempts < 10:
             winner = random.choice(self.entrants)
-            winner = discord.utils.find(lambda member: member.id == winner, self.message.guild.members)
+            winner = discord.utils.get(self.message.guild.members, id=winner)
             attempts += 1
         self.winner = winner
 
@@ -55,8 +55,7 @@ class GuildGiveaway:
         index = giveaways.index(entry)
         self.winner = giveaways[index]["winner"]
         if self.winner is not None:
-            self.winner = discord.utils.find(lambda member: member.id == self.winner, self.message.guild.members) \
-                          or "Unknown"
+            self.winner = discord.utils.get(self.message.guild.members, id=self.winner) or "Unknown"
         self.entrants = giveaways[index]["entrants"]
         self.ended = giveaways[index]["ended"]
         self.description = giveaways[index]["description"] if "description" in giveaways[index] else "No description " \
@@ -83,7 +82,7 @@ class GuildGiveaway:
         embed = discord.Embed(colour=discord.Colour.red() if self.ended else discord.Colour.blurple())
         embed.description = description
         embed.set_author(name="Giveaway #{}".format(self.index + 1), icon_url=self.creator.avatar_url)
-        embed.set_footer(text="Giveaway started by {}".format(str(self.creator)))
+        embed.set_footer(text="Giveaway started by {0!s}".format(self.creator))
         await self.message.edit(embed=embed)
 
         if self.channel.permissions_for(self.message.guild.me).manage_messages and self.ended:
