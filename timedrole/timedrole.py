@@ -5,12 +5,88 @@ from discord.ext import commands
 
 from redbot.core.bot import Red, RedContext
 from redbot.core import checks, Config
-from redbot.core.utils.chat_formatting import warning, pagify
+from redbot.core.utils.chat_formatting import warning, pagify, bold
 
 from collections import OrderedDict
 import re
 
 from datetime import datetime, timedelta
+
+
+class GuildRoles:
+    def __init__(self, config: Config, guild: discord.Guild):
+        self._config = config
+        self.guild = guild
+
+    @property
+    def roles(self):
+        return self.guild.roles
+
+    async def all_temp_roles(self, *members: discord.Member):
+        members = [x.id for x in members]
+        member_data = await self._config.all_members(self.guild)
+        member_data = {uid: member_data[uid] for uid in member_data
+                       if not len(members) or uid in members}
+        roles = []
+        for uid in member_data:
+            member = self.guild.get_member(uid)
+            if not member:
+                continue
+            temp_roles = member_data[uid]["roles"]
+            for temp_role in temp_roles:
+                try:
+                    role = TRole.from_data(self, member, temp_role)
+                except ValueError:
+                    await self.remove(member, temp_role.get("role_id"))
+                else:
+                    roles.append(role)
+        return roles
+
+    async def expired_roles(self, *members: discord.Member):
+        return [x for x in await self.all_temp_roles(*members) if x.has_expired]
+
+    async def remove(self, member: discord.Member, role: discord.Role or int):
+        async with self._config.member(member).roles() as temp_roles:
+            for item in temp_roles:
+                if item.get("role_id", None) == (role.id if isinstance(role, discord.Role) else role):
+                    temp_roles.remove(item)
+
+
+class TRole:
+    def __init__(self, role: discord.Role, guild: GuildRoles, member: discord.Member, given_at: datetime, seconds: int,
+                 granted_by: discord.Member):
+        self.member = member
+        self.role = role
+        self.guild = guild
+        self.expiry_time = given_at + timedelta(seconds=seconds)
+        self.granted_by = granted_by
+
+    @classmethod
+    def from_data(cls, guild: GuildRoles, member: discord.Member, data: dict):
+        role = discord.utils.get(guild.roles, id=data.get("role_id", None))
+        if role is None:
+            raise ValueError("Data does not contain a role ID, or the role was deleted")
+        return cls(role=role, member=member, guild=guild, given_at=data.get("added_at"), seconds=data.get("duration"),
+                   granted_by=guild.guild.get_member(data.get("granted_by")))
+
+    def until_expires(self, as_string: bool=False):
+        expiry_ts = self.expiry_time - datetime.utcnow()
+        if as_string is False:
+            return expiry_ts
+        else:
+            return TimedRole.td_format(expiry_ts) if expiry_ts > timedelta() else "Queued for removal"
+
+    @property
+    def has_expired(self):
+        return self.role not in self.member.roles or self.expiry_time < datetime.utcnow()
+
+    async def remove(self):
+        await self.guild.remove(self.member, self.role)
+        if self.role in self.member.roles:
+            try:
+                await self.member.remove_roles(self.role, reason="Timed role expired")
+            except discord.Forbidden:
+                pass
 
 
 class TimedRole:
@@ -30,47 +106,95 @@ class TimedRole:
         self.bot = bot
         self.config = Config.get_conf(self, identifier=35235234, force_registration=True)
         self.config.register_member(roles=[])
-        self.bot.loop.create_task(self.check_role_expirations())
+        self.bot.loop.create_task(self.remove_expired_roles())
 
     @commands.group()
     @commands.guild_only()
     @checks.admin_or_permissions(manage_roles=True)
+    @commands.bot_has_permissions(manage_roles=True)
     async def timedrole(self, ctx: RedContext):
         """Timed role management"""
         if not ctx.invoked_subcommand:
             await ctx.send_help()
 
     @timedrole.command(name="list")
-    async def list_roles(self, ctx: RedContext, *, member: discord.Member = None):
-        """List all members with temporary roles"""
-        if not member:
-            members = await self.config.all_members(ctx.guild)
-        else:
-            members = {member.id: await self.config.member(member)()}
+    async def list_roles(self, ctx: RedContext, *members: discord.Member):
+        """List all members with timed roles"""
+        member_ids = [x.id for x in members]
+        members = await self.config.all_members(ctx.guild)
+        members = {uid: members[uid] for uid in members if not len(member_ids) or uid in member_ids}
         members = {x: members[x] for x in members if members[x] and members[x]["roles"]}
         if not len(members):
-            await ctx.send(warning("There's no timed roles currently on this server" if not member
+            await ctx.send(warning("There's no timed roles currently on this server" if not member_ids
                                    else "That member has no timed roles"))
             return
+        guild_roles = GuildRoles(config=self.config, guild=ctx.guild)
         strings = []
         for member_id in members:
             member = ctx.guild.get_member(member_id)
             if not member:
                 continue
-            roles = []
-            for role in members[member_id]["roles"]:
-                expires_at = role["added_at"] + timedelta(seconds=role["duration"])
-                # noinspection PyTypeChecker
-                duration_left = expires_at - datetime.utcnow()
-                roles.append(
-                    "**❯** Role **{role!s}**\n      Granted by: **{granted_by!s}**\n      Expires in: **{duration}**"
-                    .format(role=discord.utils.get(ctx.guild.roles, id=role["role_id"]),
-                            granted_by=ctx.guild.get_member(role["granted_by"]),
-                            duration=self.td_format(duration_left) if duration_left > timedelta()
-                            else "Queued for removal"))
-            msg = "Member **{0!s}**:\n{1}".format(member, "\n".join(roles))
-            strings.append(msg)
+            roles = await guild_roles.all_temp_roles(member)
+            role_strs = []
+            for role in roles:
+                role_strs.append("**❯** Role: **{role!s}**\n"
+                                 "      Granted by: **{granted_by!s}**\n"
+                                 "      Expires in: **{duration}**".format(role=role.role,
+                                                                           granted_by=role.granted_by,
+                                                                           duration=role.until_expires(True)))
+            strings.append("Member **{0!s}**:\n{1}".format(member, "\n".join(role_strs)))
         await ctx.send_interactive(pagify("\n\n".join(strings), escape_mass_mentions=True))
+
+    async def add_roles(self, ctx: RedContext, member: discord.Member,
+                        duration: str, *roles: discord.Role):
+        roles = list(roles)
+        try:
+            roles.remove(ctx.guild.default_role)
+        except ValueError:
+            pass
+        if len(roles) == 0:
+            await ctx.send_help()
+            return
+        for role in roles:
+            if role in member.roles:
+                await ctx.send(warning("That user already has the {0!s} role".format(role)))
+                return
+        now = datetime.utcnow()
+        duration = self.get_seconds(duration)
+        if not duration:
+            await ctx.send(warning("That's an invalid time format."))
+            return
+        elif duration > self.MAX_SECONDS:
+            await ctx.send(warning("The maximum timed role duration is {}".format(
+                self.td_format(timedelta(seconds=self.MAX_SECONDS)))))
+            return
+        try:
+            await member.add_roles(*roles, reason="Timed role granted by {0!s}".format(ctx.author))
+        except discord.Forbidden:
+            await ctx.send(warning("I'm not allowed to give one or more of those roles to the specified user"))
+        except discord.HTTPException:
+            await ctx.send(warning("I failed to give one or more of those roles to the specified user"))
+        else:
+            await ctx.tick()
+            formatted_delta = self.td_format(timedelta(seconds=duration))
+            msg = "Successfully granted {0!s} to **{1!s}** for {2}".format(", ".join([bold(str(x)) for x in roles]),
+                                                                           member, formatted_delta)
+            await ctx.send(msg)
+        async with self.config.member(member).roles() as tmp_roles:
+            for role in roles:
+                tmp_roles.append({"role_id": role.id,
+                                  "added_at": now,
+                                  "duration": duration,
+                                  "granted_by": ctx.author.id})
+
+    @timedrole.command(name="multiple")
+    async def add_multiple(self, ctx: RedContext, member: discord.Member, duration: str, *roles: discord.Role):
+        """Add multiple roles to a user at once
+
+        See `[p]timedrole add` for help on `duration`
+
+        If a role has spaces in its name, wrap it in double quotes."""
+        await self.add_roles(ctx, member, duration, *roles)
 
     @timedrole.command(name="add")
     async def add_role(self, ctx: RedContext, member: discord.Member, role: discord.Role, duration: str = "1mo"):
@@ -83,60 +207,17 @@ class TimedRole:
 
         One month is counted as 30 days, and one year is counted as 365 days. All invalid abbreviations are ignored.
 
-        Maximum duration for a timed role is two years. Expired timed roles are checked every 5 minutes."""
-        if role in member.roles:
-            await ctx.send(warning("That user already has that role"))
-            return
-        now = datetime.utcnow()
-        duration = self.get_seconds(duration)
-        if not duration:
-            await ctx.send(warning("That's an invalid time format."))
-            return
-        elif duration > self.MAX_SECONDS:
-            await ctx.send(warning("The maximum timed role duration is {}".format(
-                self.td_format(timedelta(seconds=self.MAX_SECONDS)))))
-            return
-        delta = timedelta(seconds=duration)
-        try:
-            await member.add_roles(role, reason="Timed role granted by {0!s}".format(ctx.author))
-        except discord.Forbidden:
-            await ctx.send(warning("I'm not allowed to give that role to users"))
-        except discord.HTTPException:
-            await ctx.send(warning("I failed to give that role to the specified user"))
-        else:
-            await ctx.tick()
-            formatted_delta = self.td_format(delta)
-            msg = "Successfully granted **{0!s}** to **{1!s}** for {2}".format(role, member, formatted_delta)
-            await ctx.send(msg)
-        async with self.config.member(member).roles() as tmp_roles:
-            tmp_roles.append({"role_id": role.id,
-                              "added_at": now,
-                              "duration": duration,
-                              "granted_by": ctx.author.id})
+        Maximum duration for a timed role is two years. Expired timed roles are checked every 2 minutes."""
+        await self.add_roles(ctx, member, duration, role)
 
-    async def check_role_expirations(self):
+    async def remove_expired_roles(self):
         while self == self.bot.get_cog(self.__class__.__name__):
             for guild in self.bot.guilds:
-                members = await self.config.all_members(guild)
-                for uid in members:
-                    member = guild.get_member(uid)
-                    if not member:
-                        continue
-                    async with self.config.member(member).roles() as temp_roles:
-                        for item in temp_roles:
-                            index = temp_roles.index(item)
-                            role_id = item["role_id"]
-                            role = discord.utils.get(guild.roles, id=role_id)
-                            expiry = item["added_at"] + timedelta(seconds=item["duration"])
-                            if not role or role not in member.roles:
-                                temp_roles.pop(index)
-                            elif datetime.utcnow() > expiry:
-                                temp_roles.pop(index)
-                                try:
-                                    await member.remove_roles(role, reason="Timed role expired")
-                                except (discord.Forbidden, discord.HTTPException):
-                                    pass
-            await asyncio.sleep(300)  # Check once every 5 minutes
+                guild = GuildRoles(config=self.config, guild=guild)
+                expired = await guild.expired_roles()
+                for role in expired:
+                    await role.remove()
+            await asyncio.sleep(300)
 
     # originally from ZeLarpMaster's Reminders cog
     def get_seconds(self, time):
