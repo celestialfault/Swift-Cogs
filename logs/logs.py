@@ -6,9 +6,12 @@ from redbot.core.bot import Red, RedContext
 from redbot.core import checks, Config
 from redbot.core.utils.chat_formatting import info, error, box, warning
 
-from logs.utils import toggle, cmd_help, GuildChannel, handle_group
+from logs.utils import toggle, handle_group
 from logs.guildlog import GuildLog, LogType
 from logs.types import *
+
+from odinair_libs.converters import GuildChannel
+from odinair_libs.menus import cmd_help, confirm
 
 _guilds = {}
 
@@ -325,8 +328,12 @@ class Logs:
     @logset.command(name="reset")
     async def logset_reset(self, ctx: RedContext):
         """Reset the guild's log settings"""
-        await self.config.guild(ctx.guild).set(self.config.guild(ctx.guild).defaults)
-        await ctx.tick()
+        if await confirm(self.bot, ctx, "Are you sure you want to reset this guild's log settings?",
+                         colour=discord.Colour.red()):
+            await self.config.guild(ctx.guild).set(self.config.guild(ctx.guild).defaults)
+            await ctx.tick()
+        else:
+            await ctx.send("Okay then.", delete_after=15.0)
 
     @staticmethod
     def get_guild_log(guild: discord.Guild) -> GuildLog:

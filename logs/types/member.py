@@ -4,7 +4,7 @@ import discord
 from redbot.core.utils.chat_formatting import escape
 
 from .base import LogType
-from logs.utils import td_format, difference
+from odinair_libs.formatting import td_format, difference
 from logs.logentry import LogEntry
 
 

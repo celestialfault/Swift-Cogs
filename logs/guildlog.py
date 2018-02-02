@@ -1,14 +1,14 @@
 import asyncio
 
 from enum import Enum
-from typing import Optional, Union
+from typing import Optional
 
 import discord
 from redbot.core import Config
 from redbot.core.bot import Red
 
-from logs.logentry import LogFormat, LogEntry
-from logs.utils import extract_check, find_check
+from logs.logentry import LogFormat
+from logs.utils import find_check
 
 
 def setup(_bot: Red, _config: Config):

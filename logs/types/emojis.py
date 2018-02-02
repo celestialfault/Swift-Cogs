@@ -3,7 +3,7 @@ from typing import List
 import discord
 
 from logs.logentry import LogEntry
-from logs.utils import difference
+from odinair_libs.formatting import difference
 from .base import LogType
 
 

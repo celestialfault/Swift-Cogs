@@ -5,7 +5,7 @@ from redbot.core.utils.chat_formatting import escape
 
 from .base import LogType
 from logs.logentry import LogEntry
-from logs.utils import normalize, td_format
+from odinair_libs.formatting import td_format, normalize
 
 
 class GuildLogType(LogType):
