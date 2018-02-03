@@ -36,11 +36,11 @@ def td_format(td_object: timedelta, short_format: bool = False, as_string: bool 
 def difference(list1: Iterable, list2: Iterable, *, check_val: bool = False) -> Tuple[list, list]:
     """Returns a tuple of lists based on the Iterable items passed in
 
-    If check_val is True, this assumes the lists are tuple-like, and checks for True-ish items"""
+    If check_val is True, this assumes the lists contain tuple-like items, and checks for True-ish items"""
     if check_val:
         # Only include items that evaluate to True
-        list1 = filter(None, list1)
-        list2 = filter(None, list2)
+        list1 = [x for x, val in list1 if val]
+        list2 = [x for x, val in list2 if val]
 
     added = [x for x in list2 if x not in list1]
     removed = [x for x in list1 if x not in list2]
