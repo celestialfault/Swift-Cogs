@@ -254,24 +254,24 @@ class Starboard(StarboardBase):
         await ctx.send("{} respecting RequireRole settings.".format("Now" if current else "No longer"))
 
     async def on_raw_reaction_add(self, emoji, message_id, channel_id, user_id):
-        channel: discord.TextChannel = self.bot.get_channel(channel_id)
+        channel = self.bot.get_channel(channel_id)
         if channel is None:
             return
         # check that the channel is in a guild
         if isinstance(channel, discord.abc.PrivateChannel) or not hasattr(channel, "guild"):
             return
-        guild: discord.Guild = channel.guild
-        starboard: GuildStarboard = self.starboard(guild)
+        guild = channel.guild
+        starboard = self.starboard(guild)
         # check the reaction is a star emoji
         if not emoji.is_unicode_emoji() or str(emoji) != "\N{WHITE MEDIUM STAR}":
             return
 
-        member: discord.Member = guild.get_member(user_id)
+        member = guild.get_member(user_id)
         # check if the member or channel is ignored
         if await starboard.is_ignored(member) or await starboard.is_ignored(channel):
             return
 
-        message: Star = await self.starboard(guild).message_by_id(message_id=message_id,
+        message = await self.starboard(guild).message_by_id(message_id=message_id,
                                                                   channel_id=channel_id,
                                                                   auto_create=True)
         if message.has_starred(member):
@@ -282,24 +282,24 @@ class Starboard(StarboardBase):
             pass
 
     async def on_raw_reaction_remove(self, emoji, message_id, channel_id, user_id):
-        channel: discord.TextChannel = self.bot.get_channel(channel_id)
+        channel = self.bot.get_channel(channel_id)
         if channel is None:
             return
         # check that the channel is in a guild
         if isinstance(channel, discord.abc.PrivateChannel) or not hasattr(channel, "guild"):
             return
-        guild: discord.Guild = channel.guild
-        starboard: GuildStarboard = self.starboard(guild)
+        guild = channel.guild
+        starboard = self.starboard(guild)
         # check the reaction is a star emoji
         if not emoji.is_unicode_emoji() or str(emoji) != "\N{WHITE MEDIUM STAR}":
             return
 
-        member: discord.Member = guild.get_member(user_id)
+        member = guild.get_member(user_id)
         if await starboard.is_ignored(member) or await starboard.is_ignored(channel):
             return
 
-        message: Star = await self.starboard(guild).message_by_id(message_id=message_id,
-                                                                  channel_id=channel_id)
+        message = await self.starboard(guild).message_by_id(message_id=message_id,
+                                                            channel_id=channel_id)
         if not message.has_starred(member):
             return
         try:
