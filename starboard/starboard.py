@@ -1,7 +1,7 @@
-import asyncio
-from asyncio import QueueEmpty
+import logging
+
+from asyncio import QueueEmpty, sleep
 from datetime import datetime, timedelta
-from typing import Union
 
 import discord
 from discord.ext import commands
@@ -9,9 +9,13 @@ from redbot.core import Config, checks, modlog
 from redbot.core.bot import Red, RedContext
 from redbot.core.utils.chat_formatting import error, warning
 
-from .classes.exceptions import *
-from .classes.starboardbase import StarboardBase
-from .checks import allowed_starboard, guild_has_starboard
+from starboard.classes.guildstarboard import GuildStarboard
+from starboard.classes.star import Star
+from starboard.classes.exceptions import *
+from starboard.classes.starboardbase import StarboardBase
+from starboard.checks import allowed_starboard, guild_has_starboard, requirerole_loaded
+
+log = logging.getLogger("red.starboard")
 
 
 class Starboard(StarboardBase):
@@ -48,72 +52,60 @@ class Starboard(StarboardBase):
     @allowed_starboard()
     async def star(self, ctx: RedContext, message_id: int):
         """
-        Star a message in the current channel by it's ID
+        Star a message by it's ID
         """
         if not await guild_has_starboard(ctx):
             return
-        try:
-            message = await ctx.get_message(message_id)
-        except discord.NotFound:
-            await ctx.send(error("That message doesn't exist in this channel"))
-        except discord.Forbidden:
-            await ctx.send(error("I'm not allowed to retrieve message logs"))
-        except discord.HTTPException:
-            await ctx.send(error("An error occurred while attempting to retrieve that message"))
-        else:
-            message = await self.message(message, auto_create=True)
-            if not message.can_star:
-                await ctx.send(
-                    warning("That message cannot be starred as it does not have any content or attachments"),
-                    delete_after=15)
-                return
-            if await self.starboard(ctx.guild).is_ignored(message.message.author):
-                await ctx.send(error("The author of that message has been blocked from using this guild's starboard"),
-                               delete_after=15)
-                return
-            if message.has_starred(ctx.author):
-                await ctx.send(
-                    warning("You've already starred that message\n\n(you can use `{}unstar` to remove your star)"
-                            .format(ctx.prefix)),
-                    delete_after=15)
-                return
-            await message.add_star(ctx.author)
-            await ctx.tick()
+        message = await self.starboard(ctx.guild).message_by_id(message_id, channel_id=ctx.channel.id, auto_create=True)
+        if not message:
+            await ctx.send("Sorry, I couldn't find that message.")
+            return
+        if not message.can_star:
+            await ctx.send(
+                warning("That message cannot be starred as it does not have any content or attachments"),
+                delete_after=15)
+            return
+        if await self.starboard(ctx.guild).is_ignored(message.message.author):
+            await ctx.send(error("The author of that message has been blocked from using this guild's starboard"),
+                           delete_after=15)
+            return
+        if message.has_starred(ctx.author):
+            await ctx.send(
+                warning("You've already starred that message\n\n(you can use `{}unstar` to remove your star)"
+                        .format(ctx.prefix)),
+                delete_after=15)
+            return
+        await message.add_star(ctx.author)
+        await ctx.tick()
 
     @commands.command()
     @commands.guild_only()
     @allowed_starboard()
     async def unstar(self, ctx: RedContext, message_id: int):
         """
-        Unstars a message in the current channel by it's ID
+        Unstar a message by it's ID
         """
         if not await guild_has_starboard(ctx):
             return
-        try:
-            message = await ctx.get_message(message_id)
-        except discord.NotFound:
-            await ctx.send(error("That message doesn't exist in this channel"))
-        except discord.Forbidden:
-            await ctx.send(error("I'm not allowed to retrieve message logs"))
-        except discord.HTTPException:
-            await ctx.send(error("An error occurred while attempting to retrieve that message"))
-        else:
-            message = await self.message(message)
-            if not message.exists:
-                await ctx.send(warning("That message hasn't been starred by anyone yet"))
-                return
-            if await self.starboard(ctx.guild).is_ignored(message.message.author):
-                await ctx.send(error("The author of that message has been blocked from using this guild's starboard"),
-                               delete_after=15)
-                return
-            if not message.has_starred(ctx.author):
-                await ctx.send(
-                    warning("You haven't starred that message\n\n(you can use `{}star` to star it)"
-                            .format(ctx.prefix)),
-                    delete_after=15)
-                return
-            await message.remove_star(ctx.author)
-            await ctx.tick()
+        message = await self.starboard(ctx.guild).message_by_id(message_id, channel_id=ctx.channel.id, auto_create=True)
+        if not message:
+            await ctx.send("Sorry, but I couldn't find that message \N{WORRIED FACE}")
+            return
+        if not message.exists:
+            await ctx.send(warning("That message hasn't been starred by anyone yet"))
+            return
+        if await self.starboard(ctx.guild).is_ignored(message.message.author):
+            await ctx.send(error("The author of that message has been blocked from using this guild's starboard"),
+                           delete_after=15)
+            return
+        if not message.has_starred(ctx.author):
+            await ctx.send(
+                warning("You haven't starred that message\n\n(you can use `{}star` to star it)"
+                        .format(ctx.prefix)),
+                delete_after=15)
+            return
+        await message.remove_star(ctx.author)
+        await ctx.tick()
 
     @commands.group(name="stars")
     @commands.guild_only()
@@ -132,9 +124,7 @@ class Starboard(StarboardBase):
         if not star:
             await ctx.send(error("That message hasn't been starred"))
             return
-        try:
-            await star.hide()
-        except HideException:
+        if not await star.hide():
             await ctx.send(error("That message is already hidden"))
         else:
             await ctx.tick()
@@ -146,12 +136,60 @@ class Starboard(StarboardBase):
         if not star:
             await ctx.send(error("That message hasn't been starred"))
             return
-        try:
-            await star.unhide()
-        except HideException:
+        if not await star.unhide():
             await ctx.send(error("That message hasn't been hidden"))
         else:
             await ctx.tick()
+
+    @stars.command(name="block", aliases=["blacklist", "ban"])
+    async def starboard_block(self, ctx: RedContext, member: discord.Member, *, reason: str = None):
+        """
+        Block the passed user from using this guild's starboard
+
+        For ignoring a channel from the starboard, see `[p]starboard ignore`
+        """
+        if await self.bot.is_owner(member) or member.id == ctx.guild.owner.id:
+            # prevent blocking of the bot/guild owner
+            await ctx.send(error("You aren't allowed to block that member"))
+            return
+        elif ctx.guild.owner.id == ctx.author.id or await self.bot.is_owner(ctx.author):
+            # allow guild owners or the bot owner to block admins and mods
+            pass
+        elif await self.bot.is_admin(member):  # prevent blocking of admins
+            await ctx.send(error("You aren't allowed to block that member"))
+            return
+        elif await self.bot.is_mod(member) and not await self.bot.is_admin(ctx.author):
+            # prevent mods blocking other moderators, but allow admins to block mods
+            await ctx.send(error("You aren't allowed to block that member"))
+            return
+        starboard = self.starboard(ctx.guild)
+        if await starboard.block_member(member):
+            await ctx.tick()
+            try:
+                await modlog.create_case(ctx.guild, ctx.message.created_at, "starboardblock",
+                                         member, ctx.author, reason, until=None, channel=None)
+            except RuntimeError:
+                pass
+        else:
+            await ctx.send(error("That user is already blocked from using this guild's starboard"))
+
+    @stars.command(name="unblock", aliases=["unblacklist", "unban"])
+    async def starboard_unblock(self, ctx: RedContext, member: discord.Member, *, reason: str = None):
+        """
+        Unblocks the passed user from using this guild's starboard
+
+        For unignoring a channel from the starboard, see `[p]starboard unignore`
+        """
+        starboard = self.starboard(ctx.guild)
+        if await starboard.unblock_member(member):
+            await ctx.tick()
+            try:
+                await modlog.create_case(ctx.guild, ctx.message.created_at, "starboardunblock",
+                                         member, ctx.author, reason, until=None, channel=None)
+            except RuntimeError:
+                pass
+        else:
+            await ctx.send(error("That user isn't blocked from using this guild's starboard"))
 
     @commands.group(name="starboard")
     @checks.admin_or_permissions(manage_channels=True)
@@ -205,119 +243,69 @@ class Starboard(StarboardBase):
         else:
             await ctx.send(error("That channel isn't ignored from this guild's starboard"))
 
-    @cmd_starboard.command(name="block", aliases=["blacklist", "ban"])
-    async def starboard_block(self, ctx: RedContext, member: discord.Member, *, reason: str=None):
-        """
-        Block the passed user from using this guild's starboard
-
-        For ignoring a channel from the starboard, see `[p]starboard ignore`
-        """
-        if await self.bot.is_owner(member) or member.id == ctx.guild.owner.id:
-            # prevent blocking of the bot/guild owner
-            await ctx.send(error("You aren't allowed to block that member"))
-            return
-        elif ctx.guild.owner.id == ctx.author.id or await self.bot.is_owner(ctx.author):
-            # allow guild owners or the bot owner to block admins and mods
-            pass
-        elif await self.bot.is_admin(member):  # prevent blocking of admins
-            await ctx.send(error("You aren't allowed to block that member"))
-            return
-        elif await self.bot.is_mod(member) and not await self.bot.is_admin(ctx.author):
-            # prevent mods blocking other moderators, but allow admins to block mods
-            await ctx.send(error("You aren't allowed to block that member"))
-            return
+    @cmd_starboard.command(name="requirerole")
+    @requirerole_loaded()
+    async def starboard_respect_requirerole(self, ctx: RedContext):
+        """Toggle whether or not the starboard respects your RequireRole settings"""
         starboard = self.starboard(ctx.guild)
-        if await starboard.block_member(member):
-            await ctx.tick()
-            try:
-                await modlog.create_case(ctx.guild, ctx.message.created_at, "starboardblock",
-                                         member, ctx.author, reason, until=None, channel=None)
-            except RuntimeError:
-                pass
-        else:
-            await ctx.send(error("That user is already blocked from using this guild's starboard"))
+        current = await starboard.config.respect_requirerole()
+        current = not current
+        await starboard.config.respect_requirerole.set(current)
+        await ctx.send("{} respecting RequireRole settings.".format("Now" if current else "No longer"))
 
-    @cmd_starboard.command(name="unblock", aliases=["unblacklist", "unban"])
-    async def starboard_unblock(self, ctx: RedContext, member: discord.Member, *, reason: str=None):
-        """
-        Unblocks the passed user from using this guild's starboard
+    async def on_raw_reaction_add(self, emoji, message_id, channel_id, user_id):
+        channel: discord.TextChannel = self.bot.get_channel(channel_id)
+        if channel is None:
+            return
+        # check that the channel is in a guild
+        if isinstance(channel, discord.abc.PrivateChannel) or not hasattr(channel, "guild"):
+            return
+        guild: discord.Guild = channel.guild
+        starboard: GuildStarboard = self.starboard(guild)
+        # check the reaction is a star emoji
+        if not emoji.is_unicode_emoji() or str(emoji) != "\N{WHITE MEDIUM STAR}":
+            return
 
-        For unignoring a channel from the starboard, see `[p]starboard unignore`
-        """
-        starboard = self.starboard(ctx.guild)
-        if await starboard.unblock_member(member):
-            await ctx.tick()
-            try:
-                await modlog.create_case(ctx.guild, ctx.message.created_at, "starboardunblock",
-                                         member, ctx.author, reason, until=None, channel=None)
-            except RuntimeError:
-                pass
-        else:
-            await ctx.send(error("That user isn't blocked from using this guild's starboard"))
+        member: discord.Member = guild.get_member(user_id)
+        # check if the member or channel is ignored
+        if await starboard.is_ignored(member) or await starboard.is_ignored(channel):
+            return
 
-    async def on_reaction_add(self, reaction: discord.Reaction, user: Union[discord.User, discord.Member]):
-        if not str(reaction.emoji) == "⭐" or not isinstance(user, discord.Member):
-            return
-        message = reaction.message
-        starboard = self.starboard(message.guild)
-        if await starboard.channel() is None:
-            return
-        if await starboard.is_ignored(user) or await starboard.is_ignored(message.channel):
-            return
-        message = await self.message(message, auto_create=True)
-        try:  # Someone please remind me to never use exceptions in cogs again
-            await message.add_star(user)
-        except StarException:
-            pass
-        except BlockedAuthorException:
-            pass
-        except BlockedException:
-            pass
-        except StarboardException:
-            pass
-
-    async def on_reaction_remove(self, reaction: discord.Reaction, user: Union[discord.User, discord.Member]):
-        if not str(reaction.emoji) == "⭐" or not isinstance(user, discord.Member):
-            return
-        message = reaction.message
-        starboard = self.starboard(message.guild)
-        if await starboard.channel() is None:
-            return
-        if await starboard.is_ignored(user) or await starboard.is_ignored(message.channel):
-            return
-        message = await self.message(message)
-        if not message or not message.user_count:
+        message: Star = await self.starboard(guild).message_by_id(message_id=message_id,
+                                                                  channel_id=channel_id,
+                                                                  auto_create=True)
+        if message.has_starred(member):
             return
         try:
-            await message.remove_star(user)
-        except StarException:
-            pass
-        except BlockedAuthorException:
-            pass
-        except BlockedException:
-            pass
+            await message.add_star(member)
         except StarboardException:
             pass
 
-    # noinspection PyUnusedLocal
-    async def on_message_edit(self, before: discord.Message, after: discord.Message):
-        if not after.guild:
+    async def on_raw_reaction_remove(self, emoji, message_id, channel_id, user_id):
+        channel: discord.TextChannel = self.bot.get_channel(channel_id)
+        if channel is None:
             return
-        if self.starboard(after.guild).is_cached(after):
-            # Force a re-cache of the updated message contents
-            await self.starboard(after.guild).remove_from_cache(after)
+        # check that the channel is in a guild
+        if isinstance(channel, discord.abc.PrivateChannel) or not hasattr(channel, "guild"):
+            return
+        guild: discord.Guild = channel.guild
+        starboard: GuildStarboard = self.starboard(guild)
+        # check the reaction is a star emoji
+        if not emoji.is_unicode_emoji() or str(emoji) != "\N{WHITE MEDIUM STAR}":
+            return
 
-    async def on_message_delete(self, message: discord.Message):
-        if not message.guild:
+        member: discord.Member = guild.get_member(user_id)
+        if await starboard.is_ignored(member) or await starboard.is_ignored(channel):
             return
-        msg = await self.message(message)
-        if msg and msg.exists:
-            try:
-                await msg.hide()
-            except HideException:
-                pass
-        # Remove the message from the cache
-        await self.starboard(message.guild).remove_from_cache(message)
+
+        message: Star = await self.starboard(guild).message_by_id(message_id=message_id,
+                                                                  channel_id=channel_id)
+        if not message.has_starred(member):
+            return
+        try:
+            await message.remove_star(member)
+        except StarboardException:
+            pass
 
     def __unload(self):
         self.bot.loop.create_task(self.empty_starboard_queue())
@@ -331,24 +319,24 @@ class Starboard(StarboardBase):
                 try:
                     await starboard.handle_queue()
                 except QueueEmpty:
-                    continue
+                    pass
 
-            # Housekeep - runs every hour
-            housekeep_ts = time_since.get("housekeep", datetime.fromtimestamp(0))
-            housekeep_check_ts = (housekeep_ts + timedelta(hours=1)).timestamp()
-            if housekeep_check_ts < datetime.utcnow().timestamp():
+            # Housekeeping - runs every hour
+            housekeep_check = time_since.get("housekeep", datetime.fromtimestamp(0)) + timedelta(hours=1)
+            if housekeep_check < datetime.utcnow():
+                log.debug("Pruning junk data")
                 self.bot.loop.create_task(self.handle_housekeeping())
                 time_since["housekeep"] = datetime.utcnow()
 
-            # Cache cleanup - runs every 5 minutes
-            cleanup_ts = time_since.get("cache_clean", datetime.fromtimestamp(0))
-            cleanup_check_ts = (cleanup_ts + timedelta(hours=1)).timestamp()
-            if cleanup_check_ts < datetime.utcnow().timestamp():
+            # Cache cleanup - runs every 15 minutes
+            cleanup_check = time_since.get("cache_clean", datetime.fromtimestamp(0)) + timedelta(minutes=15)
+            if cleanup_check < datetime.utcnow():
+                log.debug("Pruning internal cache")
                 self.bot.loop.create_task(self.cache_cleanup())
                 time_since["cache_clean"] = datetime.utcnow()
 
             # Sleep for 5 seconds
-            await asyncio.sleep(5)
+            await sleep(5)
 
     async def cache_cleanup(self):
         for starboard in self.guild_starboard_cache():

@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Optional
 
 import discord
 
@@ -26,7 +27,11 @@ class Star(StarboardBase):
         self._in_queue = False
 
     @property
-    def author_name(self):
+    def author_name(self) -> str:
+        """
+        Get the message author's name
+        :return: The display name of the message author
+        """
         return self.author.display_name
 
     @property
@@ -34,7 +39,7 @@ class Star(StarboardBase):
         return len(self.members)
 
     @property
-    def in_queue(self):
+    def in_queue(self) -> bool:
         return self._in_queue
 
     @in_queue.setter
@@ -52,7 +57,7 @@ class Star(StarboardBase):
         return self.message.content or (self.message.attachments and len(self.message.attachments) == 1)
 
     @property
-    def embed(self):
+    def embed(self) -> Optional[discord.Embed]:
         if not self.can_star:
             return None
         embed = discord.Embed(colour=discord.Colour.gold(),
@@ -61,7 +66,7 @@ class Star(StarboardBase):
         embed.set_author(name=self.author_name, icon_url=self.author.avatar_url)
         if self.message.attachments and len(self.message.attachments) > 0:
             embed.set_image(url=self.message.attachments[0].proxy_url)
-        embed.set_footer(text="Message ID: {}".format(self.message.id))
+        embed.set_footer(text="ID: {}".format(self.message.id))
         return embed
 
     def __repr__(self):
@@ -73,18 +78,18 @@ class Star(StarboardBase):
             self.in_queue
         )
 
-    async def setup(self, auto_create: bool = False):
+    async def setup(self, auto_create: bool = False) -> None:
         """Setup the current Star object
 
         You shouldn't need to run this directly, as it's already done for you if you retrieve this with
         either StarboardBase.message or GuildStarboard.message"""
-        if self._entry:
+        if self._entry is not None:
             raise RuntimeError("Cannot re-instantiate an already created Star object")
         messages = await self.starboard.config.messages()
         self._entry = discord.utils.find(lambda entry: entry["message_id"] == self.message.id, messages)
-        if not self._entry and auto_create:
+        if self._entry is None and auto_create:
             await self.create()
-        if self._entry:
+        if self._entry is not None:
             self.members = self._entry.get("members", [])
             self.hidden = self._entry.get("hidden", False)
             if self._entry.get("starboard_message", None) is not None:
@@ -96,11 +101,11 @@ class Star(StarboardBase):
                     # force an update to clear the starboard message data
                     await self.save()
 
-    async def create(self):
+    async def create(self) -> None:
         """Creates the message's starboard entry
 
         This is useful if you didn't pass auto_create when creating the Star object"""
-        if self._entry:
+        if self._entry is not None:
             raise StarboardException("This message already has an entry")
         self._entry = dict(message_id=self.message.id, channel_id=self.message.channel.id, members=[],
                            starboard_message=None, hidden=False)
@@ -108,8 +113,10 @@ class Star(StarboardBase):
             messages.append(self._entry)
         self.last_update = datetime.utcnow()
 
-    async def save(self, queue_for_update: bool=True):
+    async def save(self, queue_for_update: bool=True) -> None:
         """Updates the star's guild starboard entry"""
+        if not self._entry:
+            return
         if queue_for_update is True:
             self.in_queue = True
         self._entry["members"] = self.members
@@ -160,22 +167,23 @@ class Star(StarboardBase):
     def has_starred(self, member: discord.Member) -> bool:
         return member.id in self.members
 
-    async def hide(self):
+    async def hide(self) -> bool:
         if self.hidden:
-            raise HideException("This message is already hidden")
+            return False
         self.hidden = True
         if self.starboard_message:
             await self.starboard_message.delete()
             self.starboard_message = None
-        await self.save()
+        await self.save(False)
+        return True
 
-    async def unhide(self):
+    async def unhide(self) -> bool:
         if not self.hidden:
-            raise HideException("This message isn't currently hidden")
+            return False
         self.hidden = False
         await self.save()
 
-    async def update_starboard_message(self):
+    async def update_starboard_message(self) -> None:
         self.in_queue = False
         if self.hidden:
             return

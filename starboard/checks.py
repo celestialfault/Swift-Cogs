@@ -7,6 +7,13 @@ from .classes.starboardbase import StarboardBase
 starboard = StarboardBase()
 
 
+def requirerole_loaded():
+    def predicate(ctx):
+        return bool(ctx.bot.get_cog('RequireRole'))
+
+    return check(predicate)
+
+
 def allowed_starboard():
     async def predicate(ctx):
         if not ctx.guild:
