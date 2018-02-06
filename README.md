@@ -48,6 +48,15 @@ Log anything and everything that happens in your server
 [p]load logs
 ```
 
+### Punish
+
+Temporarily mute a user in voice and text channels across an entire server
+
+```
+[p]cog install odinair-cogs punish
+[p]load punish
+```
+
 ### Quotes
 
 Save and retrieve quotes. Supports author attribution!
