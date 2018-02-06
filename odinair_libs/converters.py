@@ -1,4 +1,8 @@
 import asyncio
+from typing import Union
+
+from collections import OrderedDict
+from datetime import timedelta
 
 import re
 
@@ -8,6 +12,10 @@ from discord.ext import commands
 from redbot.core.bot import RedContext
 
 
+def get_role_or_member(snowflake: int, guild: discord.Guild):
+    return guild.get_member(snowflake) or discord.utils.get(guild.roles, id=snowflake)
+
+
 async def ask_channel(ctx: RedContext, *channels: discord.abc.GuildChannel):
     """Prompt a user choice for a channel from a list of GuildChannel objects"""
     # Dear future adventurers:
@@ -15,7 +23,7 @@ async def ask_channel(ctx: RedContext, *channels: discord.abc.GuildChannel):
     if not hasattr(ctx, "guild"):  # Ensure this is called from a guild context
         return None
     bot = ctx.bot
-    channels = [x for x in channels if getattr(x, "id", None) is not None]  # Remove channels without an id attribute
+    channels = [x for x in channels if hasattr(x, "id")]  # Remove channels without an id attribute
     _msg = ("More than one channel matches that name\n"
             "Please select which channel you'd like to use:\n\n"
             "{channels}\n\n"
@@ -25,11 +33,11 @@ async def ask_channel(ctx: RedContext, *channels: discord.abc.GuildChannel):
     msg = await ctx.send(_msg)
 
     async def ask():
-        def check(message):
-            return message.author.id == ctx.author.id and message.channel.id == ctx.channel.id
-
         try:
-            msg_response = await bot.wait_for('message', check=check, timeout=30.0)
+            msg_response = await bot.wait_for('message',
+                                              check=lambda message: message.author.id == ctx.author.id
+                                                                    and message.channel.id == ctx.channel.id,
+                                              timeout=30.0)
         except asyncio.TimeoutError:
             return None
         return msg_response
@@ -69,9 +77,46 @@ async def ask_channel(ctx: RedContext, *channels: discord.abc.GuildChannel):
     return getattr(channel, "id", None)
 
 
+class TimeDuration(commands.Converter):
+    # The following variables, including `get_seconds`, is taken from ZeLarpMaster's Reminders cog:
+    # https://github.com/ZeLarpMaster/ZeCogs/blob/master/reminder/reminder.py
+    # Only changes made have been to make the parsed times more consistent with timedelta objects
+    TIME_AMNT_REGEX = re.compile("([1-9][0-9]*)([a-z]+)", re.IGNORECASE)
+    TIME_QUANTITIES = OrderedDict([("seconds", 1), ("minutes", 60),
+                                   ("hours", timedelta(hours=1).total_seconds()),
+                                   ("days", timedelta(days=1).total_seconds()),
+                                   ("weeks", timedelta(days=7).total_seconds()),
+                                   ("months", timedelta(days=30).total_seconds()),
+                                   ("years", timedelta(days=365).total_seconds())])
+    MAX_SECONDS = TIME_QUANTITIES["years"] * 2
+
+    def __init__(self, max_duration: int or float = None):
+        self.MAX_SECONDS = max_duration or self.TIME_QUANTITIES["years"] * 2
+
+    def get_seconds(self, time):
+        """Returns the amount of converted time or None if invalid"""
+        seconds = 0
+        for time_match in self.TIME_AMNT_REGEX.finditer(time):
+            time_amnt = int(time_match.group(1))
+            time_abbrev = time_match.group(2)
+            time_quantity = discord.utils.find(lambda t: t[0].startswith(time_abbrev), self.TIME_QUANTITIES.items())
+            if time_quantity is not None:
+                seconds += time_amnt * time_quantity[1]
+        return None if seconds == 0 else seconds
+
+    async def convert(self, ctx, argument: str) -> Union[None, timedelta, bool]:
+        seconds = self.get_seconds(argument)
+        if seconds and seconds > self.MAX_SECONDS:
+            return False
+        return timedelta(seconds=self.get_seconds(argument)) if seconds else None
+
+
 class GuildChannel(commands.IDConverter):
+    # Yes, it would have been quicker to specify all the channel types similar to
+    # 'discord.TextChannel or discord.VoiceChannel or discord.CategoryChannel' instead of making this,
+    # but let's be honest, that isn't as fun (and it also looks objectively worse than just specifying one converter)
     async def convert(self, ctx, argument):
-        if not hasattr(ctx, "guild"):
+        if not getattr(ctx, "guild", None):
             raise commands.BadArgument("This must be ran in a guild context")
         guild = ctx.guild
         cid = None
