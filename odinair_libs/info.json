@@ -1,5 +1,6 @@
 {
   "author": ["odinair"],
   "bot_version": [3, 0, 0],
+  "description": "Shared library for all my cogs. This is mostly useless on its own.",
   "type": "SHARED_LIBRARY"
 }
