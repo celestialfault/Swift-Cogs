@@ -6,19 +6,6 @@ from logs.logentry import LogEntry
 from .base import LogType
 
 
-def format_overwrite(role_or_member, overwrite):
-    _type = "role" if isinstance(role_or_member, discord.Role) else "member"
-    return "{0} {1!s}: {2}".format(_type, role_or_member, "Passthrough"
-                                   if overwrite is None else "Granted" if overwrite is True else "Denied")
-
-
-def get_role_or_member(snowflake: int, guild: discord.Guild):
-    obj = guild.get_member(snowflake)
-    if not obj:
-        obj = discord.utils.get(guild.roles, id=snowflake)
-    return obj
-
-
 def format_bitrate(bitrate: int):
     return "{} kbps".format(str(bitrate)[:-3])
 

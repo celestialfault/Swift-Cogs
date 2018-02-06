@@ -25,18 +25,18 @@ class MemberLogType(LogType):
         ret.set_footer(footer="User ID: {0.id}".format(after), timestamp=datetime.utcnow())
         ret.description = "Member: **{0!s}**".format(after)
 
-        if before.name != after.name and settings.get("name", False):
+        if settings.get("name", False) is True and hash(before.name) != hash(after.name):
             ret.add_diff_field(title="Username", before=before.name, after=after.name)
 
-        if before.discriminator != after.discriminator and settings.get("discriminator", False):
-            ret.add_diff_field(title="Discriminator", before=before.discriminator, after=after.discriminator)
-
-        if before.nick != after.nick and settings.get("nickname", False):
+        if settings.get("nickname", False) is True and hash(before.nick) != hash(after.nick):
             ret.add_diff_field(title="Nickname",
                                before=safe_escape(before.nick) if before.nick else "*No nickname*",
                                after=safe_escape(after.nick) if after.nick else "*No nickname*")
 
-        if (before.roles != after.roles) and settings.get("roles", False):
+        if settings.get("discriminator", False) is True and before.discriminator != after.discriminator:
+            ret.add_diff_field(title="Discriminator", before=before.discriminator, after=after.discriminator)
+
+        if settings.get("roles", False) is True and before.roles != after.roles:
             added, removed = difference(before.roles, after.roles, check_val=False)
             if len(added) > 0:
                 ret.add_field(title="Roles Added", value=", ".join([safe_escape(x.name) for x in added]))

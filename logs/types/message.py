@@ -18,9 +18,10 @@ class MessageLogType(LogType):
             return None
 
         ret = LogEntry(self, colour=discord.Colour.blurple())
+        ret.description = "Message author: **{0!s}** ({0.id})\nChannel: {1.mention}".format(after.author, after.channel)
+
         ret.set_title(title="Message edited", emoji="\N{MEMO}", icon_url=after.author.avatar_url)
         ret.set_footer(footer="Message ID: {0.id}".format(after), timestamp=datetime.utcnow())
-        ret.description = "Message author: **{0!s}** ({0.id})".format(after.author)
 
         ret.add_field(title="Previous Content", value=before.content)
         ret.add_field(title="New Content", value=after.content)
@@ -36,10 +37,12 @@ class MessageLogType(LogType):
             return None
 
         ret = LogEntry(self, colour=discord.Colour.red())
+        ret.description = "Message author: **{0!s}** ({0.id})\nChannel: {1.mention}".format(deleted.author,
+                                                                                            deleted.channel)
+
         ret.set_title(title="Message deleted", emoji="\N{WASTEBASKET}", icon_url=deleted.author.avatar_url)
         ret.set_footer(footer="Message ID: {0.id}".format(deleted), timestamp=datetime.utcnow())
 
-        ret.description = "Message author: **{0!s}** ({0.id})".format(deleted.author)
         ret.add_field(title="Message content", value=deleted.content or "*No message content*")
         if len(deleted.attachments):
             ret.add_field(title="Attachments", value="\n".join("<{0}>".format(x.url) for x in deleted.attachments))

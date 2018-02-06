@@ -1,5 +1,3 @@
-import asyncio
-
 from redbot.core import Config
 from redbot.core.bot import Red
 

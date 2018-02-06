@@ -169,10 +169,10 @@ class Logs:
 
         **NOTE:** It's recommended to notify users about the presence of message logging in public servers
 
-        Due to a limitation of discord.py's `on_message_edit|delete` events, logs will only include messages
-        that are in the bot's internal message cache; meaning if a message was pushed out of the bot's message cache
-        for any reason, such as enough messages being sent or a restart of the bot,
-        any edits or deletions won't be logged.
+        Due to a limitation of the Discord API, logs will only include messages that are in the bot's message cache
+        This means that if a message was pushed out of the bot's message cache for any reason,
+        such as enough messages being sent or if the bot is restarted, any edits or deletions
+        will not be logged.
         """
         slots = ["edit", "delete"]
         # noinspection PyTypeChecker
@@ -328,12 +328,11 @@ class Logs:
     @logset.command(name="reset")
     async def logset_reset(self, ctx: RedContext):
         """Reset the guild's log settings"""
-        if await confirm(self.bot, ctx, "Are you sure you want to reset this guild's log settings?",
-                         colour=discord.Colour.red()):
+        if await confirm(ctx, "Are you sure you want to reset this guild's log settings?", colour=discord.Colour.red()):
             await self.config.guild(ctx.guild).set(self.config.guild(ctx.guild).defaults)
-            await ctx.tick()
+            await ctx.send(embed=discord.Embed(description="Guild log settings reset.", colour=discord.Colour.green()))
         else:
-            await ctx.send("Okay then.", delete_after=15.0)
+            await ctx.send(embed=discord.Embed(description="Okay then.", colour=discord.Colour.gold()))
 
     @staticmethod
     def get_guild_log(guild: discord.Guild) -> GuildLog:
@@ -352,17 +351,17 @@ class Logs:
         await cmd_help(ctx, "debug")
 
     @logset_debug.command(name="fakeleave")
-    async def fakeleave(self, ctx: RedContext, member: discord.Member = None):
+    async def debug_fakeleave(self, ctx: RedContext, member: discord.Member = None):
         """Fake a member leave"""
         await self.on_member_leave(member or ctx.author)
 
     @logset_debug.command(name="fakejoin")
-    async def fakejoin(self, ctx: RedContext, member: discord.Member = None):
+    async def debug_fakejoin(self, ctx: RedContext, member: discord.Member = None):
         """Fake a member join"""
         await self.on_member_join(member or ctx.author)
 
     @logset_debug.command(name="fakeemoji")
-    async def fakeemoji(self, ctx: RedContext, emoji: discord.Emoji, remove: bool=False):
+    async def debug_fakeemoji(self, ctx: RedContext, emoji: discord.Emoji, remove: bool=False):
         """Fake an emoji addition/removal"""
         if emoji.guild != ctx.guild:
             await ctx.send("That emoji isn't in the current guild")
@@ -377,7 +376,7 @@ class Logs:
         await self.on_guild_emojis_update(guild, before, after)
 
     @logset_debug.command(name="fakeedit")
-    async def fakeedit(self, ctx: RedContext, *, text: str):
+    async def debug_fakeedit(self, ctx: RedContext, *, text: str):
         """Fake a message edit with the provided text"""
         FakeMessage = namedtuple("Message", "guild author content channel type")
         after = FakeMessage(author=ctx.author, guild=ctx.guild, channel=ctx.channel, content=text,
@@ -385,13 +384,13 @@ class Logs:
         # noinspection PyTypeChecker
         await self.on_message_edit(ctx.message, after)
 
-    @logset_debug.command()
-    async def getchannel(self, ctx: RedContext, *, channel: GuildChannel):
+    @logset_debug.command(name="getchannel")
+    async def debug_getchannel(self, ctx: RedContext, *, channel: GuildChannel):
         """Get a channel by name and return it's channel type"""
         await ctx.send(box("{} (type: {})".format(str(channel), type(channel)), lang="python"))
 
     @logset_debug.command(name="fakedelete")
-    async def fakedelete(self, ctx: RedContext):
+    async def debug_fakedelete(self, ctx: RedContext):
         """Fake a message deletion"""
         await self.on_message_delete(ctx.message)
 
