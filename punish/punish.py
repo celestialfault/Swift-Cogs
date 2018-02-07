@@ -69,7 +69,7 @@ class Punish:
     @checks.mod_or_permissions(manage_roles=True)
     @commands.bot_has_permissions(manage_roles=True)
     async def punish(self, ctx: RedContext, member: discord.Member,
-                     duration: TimeDuration(max_duration=timedelta(days=365).total_seconds()),
+                     duration: TimeDuration(max_duration=timedelta(days=365).total_seconds(), strict=True),
                      *, reason: str=None):
         """Punish a user for a set amount of time.
 
@@ -80,17 +80,16 @@ class Punish:
         Abbreviations: `s` for seconds, `m` for minutes, `h` for hours, `d` for days, `w` for weeks,
         `mo` for months, `y` for years. Any longer abbreviation is accepted. `m` assumes minutes instead of months.
 
-        One month is counted as 30 days, and one year is counted as 365 days. All invalid abbreviations are ignored.
+        One month is counted as 30 days. Maximum duration for a punishment is 6 months.
 
-        Maximum duration for a punishment is one year. Expired punishments are checked every 5 minutes."""
-        if duration is False:
-            await ctx.send(warning("That duration is invalid"))
-            return
+        Expired punishments are checked alongside expired timed roles assigned with `[p]timedrole`
+        """
         role = await self.get_punished_role(ctx.guild)
         try:
-            await self.bot.get_cog("TimedRole").add_roles(member, ctx.author, duration,
-                                                          "Punished by {}".format(ctx.author) if not reason else reason,
-                                                          True, role)
+            timed_role = self.bot.get_cog("TimedRole")
+            await timed_role.add_roles(member=member, duration=duration, granted_by=ctx.author,
+                                       reason="Punished by {0!s}".format(ctx.author),
+                                       expired_reason="Punishment expired", roles=[role], hidden=True)
         except RuntimeError as e:
             await ctx.send(warning(str(e)))
         else:

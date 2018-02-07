@@ -11,6 +11,8 @@ from discord.ext import commands
 
 from redbot.core.bot import RedContext
 
+from odinair_libs.formatting import td_format
+
 
 def get_role_or_member(snowflake: int, guild: discord.Guild):
     return guild.get_member(snowflake) or discord.utils.get(guild.roles, id=snowflake)
@@ -89,9 +91,25 @@ class TimeDuration(commands.Converter):
                                    ("months", timedelta(days=30).total_seconds()),
                                    ("years", timedelta(days=365).total_seconds())])
     MAX_SECONDS = TIME_QUANTITIES["years"] * 2
+    STRICT_MODE = False
 
-    def __init__(self, max_duration: int or float = None):
-        self.MAX_SECONDS = max_duration or self.TIME_QUANTITIES["years"] * 2
+    def __init__(self, max_duration: int or float = TIME_QUANTITIES["years"]*2, strict: bool = False):
+        """Create a TimeDuration converter
+
+        Parameters
+        -----------
+
+            max_duration: int or float
+
+                How long in seconds to allow for a conversion to go up to. Set to None to disable this
+
+            strict: bool
+
+                If this is True, `convert` will throw a `commands.BadArgument` exception
+                if the argument passed fails to convert into a timedelta
+        """
+        self.MAX_SECONDS = max_duration
+        self.STRICT_MODE = strict
 
     def get_seconds(self, time):
         """Returns the amount of converted time or None if invalid"""
@@ -104,11 +122,14 @@ class TimeDuration(commands.Converter):
                 seconds += time_amnt * time_quantity[1]
         return None if seconds == 0 else seconds
 
-    async def convert(self, ctx, argument: str) -> Union[None, timedelta, bool]:
+    async def convert(self, ctx, argument: str) -> Union[None, timedelta]:
         seconds = self.get_seconds(argument)
-        if seconds and seconds > self.MAX_SECONDS:
-            return False
-        return timedelta(seconds=self.get_seconds(argument)) if seconds else None
+        if seconds and self.MAX_SECONDS is not None and seconds > self.MAX_SECONDS:
+            raise commands.BadArgument('Time duration exceeds {}'
+                                       .format(td_format(timedelta(seconds=self.MAX_SECONDS))))
+        if seconds is None and self.STRICT_MODE:
+            raise commands.BadArgument("Failed to parse duration")
+        return timedelta(seconds=seconds) if seconds else None
 
 
 class GuildChannel(commands.IDConverter):
