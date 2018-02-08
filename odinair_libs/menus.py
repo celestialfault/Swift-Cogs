@@ -2,7 +2,7 @@ from asyncio import TimeoutError
 
 from collections import namedtuple
 from enum import Enum
-from typing import Union, Optional, Any, Dict
+from typing import Union, Any, Dict, Callable
 
 import discord
 from redbot.core import RedContext
@@ -16,28 +16,7 @@ class PostMenuAction(Enum):
     NONE = "none"
 
 
-class MenuResult:
-    """A result from a call to `react_menu`
-
-    Attributes
-    -----------
-
-        action: Any
-
-            The action chosen by the user, or the default action
-
-        message: Optional[discord.Message]
-
-            The sent message, or None if the menu deleted the message afterwards
-
-        timed_out: bool
-
-            If the menu timed out and returned the default value, this value will be True. Otherwise, False
-    """
-    def __init__(self, action: Any, message: Optional[discord.Message], timed_out: bool):
-        self.action = action
-        self.message = message
-        self.timed_out = timed_out
+MenuResult = namedtuple("MenuResult", "action message timed_out")
 
 
 async def confirm(ctx: RedContext, message: str, timeout: float = 30.0,
@@ -92,7 +71,8 @@ async def confirm(ctx: RedContext, message: str, timeout: float = 30.0,
     result = await react_menu(ctx, {True: "\N{WHITE HEAVY CHECK MARK}",
                                           False: "\N{REGIONAL INDICATOR SYMBOL LETTER X}"},
                                     embed=discord.Embed(description=message, colour=colour),
-                                    default=default, timeout=timeout, post_action=PostMenuAction.DELETE, **kwargs)
+                                    default=default, timeout=timeout, post_action=PostMenuAction.DELETE,
+                                    post_action_check=None, **kwargs)
     return result.action
 
 
@@ -100,7 +80,8 @@ async def react_menu(ctx: RedContext,
                      actions: Dict[Any, Union[discord.Emoji, discord.Reaction, str]],
                      default: Any = None, content: str = None, embed: discord.Embed = None,
                      message: discord.Message = None, member: discord.Member = None, timeout: float = 30.0,
-                     post_action: PostMenuAction = PostMenuAction.REMOVE_REACTION) -> MenuResult:
+                     post_action: PostMenuAction = PostMenuAction.REMOVE_REACTION,
+                     post_action_check: Callable[[Any], bool] = None) -> MenuResult:
     """Create a reaction menu
 
     Parameters
@@ -110,7 +91,7 @@ async def react_menu(ctx: RedContext,
 
             The Red context object
 
-        actions: Dict[Any, Union[discord.Emoji, discord.Reaction, str]
+        actions: Dict[Any, Union[discord.Emoji, discord.Reaction, str]]
 
             A dict of actions, similar to {action: emoji, ...}
             There can only be up to 15 different actions
@@ -162,12 +143,20 @@ async def react_menu(ctx: RedContext,
 
             Default value: `PostMenuAction.REMOVE_REACTION`
 
+            This setting is treated as if it was set to `PostMenuAction.CLEAR_REACTIONS`
+            if the menu times out if this is not set to `PostMenuAction.DELETE`
+
+        post_action_check: Callable[[Any], bool]
+
+            An optional Callable that should return a bool value. If it returns False, `post_action` will be
+            treated as if it was set to `PostMenuAction.NONE` when the menu was created
+
+            This setting is ignored if the menu times out
+
     Returns
     --------
 
         MenuResult
-
-            The resulting action chosen can be accessed with `<MenuResult>.action`
 
     Raises
     -------
@@ -219,6 +208,8 @@ async def react_menu(ctx: RedContext,
         if reaction.emoji in emojis:
             ret_val = actions[emojis.index(reaction.emoji)]
     finally:
+        if post_action_check is not None and timed_out is not True and post_action_check(ret_val) is False:
+            post_action = PostMenuAction.NONE
         if post_action == PostMenuAction.DELETE:
             await message.delete()
         elif getattr(ctx, "guild", None) and ctx.channel.permissions_for(ctx.guild.me).manage_messages:

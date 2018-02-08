@@ -1,5 +1,6 @@
-import discord
 from collections import namedtuple
+
+import discord
 from discord.ext import commands
 
 from redbot.core.bot import Red, RedContext
@@ -11,7 +12,7 @@ from logs.guildlog import GuildLog, LogType
 from logs.types import *
 
 from odinair_libs.converters import GuildChannel
-from odinair_libs.menus import cmd_help, confirm
+from odinair_libs.menus import cmd_help, confirm, react_menu, MenuResult
 
 _guilds = {}
 
@@ -231,6 +232,136 @@ class Logs:
             await ctx.send(info("Now logging emoji creations/deletions"))
         else:
             await ctx.send(info("No longer logging emoji creations/deletions"))
+
+    @logset.group(name="info", invoke_without_command=True)
+    async def logset_info(self, ctx: RedContext):
+        """Returns some information on the guild's log settings"""
+        settings = await self.config.guild(ctx.guild)()
+
+        for channel in settings.get('log_channels', []):
+            settings["log_channels"][channel] = ctx.guild.get_channel(settings["log_channels"][channel])
+        channels = ["**{type}:** {channel}".format(type=x.title(),
+                                                   channel=settings["log_channels"][x].mention
+                                                   if settings["log_channels"][x] else None)
+                    for x in settings["log_channels"]]
+
+        def build(group: str):
+            return {"title": "{} Settings".format(group.replace("_", " ").title()),
+                    "content": "\n".join(["**{}:** {}".format(x, settings.get(group, {})[x])
+                                          for x in settings.get(group, {})])}
+
+        pages = [
+            [
+                build("channels"),
+                build("guild"),
+                build("roles")
+            ],
+            [
+                build("messages"),
+                build("guild"),
+                build("members")
+            ],
+            [
+                {"title": "Log Channels", "content": "\n".join(channels)},
+                {"title": "Emoji Updates", "content": str(settings.get("emojis", False))},
+                {"title": "Ignore Check Type", "content": str(settings.get("check_type", "after")).title()}
+            ],
+            [
+                {"title": "Log Format", "content": str(settings.get("format", "EMBED")).title()}
+            ]
+        ]
+
+        last_action = MenuResult(None, None, False)
+        actions = {
+            "prev": "\N{BLACK LEFT-POINTING TRIANGLE}",
+            "close": "\N{CROSS MARK}",
+            "next": "\N{BLACK RIGHT-POINTING TRIANGLE}"
+        }
+        curr_page = 0
+
+        while True:
+            embed = discord.Embed(colour=discord.Colour.blurple(), title="Log Settings")
+            for item in pages[curr_page]:
+                embed.add_field(name=item["title"], value=item["content"])
+            embed.set_footer(text="Page {}/{}".format(curr_page + 1, len(pages)))
+            if last_action.message:
+                await last_action.message.edit(embed=embed)
+            last_action = await react_menu(ctx=ctx, actions=actions, embed=embed, message=last_action.message,
+                                           timeout=60.0, post_action_check=lambda action: action != "close")
+            if last_action.action == "close" and not last_action.timed_out:
+                try:
+                    await last_action.message.clear_reactions()
+                except discord.Forbidden:
+                    pass
+                break
+            elif last_action.action == "next":
+                if curr_page + 1 > len(pages) - 1:
+                    continue
+                curr_page += 1
+            elif last_action.action == "prev":
+                if curr_page - 1 < 0:
+                    continue
+                curr_page -= 1
+            elif last_action.timed_out is True:
+                break
+
+    @logset_info.command(name="ignored")
+    async def info_ignored(self, ctx: RedContext):
+        ignored_channels = await self.config.all_channels()
+        ignored_channels = [x for x in ignored_channels if ignored_channels[x].get("ignored", False) is True]
+        ignored_channels = [x.mention for x in map(lambda x: self.bot.get_channel(x), ignored_channels) if x]
+
+        if not len(ignored_channels):
+            await ctx.send(warning("There's no ignored channels in this guild"))
+
+        pages = []
+        items = []
+        for item in ignored_channels:
+            items.append(item)
+            if len(items) == 10:
+                pages.append("\n".join(items))
+                items = []
+        if items:
+            pages.append("\n".join(items))
+
+        if len(pages) == 1:
+            embed = discord.Embed(colour=discord.Colour.blurple(), title="Ignored Channels", description=pages[0])
+            embed.set_footer(text="Page 1/1")
+            await ctx.send(embed=embed)
+            return
+
+        last_action = MenuResult(None, None, False)
+        actions = {
+            "prev": "\N{BLACK LEFT-POINTING TRIANGLE}",
+            "close": "\N{CROSS MARK}",
+            "next": "\N{BLACK RIGHT-POINTING TRIANGLE}"
+        }
+        curr_page = 0
+
+        while True:
+            embed = discord.Embed(colour=discord.Colour.blurple(), title="Ignored Channels",
+                                  description=pages[curr_page])
+            embed.set_footer(text="Page {}/{}".format(curr_page + 1, len(pages)))
+            if last_action.message:
+                await last_action.message.edit(embed=embed)
+            last_action = await react_menu(ctx=ctx, actions=actions, embed=embed, message=last_action.message,
+                                           timeout=60.0, post_action_check=lambda action: action != "close")
+            if last_action.action == "close" and not last_action.timed_out:
+                try:
+                    await last_action.message.clear_reactions()
+                except discord.Forbidden:
+                    await last_action.message.delete()
+                break
+            elif last_action.action == "next":
+                if curr_page + 1 > len(pages) - 1:
+                    continue
+                curr_page += 1
+            elif last_action.action == "prev":
+                if curr_page - 1 < 0:
+                    continue
+                curr_page -= 1
+            elif last_action.timed_out is True:
+                break
 
     @logset.group(name="ignore")
     async def logset_ignore(self, ctx: RedContext):
