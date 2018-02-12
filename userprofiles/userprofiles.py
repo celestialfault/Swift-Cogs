@@ -57,7 +57,6 @@ class UserProfile:
 
         # Role list
         roles = reversed([escape(x.name, formatting=True) for x in user.roles if x.name != "@everyone"])
-        roles = ", ".join(roles) if roles else "None"
 
         # Game display
         status = str(user.status).replace("_", " ").replace("dnd", "do not disturb").title()
@@ -116,7 +115,6 @@ class UserProfile:
             embed.add_field(name="Gender", value=user_info.get("gender"))
         if user_info.get("about", None):
             embed.add_field(name="About Me", value=user_info.get("about"), inline=False)
-        print(embed.fields)
         await ctx.send(embed=embed)
 
     @commands.command(name="avatar")
