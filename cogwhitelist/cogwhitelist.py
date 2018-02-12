@@ -6,6 +6,7 @@ from redbot.core.utils.chat_formatting import warning, pagify
 
 
 class CogWhitelist:
+    """Restrict cogs to approved servers"""
     def __init__(self, bot: Red):
         self.bot = bot
         self.config = Config.get_conf(self, identifier=7856391, force_registration=True)
@@ -14,7 +15,7 @@ class CogWhitelist:
             cogs={}  # dict of lowercase cog names with lists of whitelisted guild IDs
         )
 
-    async def __global_check(self, ctx: commands.Context):
+    async def __global_check(self, ctx: RedContext):
         if not ctx.cog or await self.bot.is_owner(ctx.author):
             return True
         cog_name = str(ctx.cog.__class__.__name__).lower()
@@ -42,9 +43,10 @@ class CogWhitelist:
 
     @cogwhitelist.command(name="add")
     async def cog_add(self, ctx: RedContext, cog: str, guild_id: int=None):
-        """Add a cog or guild to the list of whitelisted cogs/guilds
+        """Add a cog and/or guild to the list of whitelisted cogs/guilds
 
-        If a guild ID is specified, the guild is added to the cog's list of allowed guilds."""
+        If a guild ID is specified, the guild is added to the cog's list of allowed guilds
+        """
         cog = cog.lower()
         cogs = [x.lower() for x in self.bot.cogs]
         if cog not in cogs:
@@ -67,7 +69,8 @@ class CogWhitelist:
     async def cog_remove(self, ctx: RedContext, cog: str, guild_id: int=None):
         """Removes a cog or guild from the list of whitelisted cogs/guilds
 
-        If a guild ID is specified, it's removed from the specified cogs' list of allowed guilds"""
+        If a guild ID is specified, it's removed from the specified cogs' list of allowed guilds
+        """
         cog = cog.lower()
         async with self.config.cogs() as cogs:
             if cog not in cogs:
@@ -84,6 +87,7 @@ class CogWhitelist:
 
     @cogwhitelist.command(name="list")
     async def cog_list(self, ctx: RedContext, cog: str=None):
+        """List all cogs that require a whitelist, or all the guilds that are allowed to use a cog"""
         cogs = await self.config.cogs()
         if not len(cogs):
             await ctx.send(warning("I have no cogs that require a whitelist to use"))
@@ -92,7 +96,7 @@ class CogWhitelist:
             __cogs = []
             for _cog in cogs:
                 c, _ = self.find_cog(_cog)
-                __cogs.append("[{cog}] {guilds} guilds".format(cog=c, guilds=len(cogs[c.lower()])))
+                __cogs.append("[{cog}] {guilds} guilds".format(cog=c or _cog, guilds=len(cogs[_cog])))
             msg = "{cogs}".format(cogs="\n".join(__cogs))
             await ctx.send_interactive(pagify(msg), box_lang="ini")
         else:
@@ -102,5 +106,6 @@ class CogWhitelist:
                 await ctx.send(warning("No guilds that I'm currently in are allowed to use that cog"))
                 return
             cog_name, _ = self.find_cog(cog)
-            msg = "Guilds that are allowed to use {cog}:\n\n{guilds}".format(cog=cog_name, guilds="\n".join(guilds))
+            msg = "Guilds that are allowed to use {cog}:\n\n{guilds}".format(cog=cog_name or cog,
+                                                                             guilds="\n".join(guilds))
             await ctx.send_interactive(pagify(msg), box_lang="")
