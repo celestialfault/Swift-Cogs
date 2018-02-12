@@ -11,7 +11,7 @@ from redbot.core.utils.chat_formatting import warning, bold, pagify
 from datetime import datetime, timedelta
 
 from odinair_libs.formatting import td_format
-from odinair_libs.converters import TimeDuration
+from odinair_libs.converters import FutureTime
 
 
 class GuildRoles:
@@ -185,8 +185,6 @@ class TimedRole:
 
         if duration is None:
             duration = timedelta(days=30)
-        elif duration is False:
-            raise RuntimeError("That's an invalid time format")
 
         now = datetime.utcnow()
         duration = duration.total_seconds()
@@ -240,7 +238,7 @@ class TimedRole:
         await ctx.send_interactive(pagify("\n\n".join(strings), escape_mass_mentions=True))
 
     @timedrole.command(name="add")
-    async def add_role(self, ctx: RedContext, member: discord.Member, duration: TimeDuration(strict=True),
+    async def add_role(self, ctx: RedContext, member: discord.Member, duration: FutureTime(strict=True),
                        *roles: discord.Role):
         """Add one or more roles to a user for a set amount of time.
 
@@ -260,6 +258,14 @@ class TimedRole:
             roles.remove(ctx.guild.default_role)
         if not roles:
             await ctx.send_help()
+            return
+        if any([role >= ctx.author.top_role for role in roles]):
+            await ctx.send(warning("One or more of those roles is either your highest ranked role, "
+                                   "or higher than your highest ranked role"))
+            return
+        if any([role >= ctx.guild.me.top_role for role in roles]):
+            await ctx.send(warning("One or more of those roles is either my highest ranked role, "
+                                   "or higher than my highest ranked role"))
             return
         try:
             await self.add_roles(member=member, duration=duration, granted_by=ctx.author, roles=roles)
