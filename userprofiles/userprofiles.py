@@ -1,6 +1,3 @@
-import asyncio
-from datetime import timedelta
-
 import discord
 from discord.ext import commands
 
@@ -9,6 +6,9 @@ from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import escape, warning
 
 from urllib.parse import urlparse
+
+from odinair_libs.menus import confirm
+from odinair_libs.formatting import td_format
 
 
 class UserProfile:
@@ -91,14 +91,20 @@ class UserProfile:
         member_number = sorted(ctx.guild.members,
                                key=lambda m: m.joined_at).index(user) + 1
 
-        embed = discord.Embed(title=str(user), colour=user.colour, description=status)
+        # User colour
+        colour = user.colour
+        if colour == discord.Colour.default():
+            colour = discord.Embed.Empty
+
+        embed = discord.Embed(title=str(user), colour=colour, description=status)
         embed.set_thumbnail(url=user.avatar_url)
         embed.set_footer(text="Member #{} | User ID: {}".format(member_number, user.id))
 
         bot_roles = await self.get_role(user)
         if bot_roles:
             embed.add_field(name="Bot Roles", value=bot_roles, inline=False)
-        embed.add_field(name="Guild Roles", value=roles, inline=False)
+        if roles:
+            embed.add_field(name="Guild Roles", value=", ".join(roles), inline=False)
 
         embed.add_field(name="Joined Discord", value="{} ago".format(since_created), inline=False)
         embed.add_field(name="Joined Guild", value="{} ago".format(since_joined), inline=False)
@@ -110,9 +116,11 @@ class UserProfile:
             embed.add_field(name="Gender", value=user_info.get("gender"))
         if user_info.get("about", None):
             embed.add_field(name="About Me", value=user_info.get("about"), inline=False)
+        print(embed.fields)
         await ctx.send(embed=embed)
 
     @commands.command(name="avatar")
+    @commands.guild_only()
     async def avatar(self, ctx: RedContext, *, user: discord.Member = None):
         """Get the avatar of yourself or a specified user"""
         user = ctx.author if user is None else user
@@ -136,7 +144,8 @@ class UserProfile:
     async def user_profile_about(self, ctx: RedContext, *, about: str = ""):
         """Sets your About Me message, maximum of 600 characters
 
-        Any text beyond 600 characters is trimmed off"""
+        Any text beyond 600 characters is trimmed off
+        """
         about = escape(about, mass_mentions=True)[:600]
         await self.config.user(ctx.author).about.set(about)
         if about is None:
@@ -158,7 +167,8 @@ class UserProfile:
     async def user_profile_country(self, ctx: RedContext, *, country: str = ""):
         """Set the country you reside in
 
-        Any text beyond 75 characters is trimmed off"""
+        Any text beyond 75 characters is trimmed off
+        """
         country = escape(country, mass_mentions=True)[:75]
         await self.config.user(ctx.author).country.set(country)
         if country is None:
@@ -171,7 +181,8 @@ class UserProfile:
     async def user_profile_gender(self, ctx: RedContext, *, gender: str = ""):
         """Sets your gender
 
-        Any text beyond 50 characters is trimmed off"""
+        Any text beyond 50 characters is trimmed off
+        """
         gender = escape(gender, mass_mentions=True)[:50]
         await self.config.user(ctx.author).gender.set(gender)
         if gender is None:
@@ -185,43 +196,24 @@ class UserProfile:
         """Resets your user profile.
 
         If a user is passed in the command and the command issuer is the bot owner or a co-owner,
-        this resets the specified user's profile instead"""
+        this resets the specified user's profile instead
+        """
         if not user:
             user = ctx.author
         if user and not await self.bot.is_owner(ctx.author):
             user = ctx.author
         descriptor = "your"
         if user.id != ctx.author.id:
-            descriptor = "**{}**'s".format(str(user))
+            descriptor = "**{0!s}**'s".format(user)
 
-        embed = discord.Embed(description="Are you sure you want to reset {} profile?\n\n"
-                                          "**This is irreversible**!\n\n"
-                                          "**Click \N{WHITE HEAVY CHECK MARK} to confirm or "
-                                          "\N{REGIONAL INDICATOR SYMBOL LETTER X} to cancel**"
-                                          "".format(descriptor),
-                              colour=discord.Colour.red())
-        check_msg = await ctx.send(embed=embed)
-        await check_msg.add_reaction("\N{WHITE HEAVY CHECK MARK}")
-        await check_msg.add_reaction("\N{REGIONAL INDICATOR SYMBOL LETTER X}")
-
-        def check(_reaction, _user):
-            msg = _reaction.message
-            if msg.id != check_msg.id or _user.id != user.id:
-                return False
-            expected = ["\N{WHITE HEAVY CHECK MARK}", "\N{REGIONAL INDICATOR SYMBOL LETTER X}"]
-            return str(_reaction.emoji) in expected
-
-        try:
-            reaction, user = await self.bot.wait_for("reaction_add", check=check, timeout=30)
-        except asyncio.TimeoutError:
-            await ctx.send("❌ Operation cancelled.", delete_after=15)
-        else:
-            if str(reaction.emoji) == "\N{REGIONAL INDICATOR SYMBOL LETTER X}":
-                await ctx.send("❌ Operation cancelled.", delete_after=15)
-                return await check_msg.delete()
+        if await confirm(ctx,
+                         "Are you sure you want to reset {} profile?\n\nThis action is irreversible!"
+                                 .format(descriptor),
+                         colour=discord.Colour.red()):
             await self.config.user(user).set(self.defaults_user)
             await ctx.send("\N{WHITE HEAVY CHECK MARK} Profile reset.", delete_after=15)
-        await check_msg.delete()
+        else:
+            await ctx.send("\N{CROSS MARK} Operation cancelled.", delete_after=15)
 
 
 async def is_url(url: str) -> bool:
@@ -229,28 +221,3 @@ async def is_url(url: str) -> bool:
         return True
     url = urlparse(url)
     return url.scheme and url.netloc
-
-
-# ~~stolen~~ borrowed from StackOverflow
-# https://stackoverflow.com/a/13756038
-def td_format(td_object: timedelta) -> str:
-    seconds = int(td_object.total_seconds())
-    periods = [
-        ('year', 60 * 60 * 24 * 365),
-        ('month', 60 * 60 * 24 * 30),
-        ('day', 60 * 60 * 24),
-        ('hour', 60 * 60),
-        ('minute', 60),
-        ('second', 1)
-    ]
-
-    strings = []
-    for period_name, period_seconds in periods:
-        if seconds >= period_seconds:
-            period_value, seconds = divmod(seconds, period_seconds)
-            if period_value == 1:
-                strings.append("%s %s" % (period_value, period_name))
-            else:
-                strings.append("%s %ss" % (period_value, period_name))
-
-    return ", ".join(strings)
