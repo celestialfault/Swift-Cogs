@@ -1,3 +1,5 @@
 {
-  "hidden": true
+  "author": ["odinair"],
+  "description": "Various quick & dirty utilities\n\nMostly helpful for cog development or advanced server administration",
+  "short": "Various quick & dirty utilities"
 }
