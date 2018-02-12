@@ -1,5 +1,5 @@
 import asyncio
-from typing import Union
+from typing import Union, Optional
 
 from collections import OrderedDict
 from datetime import timedelta
@@ -79,11 +79,16 @@ async def ask_channel(ctx: RedContext, *channels: discord.abc.GuildChannel):
     return getattr(channel, "id", None)
 
 
-class TimeDuration(commands.Converter):
-    # The following variables, including `get_seconds`, is taken from ZeLarpMaster's Reminders cog:
+class FutureTime(commands.Converter):
+    # The following variables, including `get_seconds`, is originally taken from ZeLarpMaster's Reminders cog
     # https://github.com/ZeLarpMaster/ZeCogs/blob/master/reminder/reminder.py
-    # Only changes made have been to make the parsed times more consistent with timedelta objects
-    TIME_AMNT_REGEX = re.compile("([1-9][0-9]*)([a-z]+)", re.IGNORECASE)
+    # The following changes have been made from the original source:
+    #  - Changed TIME_QUANTITIES to use timedeltas, to be more consistent with td_format
+    #  - Added float support, meaning time periods like '0.5h' are accepted,
+    #    and converted as if it was given as '30m'
+    #  - Properly handle spaces between the duration and time period
+    #  - Ported to a proper Converter
+    TIME_AMNT_REGEX = re.compile("([0-9]+\.?[0-9]*) ?([a-z]+)", re.IGNORECASE)
     TIME_QUANTITIES = OrderedDict([("seconds", 1), ("minutes", 60),
                                    ("hours", timedelta(hours=1).total_seconds()),
                                    ("days", timedelta(days=1).total_seconds()),
@@ -93,31 +98,34 @@ class TimeDuration(commands.Converter):
     MAX_SECONDS = TIME_QUANTITIES["years"] * 2
     STRICT_MODE = False
 
-    def __init__(self, max_duration: int or float = TIME_QUANTITIES["years"]*2, strict: bool = False):
-        """Create a TimeDuration converter
+    def __init__(self, max_duration: Union[str, int, float, None] = "2y", strict: bool = False):
+        """Create a FutureTime converter
 
         Parameters
         -----------
 
-            max_duration: int or float
+            max_duration: Union[str, int, float, None]
 
                 How long in seconds to allow for a conversion to go up to. Set to None to disable this
 
             strict: bool
 
                 If this is True, `convert` will throw a `commands.BadArgument` exception
-                if the argument passed fails to convert into a timedelta
+                if the argument passed fails to convert into a timedelta, such as if
+                the user only gave invalid time strings
         """
-        self.MAX_SECONDS = max_duration
+        self.MAX_SECONDS = self.get_seconds(max_duration) if isinstance(max_duration, str) else max_duration
         self.STRICT_MODE = strict
 
-    def get_seconds(self, time):
+    @staticmethod
+    def get_seconds(time: str) -> Optional[int]:
         """Returns the amount of converted time or None if invalid"""
         seconds = 0
-        for time_match in self.TIME_AMNT_REGEX.finditer(time):
-            time_amnt = int(time_match.group(1))
+        for time_match in FutureTime.TIME_AMNT_REGEX.finditer(time):
+            time_amnt = float(time_match.group(1))
             time_abbrev = time_match.group(2)
-            time_quantity = discord.utils.find(lambda t: t[0].startswith(time_abbrev), self.TIME_QUANTITIES.items())
+            time_quantity = discord.utils.find(lambda t: t[0].startswith(time_abbrev),
+                                               FutureTime.TIME_QUANTITIES.items())
             if time_quantity is not None:
                 seconds += time_amnt * time_quantity[1]
         return None if seconds == 0 else seconds
@@ -130,6 +138,9 @@ class TimeDuration(commands.Converter):
         if seconds is None and self.STRICT_MODE:
             raise commands.BadArgument("Failed to parse duration")
         return timedelta(seconds=seconds) if seconds else None
+
+
+TimeDuration = FutureTime
 
 
 class GuildChannel(commands.IDConverter):

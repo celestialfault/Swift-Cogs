@@ -2,7 +2,7 @@ from asyncio import TimeoutError
 
 from collections import namedtuple
 from enum import Enum
-from typing import Union, Any, Dict, Callable
+from typing import Union, Any, Dict
 
 import discord
 from redbot.core import RedContext
@@ -24,7 +24,7 @@ async def confirm(ctx: RedContext, message: str, timeout: float = 30.0,
     """Prompt a user for confirmation on an action
 
     Parameters
-    -----
+    -----------
 
         ctx: RedContext
 
@@ -37,6 +37,8 @@ async def confirm(ctx: RedContext, message: str, timeout: float = 30.0,
         timeout: float
 
             How long to wait in seconds before timing out with the default value
+
+            This can be set to `None` to disable the timeout, however it is not recommended.
 
             Default value: 30.0
 
@@ -53,35 +55,26 @@ async def confirm(ctx: RedContext, message: str, timeout: float = 30.0,
             Default value: `False`
 
     Returns
-    -----
+    --------
 
-        True
+        bool
 
-            Returned if the user confirmed the action or if the timeout was reached and the default was True
-
-        False
-
-            Returned if the user declined the action or if the timeout was reached and the default was False
+            A boolean value indicating if the user confirmed or declined the action, or the value of `default`
+            if the timeout was reached
     """
     message = (
         "{}\n\n"
         "**Click \N{WHITE HEAVY CHECK MARK} to confirm or \N{REGIONAL INDICATOR SYMBOL LETTER X} to cancel**"
         "".format(message)
     )
-    result = await react_menu(ctx, {True: "\N{WHITE HEAVY CHECK MARK}",
-                                          False: "\N{REGIONAL INDICATOR SYMBOL LETTER X}"},
-                                    embed=discord.Embed(description=message, colour=colour),
-                                    default=default, timeout=timeout, post_action=PostMenuAction.DELETE,
-                                    post_action_check=None, **kwargs)
-    return result.action
+    actions = {True: "\N{WHITE HEAVY CHECK MARK}", False: "\N{REGIONAL INDICATOR SYMBOL LETTER X}"}
+    return (await react_menu(ctx, actions, embed=discord.Embed(description=message, colour=colour),
+                             default=default, timeout=timeout, post_action=PostMenuAction.DELETE,
+                             post_action_check=None, **kwargs)).action
 
 
-async def react_menu(ctx: RedContext,
-                     actions: Dict[Any, Union[discord.Emoji, discord.Reaction, str]],
-                     default: Any = None, content: str = None, embed: discord.Embed = None,
-                     message: discord.Message = None, member: discord.Member = None, timeout: float = 30.0,
-                     post_action: PostMenuAction = PostMenuAction.REMOVE_REACTION,
-                     post_action_check: Callable[[Any], bool] = None) -> MenuResult:
+async def react_menu(ctx: RedContext, actions: Dict[Any, Union[discord.Emoji, discord.Reaction, str]],
+                     **kwargs) -> MenuResult:
     """Create a reaction menu
 
     Parameters
@@ -96,6 +89,9 @@ async def react_menu(ctx: RedContext,
             A dict of actions, similar to {action: emoji, ...}
             There can only be up to 15 different actions
 
+    Keyword args
+    -------------
+
         default: Any
 
             The default action.
@@ -106,19 +102,25 @@ async def react_menu(ctx: RedContext,
 
             The message content when sending a message if `message` is not specified
 
+            If `message` is given, this value is ignored
+
             Default value: `None`
 
         embed: discord.Embed
 
             A message embed to use when sending a message if `message` is not specified
 
+            If `message` is given, this value is ignored
+
             Default value: `None`
 
         message: discord.Message
 
-            A message to re-use. If this is present, all the reactions are expected to be present.
-            This is best used with the remove reaction action if this is a message being re-used from prior
-            react menu calls.
+            A message to re-use. This is best used with the remove reaction action if this is a message
+            being re-used from prior react menu calls.
+
+            If this is None and neither `embed` nor `content` is given, a RuntimeError is raised.
+            Otherwise, if this is given, `embed` and `content` are ignored.
 
             Default value: `None`
 
@@ -141,10 +143,10 @@ async def react_menu(ctx: RedContext,
             The action to take when a user chooses a reaction.
             If the menu times out, this will default to clearing reactions if this is not `PostMenuAction.DELETE`
 
-            Default value: `PostMenuAction.REMOVE_REACTION`
-
             This setting is treated as if it was set to `PostMenuAction.CLEAR_REACTIONS`
-            if the menu times out if this is not set to `PostMenuAction.DELETE`
+            if the menu times out and this is not set to `PostMenuAction.DELETE`
+
+            Default value: `PostMenuAction.REMOVE_REACTION`
 
         post_action_check: Callable[[Any], bool]
 
@@ -153,10 +155,15 @@ async def react_menu(ctx: RedContext,
 
             This setting is ignored if the menu times out
 
+            Default value: `None`
+
     Returns
     --------
 
         MenuResult
+
+            A special object containing the action taken, the message sent (if applicable),
+            and a bool indicating if the menu timed out.
 
     Raises
     -------
@@ -177,10 +184,19 @@ async def react_menu(ctx: RedContext,
 
             Raised if none of either message, embed or content attributes are given
     """
+    default = kwargs.get("default", None)
+    content = kwargs.get("content", None)
+    embed = kwargs.get("embed", None)
+    message = kwargs.get("message", None)
+    member = kwargs.get("member", ctx.author)
+    timeout = kwargs.get("timeout", 30.0)
+    post_action = kwargs.get("post_action", PostMenuAction.REMOVE_REACTION)
+    post_action_check = kwargs.get("post_action_check", None)
+
     if len(actions.keys()) > 15:
         raise ValueError("You can only have at most up to 15 different actions")
     if not any([message, embed, content]):
-        raise RuntimeError("Expected message, embed or content attributes, received none")
+        raise RuntimeError("Expected any of either message, embed, or content attributes, received none")
 
     member = member or ctx.author
     bot = ctx.bot
@@ -190,7 +206,9 @@ async def react_menu(ctx: RedContext,
     if not message:
         message = await ctx.send(content=content, embed=embed)
 
-        for emoji in emojis:
+    for emoji in emojis:
+        _reaction = discord.utils.get(message.reactions, emoji=emoji)
+        if _reaction is None or _reaction.me is False:
             await message.add_reaction(emoji)
 
     def check(react_, user_):

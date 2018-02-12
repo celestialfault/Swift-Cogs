@@ -1,16 +1,32 @@
 from datetime import timedelta
 from typing import Iterable, Tuple, Any, Dict, Union
 
+import discord
 
-def td_format(td_object: timedelta, short_format: bool = False, as_string: bool = True) -> str:
+import odinair_libs as libs
+
+__all__ = ["td_format", "difference", "changed", "normalize", "attempt_emoji"]
+
+
+def attempt_emoji(*, emoji_id: int = None, emoji_name: str = None, fallback: str, guild: discord.Guild = None):
+    """Attempt to get an emoji from all guilds the bot is in or from a specific guild"""
+    if not any([emoji_id, emoji_name]):
+        return fallback
+    emojis = libs.bot.emojis if guild is None else guild.emojis
+    emoji = None
+    if emoji_id is not None:
+        emoji = discord.utils.get(emojis, id=emoji_id)
+    if emoji is None and emoji_name is not None:
+        emoji = discord.utils.get(emojis, name=emoji_name)
+    return emoji or fallback
+
+
+def td_format(td_object: timedelta, short_format: bool = False, as_string: bool = True,
+              milliseconds: bool = False) -> str:
+    """Format a timedelta into a human readable output"""
     # this function is originally from StackOverflow with modifications made
     # https://stackoverflow.com/a/13756038
     seconds = int(td_object.total_seconds())
-    if seconds < 0:  # Remove negative signs from numbers
-        seconds = int(str(seconds)[1:])
-    elif seconds == 0:  # Properly handle timedelta objects with no time
-        s = "0 seconds" if not short_format else "0s"
-        return s if as_string else [s]
     periods = [
         ('year', 60 * 60 * 24 * 365), ('month', 60 * 60 * 24 * 30),
         ('day', 60 * 60 * 24), ('hour', 60 * 60), ('minute', 60), ('second', 1)]
@@ -30,12 +46,17 @@ def td_format(td_object: timedelta, short_format: bool = False, as_string: bool 
             else:
                 strings.append("%s %ss" % (period_value, period_name))
 
+    if milliseconds is True and (td_object.microseconds / 1000) > 0:
+        ms = td_object.microseconds / 1000
+        strings.append("%s%s%s%s" % (ms, "ms" if short_format else "millisecond", " " if not short_format else "",
+                                     "s" if ms != 1 and not short_format else ""))
+
     return (", " if not short_format else "").join(strings) if as_string is True else strings
 
 
 def difference(list1: Iterable, list2: Iterable, *, check_val: bool = False, dict_values: bool = False)\
         -> Tuple[Union[Iterable, Dict], Union[Iterable, Dict]]:
-    """Returns a tuple of lists based on the Iterable items passed in
+    """Returns a tuple of added or removed items based on the Iterable items passed in
 
     If check_val is True, this assumes the lists contain tuple-like items, and checks for True-ish items
     """
