@@ -5,11 +5,61 @@ import discord
 
 import odinair_libs as libs
 
-__all__ = ["td_format", "difference", "changed", "normalize", "attempt_emoji"]
+import re
+import inspect
+
+__all__ = ["td_format", "difference", "changed", "normalize", "attempt_emoji", "get_source"]
+
+
+def get_source(fn):
+    """Get the source code for a function
+
+    Parameters
+    ----------
+    fn
+      The function to get the source for
+
+    Returns
+    --------
+    str
+        The source code for ``fn``
+
+    Raises
+    -------
+    OSError
+        If the source code cannot be retrieved, such as if the function is defined in a repl
+    """
+    lines, _ = inspect.getsourcelines(fn.__code__)
+    source = "".join(lines)
+    # search for indentation on the first source line
+    # usually the first line is the command decorator, so it's assumed to be safe
+    indent = re.compile(r"^([ \t]+)").search(lines[0])
+    if indent:
+        source = re.compile(r"^{}".format(indent.group(0)), re.MULTILINE).sub("", source)
+    return source
 
 
 def attempt_emoji(*, emoji_id: int = None, emoji_name: str = None, fallback: str, guild: discord.Guild = None):
-    """Attempt to get an emoji from all guilds the bot is in or from a specific guild"""
+    """Attempt to get an emoji from all guilds the bot is in or from a specific guild
+
+    Parameters
+    -----------
+    emoji_id: int
+        The emoji ID to attempt to resolve
+    emoji_name: str
+        An emoji name to attempt to resolve. This is ignored if ``emoji_id`` resolves
+    fallback: str
+        A fallback string to return if neither emoji_id nor emoji_id resolves
+    guild: discord.Guild
+        A guild to search instead of attempting all emojis the bot has access to
+
+    Returns
+    --------
+    discord.Emoji
+        A resolved Emoji
+    str
+        The fallback string if neither ``emoji_id`` nor ``emoji_name`` resolve
+    """
     if not any([emoji_id, emoji_name]):
         return fallback
     emojis = libs.bot.emojis if guild is None else guild.emojis
@@ -23,7 +73,19 @@ def attempt_emoji(*, emoji_id: int = None, emoji_name: str = None, fallback: str
 
 def td_format(td_object: timedelta, short_format: bool = False, as_string: bool = True,
               milliseconds: bool = False) -> str:
-    """Format a timedelta into a human readable output"""
+    """Format a timedelta into a human readable output
+
+    Parameters
+    -----------
+    td_object: timedelta
+        A timedelta object to format
+    short_format: bool
+        Returns in short format, such as '10d2h' instead of '10 days 2 hours'
+    as_string: bool
+        If this is False, all the strings are returned in a list instead of a joined string
+    milliseconds: bool
+        If this is True, milliseconds are also appended
+    """
     # this function is originally from StackOverflow with modifications made
     # https://stackoverflow.com/a/13756038
     seconds = int(td_object.total_seconds())
@@ -48,7 +110,7 @@ def td_format(td_object: timedelta, short_format: bool = False, as_string: bool 
 
     if milliseconds is True and (td_object.microseconds / 1000) > 0:
         ms = td_object.microseconds / 1000
-        strings.append("%s%s%s%s" % (ms, "ms" if short_format else "millisecond", " " if not short_format else "",
+        strings.append("%s%s%s%s" % (ms, " " if not short_format else "", "ms" if short_format else "millisecond",
                                      "s" if ms != 1 and not short_format else ""))
 
     return (", " if not short_format else "").join(strings) if as_string is True else strings
@@ -59,6 +121,24 @@ def difference(list1: Iterable, list2: Iterable, *, check_val: bool = False, dic
     """Returns a tuple of added or removed items based on the Iterable items passed in
 
     If check_val is True, this assumes the lists contain tuple-like items, and checks for True-ish items
+
+    Parameters
+    -----------
+    list1: Iterable
+        The first list to check
+    list2: Iterable
+        The second list to check
+    check_val: bool
+        Whether or not to check values. If this is True, this assumes the lists contain tuple-like or are dicts
+    dict_values: bool
+        If this is True, this returns a dict of both item keys and values instead of lists of added and removed keys
+
+    Returns
+    --------
+    dict
+        Returned if ``dict_values`` is True
+    list
+        Returned if ``dict_values`` is False
     """
     if check_val:
         # Only include items that evaluate to True
@@ -74,20 +154,50 @@ def difference(list1: Iterable, list2: Iterable, *, check_val: bool = False, dic
     return added, removed
 
 
-def changed(before: Dict[Any, Any], after: Dict[Any, Any]) -> Tuple[Dict, Dict, Dict, Dict]:
+def changed(before: Dict[Any, Any], after: Dict[Any, Any]) \
+        -> Tuple[Dict[Any, Any], Dict[Any, Tuple[Any, Any]], Dict[Any, Any]]:
     """Returns a list of added, removed, and changed items from two dict-like objects
 
     This assumes that the first key of an object is a unique key, and the second key is an item that can be changed
+
+    Parameters
+    -----------
+    before: Dict[Any, Any]
+        The list before any possible changes
+    after: Dict[Any, Any]
+        The list after any possible changes
+
+    Returns
+    --------
+    Tuple[Dict[Any, Any], Dict[Any, Tuple[Any, Any]], Dict[Any, Any]]
+        Returns a tuple of dicts in the following order:
+
+        - Added items
+        - Changed items with tuples of before and after values
+        - Removed items
     """
     added, removed = difference(before, after, dict_values=True)
-    changed_before = {x: before[x] for x in after if x in after and after[x] != before[x]}
-    changed_after = {x: after[x] for x in after if x in before and before[x] != after[x]}
-    return added, changed_before, changed_after, removed
+    return added, {x: (before[x], after[x]) for x in after if x in before and before[x] != after[x]}, removed
 
 
-def normalize(text, *, title_case: bool = True, **kwargs):
+def normalize(text, *, title_case: bool = True, underscores: bool = True, **kwargs):
+    """Attempts to normalize a string
+
+    Parameters
+    -----------
+    text: Any
+        The string or object to attempt to normalize. This is casted to str for you
+    title_case: bool
+        Returns the formatted string as a Title Case string. Any substitions specified as keyword arguments are done
+        before the string is title cased.
+    underscores: bool
+        Whether or not underscores are replaced with spaces
+    **kwargs: Dict[str, Any]
+        A dict of raw string keys with substitution values
+    """
     text = str(text)
-    text = text.replace("_", " ")
+    if underscores:
+        text = text.replace("_", " ")
     for item in kwargs:
         text = text.replace(item, kwargs[item])
     if title_case:
