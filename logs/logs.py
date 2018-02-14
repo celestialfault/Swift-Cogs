@@ -12,7 +12,7 @@ from logs.guildlog import GuildLog, LogType
 from logs.types import *
 
 from odinair_libs.converters import GuildChannel
-from odinair_libs.menus import cmd_help, confirm, react_menu, MenuResult
+from odinair_libs.menus import cmd_help, confirm, ReactMenu
 
 _guilds = {}
 
@@ -271,7 +271,6 @@ class Logs:
             ]
         ]
 
-        last_action = MenuResult(None, None, False)
         actions = {
             "prev": "\N{BLACK LEFT-POINTING TRIANGLE}",
             "close": "\N{CROSS MARK}",
@@ -279,31 +278,36 @@ class Logs:
         }
         curr_page = 0
 
+        embed = discord.Embed(colour=discord.Colour.blurple(), title="Log Settings")
+        for item in pages[curr_page]:
+            embed.add_field(name=item["title"], value=item["content"])
+        embed.set_footer(text="Page {}/{}".format(curr_page + 1, len(pages)))
+        menu = ReactMenu(ctx, actions, embed=embed, timeout=60.0,
+                         post_action_check=lambda action: action != "close")
+        result = None
+
         while True:
             embed = discord.Embed(colour=discord.Colour.blurple(), title="Log Settings")
             for item in pages[curr_page]:
                 embed.add_field(name=item["title"], value=item["content"])
             embed.set_footer(text="Page {}/{}".format(curr_page + 1, len(pages)))
-            if last_action.message:
-                await last_action.message.edit(embed=embed)
-            last_action = await react_menu(ctx=ctx, actions=actions, embed=embed, message=last_action.message,
-                                           timeout=60.0, post_action_check=lambda action: action != "close")
-            if last_action.action == "close" and not last_action.timed_out:
+            if result is not None:
+                await menu.message.edit(embed=embed)
+            result = await menu.prompt()
+            if result.action == "close" or result.timed_out is True:
                 try:
-                    await last_action.message.clear_reactions()
+                    await menu.message.clear_reactions()
                 except discord.Forbidden:
                     pass
                 break
-            elif last_action.action == "next":
+            elif result.action == "next":
                 if curr_page + 1 > len(pages) - 1:
                     continue
                 curr_page += 1
-            elif last_action.action == "prev":
+            elif result.action == "prev":
                 if curr_page - 1 < 0:
                     continue
                 curr_page -= 1
-            elif last_action.timed_out is True:
-                break
 
     @logset_info.command(name="ignored")
     async def info_ignored(self, ctx: RedContext):
@@ -330,7 +334,6 @@ class Logs:
             await ctx.send(embed=embed)
             return
 
-        last_action = MenuResult(None, None, False)
         actions = {
             "prev": "\N{BLACK LEFT-POINTING TRIANGLE}",
             "close": "\N{CROSS MARK}",
@@ -338,30 +341,34 @@ class Logs:
         }
         curr_page = 0
 
+        embed = discord.Embed(colour=discord.Colour.blurple(), title="Ignored Channels",
+                              description=pages[curr_page])
+        embed.set_footer(text="Page {}/{}".format(curr_page + 1, len(pages)))
+        menu = ReactMenu(ctx, actions, embed=embed, timeout=60.0,
+                         post_action_check=lambda action: action != "close")
+        result = None
+
         while True:
             embed = discord.Embed(colour=discord.Colour.blurple(), title="Ignored Channels",
                                   description=pages[curr_page])
             embed.set_footer(text="Page {}/{}".format(curr_page + 1, len(pages)))
-            if last_action.message:
-                await last_action.message.edit(embed=embed)
-            last_action = await react_menu(ctx=ctx, actions=actions, embed=embed, message=last_action.message,
-                                           timeout=60.0, post_action_check=lambda action: action != "close")
-            if last_action.action == "close" and not last_action.timed_out:
+            if result is not None:
+                await menu.message.edit(embed=embed)
+            result = await menu.prompt()
+            if result.action == "close" or result.timed_out is True:
                 try:
-                    await last_action.message.clear_reactions()
+                    await menu.message.clear_reactions()
                 except discord.Forbidden:
-                    await last_action.message.delete()
+                    pass
                 break
-            elif last_action.action == "next":
+            elif result.action == "next":
                 if curr_page + 1 > len(pages) - 1:
                     continue
                 curr_page += 1
-            elif last_action.action == "prev":
+            elif result.action == "prev":
                 if curr_page - 1 < 0:
                     continue
                 curr_page -= 1
-            elif last_action.timed_out is True:
-                break
 
     @logset.group(name="ignore")
     async def logset_ignore(self, ctx: RedContext):
