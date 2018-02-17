@@ -1,5 +1,3 @@
-import logging
-
 from asyncio import QueueEmpty, sleep
 from datetime import datetime, timedelta
 
@@ -9,13 +7,15 @@ from redbot.core import Config, checks, modlog
 from redbot.core.bot import Red, RedContext
 from redbot.core.utils.chat_formatting import error, warning
 
+from starboard.classes.exceptions import *
 from starboard.classes.guildstarboard import GuildStarboard
 from starboard.classes.star import Star
-from starboard.classes.exceptions import *
 from starboard.classes.starboardbase import StarboardBase
-from starboard.checks import allowed_starboard, guild_has_starboard, requirerole_loaded
+from starboard.checks import allowed_starboard, guild_has_starboard
 
-log = logging.getLogger("red.starboard")
+from odinair_libs.checks import cogs_loaded
+from odinair_libs.formatting import tick
+from odinair_libs.menus import confirm
 
 
 class Starboard(StarboardBase):
@@ -24,8 +24,8 @@ class Starboard(StarboardBase):
     def __init__(self, bot: Red, config: Config):
         self.bot = bot
         self.config = config
-        self.bot.loop.create_task(self.main_timer())
-        self.bot.loop.create_task(self._register_cases())
+        self._main_task = self.bot.loop.create_task(self._main_timer())
+        self._case_task = self.bot.loop.create_task(self._register_cases())
 
     @staticmethod
     async def _register_cases():
@@ -33,13 +33,13 @@ class Starboard(StarboardBase):
             await modlog.register_casetypes([
                 {
                     "name": "starboardblock",
-                    "default_setting": True,
+                    "default_setting": False,
                     "image": "\N{NO ENTRY SIGN}",
                     "case_str": "Starboard Block"
                 },
                 {
                     "name": "starboardunblock",
-                    "default_setting": True,
+                    "default_setting": False,
                     "image": "\N{DOVE OF PEACE}",
                     "case_str": "Starboard Unblock"
                 }
@@ -51,9 +51,7 @@ class Starboard(StarboardBase):
     @commands.guild_only()
     @allowed_starboard()
     async def star(self, ctx: RedContext, message_id: int):
-        """
-        Star a message by it's ID
-        """
+        """Star a message by it's ID"""
         if not await guild_has_starboard(ctx):
             return
         message = await self.starboard(ctx.guild).message_by_id(message_id, channel_id=ctx.channel.id, auto_create=True)
@@ -82,9 +80,7 @@ class Starboard(StarboardBase):
     @commands.guild_only()
     @allowed_starboard()
     async def unstar(self, ctx: RedContext, message_id: int):
-        """
-        Unstar a message by it's ID
-        """
+        """Unstar a message by it's ID"""
         if not await guild_has_starboard(ctx):
             return
         message = await self.starboard(ctx.guild).message_by_id(message_id, channel_id=ctx.channel.id, auto_create=True)
@@ -111,9 +107,7 @@ class Starboard(StarboardBase):
     @commands.guild_only()
     @checks.mod_or_permissions(manage_messages=True)
     async def stars(self, ctx: RedContext):
-        """
-        Manage starboard messages
-        """
+        """Manage starboard messages"""
         if not ctx.invoked_subcommand:
             await ctx.send_help()
 
@@ -127,7 +121,7 @@ class Starboard(StarboardBase):
         if not await star.hide():
             await ctx.send(error("That message is already hidden"))
         else:
-            await ctx.tick()
+            await ctx.send(tick("The message sent by **{0.message.author!s}** is now hidden.".format(star)))
 
     @stars.command(name="unhide")
     async def stars_unhide(self, ctx: RedContext, message_id: int):
@@ -139,27 +133,23 @@ class Starboard(StarboardBase):
         if not await star.unhide():
             await ctx.send(error("That message hasn't been hidden"))
         else:
-            await ctx.tick()
+            await ctx.send(tick("The message sent by **{0.message.author!s}** is no longer hidden.".format(star)))
 
     @stars.command(name="block", aliases=["blacklist", "ban"])
-    async def starboard_block(self, ctx: RedContext, member: discord.Member, *, reason: str = None):
-        """
-        Block the passed user from using this guild's starboard
+    async def stars_block(self, ctx: RedContext, member: discord.Member, *, reason: str = None):
+        """Block the passed user from using this guild's starboard
 
         For ignoring a channel from the starboard, see `[p]starboard ignore`
         """
-        if await self.bot.is_owner(member) or member.id == ctx.guild.owner.id:
-            # prevent blocking of the bot/guild owner
-            await ctx.send(error("You aren't allowed to block that member"))
-            return
-        elif ctx.guild.owner.id == ctx.author.id or await self.bot.is_owner(ctx.author):
-            # allow guild owners or the bot owner to block admins and mods
+        if await self.bot.is_owner(ctx.author)\
+                or (ctx.guild.owner == ctx.author and not await self.bot.is_owner(member)):
+            # allow the bot owner to block anyone, and allow guild owners to block admins, but
+            # not the bot owner
             pass
-        elif await self.bot.is_admin(member):  # prevent blocking of admins
-            await ctx.send(error("You aren't allowed to block that member"))
-            return
-        elif await self.bot.is_mod(member) and not await self.bot.is_admin(ctx.author):
-            # prevent mods blocking other moderators, but allow admins to block mods
+        elif any([await self.bot.is_admin(member),
+                  await self.bot.is_mod(member) and not await self.bot.is_admin(ctx.author),
+                  await self.bot.is_owner(member), member.id == ctx.guild.owner.id]):
+            # don't allow mods to block other mods or admins, but allow admins to block mods
             await ctx.send(error("You aren't allowed to block that member"))
             return
         starboard = self.starboard(ctx.guild)
@@ -174,9 +164,8 @@ class Starboard(StarboardBase):
             await ctx.send(error("That user is already blocked from using this guild's starboard"))
 
     @stars.command(name="unblock", aliases=["unblacklist", "unban"])
-    async def starboard_unblock(self, ctx: RedContext, member: discord.Member, *, reason: str = None):
-        """
-        Unblocks the passed user from using this guild's starboard
+    async def stars_unblock(self, ctx: RedContext, member: discord.Member, *, reason: str = None):
+        """Unblocks the passed user from using this guild's starboard
 
         For unignoring a channel from the starboard, see `[p]starboard unignore`
         """
@@ -191,12 +180,24 @@ class Starboard(StarboardBase):
         else:
             await ctx.send(error("That user isn't blocked from using this guild's starboard"))
 
+    @stars.command(name="update", hidden=True)
+    async def stars_update(self, ctx: RedContext, message_id: int):
+        """Force update a starboard message"""
+        starboard = self.starboard(ctx.guild)  # type: GuildStarboard
+        star = await starboard.message_by_id(message_id)  # type: Star
+        if star is None:
+            await ctx.send(warning("I couldn't find that message - has it been starred before?"))
+            return
+        # force a recache of the message
+        await starboard.remove_from_cache(star.message)
+        star = await starboard.message_by_id(message_id)  # type: Star
+        await starboard.queue.put(star)
+        await ctx.send(tick("The message sent by **{0.message.author!s}** has been queued to be updated".format(star)))
+
     @commands.group(name="starboard")
     @checks.admin_or_permissions(manage_channels=True)
     async def cmd_starboard(self, ctx: RedContext):
-        """
-        Manage the guild's starboard
-        """
+        """Manage the guild's starboard"""
         if not ctx.invoked_subcommand:
             await ctx.send_help()
 
@@ -207,13 +208,14 @@ class Starboard(StarboardBase):
             await ctx.send(error("That channel isn't in this guild"))
             return
         await self.starboard(ctx.guild).channel(channel=channel)
-        await ctx.tick()
+        if channel is None:
+            await ctx.send(tick("Cleared the current starboard channel"))
+        else:
+            await ctx.send(tick("Set the starboard channel to {0.mention}".format(channel)))
 
     @cmd_starboard.command(name="stars", aliases=["minstars"])
     async def starboard_minstars(self, ctx: RedContext, stars: int):
-        """
-        Set the amount of stars required for a message to be sent to this guild's starboard
-        """
+        """Set the amount of stars required for a message to be sent to this guild's starboard"""
         if stars < 1:
             await ctx.send(error("The amount of stars must be a non-zero number"))
             return
@@ -227,7 +229,8 @@ class Starboard(StarboardBase):
     async def starboard_ignore(self, ctx: RedContext, *, channel: discord.TextChannel):
         """Ignore a channel, preventing any stars from occurring in it
 
-        For ignoring a member from the starboard, see `[p]starboard block`"""
+        For ignoring a member from the starboard, see `[p]stars block`
+        """
         if await self.starboard(ctx.guild).ignore_channel(channel):
             await ctx.tick()
         else:
@@ -237,14 +240,38 @@ class Starboard(StarboardBase):
     async def starboard_unignore(self, ctx: RedContext, *, channel: discord.TextChannel):
         """Unignore a channel, allowing stars to occur
 
-        For unignoring a member from the starboard, see `[p]starboard unblock`"""
+        For unignoring a member from the starboard, see `[p]stars unblock`
+        """
         if await self.starboard(ctx.guild).unignore_channel(channel):
             await ctx.tick()
         else:
             await ctx.send(error("That channel isn't ignored from this guild's starboard"))
 
+    @cmd_starboard.command(name="clearcache", hidden=True)
+    async def starboard_clearcache(self, ctx: RedContext, max_duration: int = 30 * 60):
+        """Prune the internal message cache
+
+        Any items that are in the queue to be updated and also qualify to be pruned are updated before being un-cached.
+
+        Any messages that are cleared from the cache will need to be re-cached
+        if any actions are done on them, such as a member starring or unstarring,
+        or the message being hidden from the starboard.
+
+        `max_duration` may be set to 0 to clear *all* items from the internal cache.
+        """
+        items_to_remove = await self.starboard(ctx.guild).purge_cache(seconds_since_update=max_duration, dry_run=True)
+        if items_to_remove == 0:
+            await ctx.send(warning("Found no items to remove from the cache."))
+            return
+        if await confirm(ctx, "Are you sure you want to remove {} item(s) from the cache?".format(items_to_remove),
+                         colour=discord.Colour.gold()):
+            purged = await self.starboard(ctx.guild).purge_cache(seconds_since_update=max_duration)
+            await ctx.send(tick("Cleared {} item(s) from the cache".format(purged)))
+        else:
+            await ctx.send("Okay then.", delete_after=20)
+
     @cmd_starboard.command(name="requirerole")
-    @requirerole_loaded()
+    @cogs_loaded("RequireRole")
     async def starboard_respect_requirerole(self, ctx: RedContext):
         """Toggle whether or not the starboard respects your RequireRole settings"""
         starboard = self.starboard(ctx.guild)
@@ -253,7 +280,7 @@ class Starboard(StarboardBase):
         await starboard.config.respect_requirerole.set(current)
         await ctx.send("{} respecting RequireRole settings.".format("Now" if current else "No longer"))
 
-    async def on_raw_reaction_add(self, emoji, message_id, channel_id, user_id):
+    async def on_raw_reaction_add(self, emoji: discord.PartialEmoji, message_id: int, channel_id: int, user_id: int):
         channel = self.bot.get_channel(channel_id)
         if channel is None:
             return
@@ -281,7 +308,7 @@ class Starboard(StarboardBase):
         except StarboardException:
             pass
 
-    async def on_raw_reaction_remove(self, emoji, message_id, channel_id, user_id):
+    async def on_raw_reaction_remove(self, emoji: discord.PartialEmoji, message_id: int, channel_id: int, user_id: int):
         channel = self.bot.get_channel(channel_id)
         if channel is None:
             return
@@ -291,7 +318,7 @@ class Starboard(StarboardBase):
         guild = channel.guild
         starboard = self.starboard(guild)
         # check the reaction is a star emoji
-        if not emoji.is_unicode_emoji() or str(emoji) != "\N{WHITE MEDIUM STAR}":
+        if emoji.is_custom_emoji() or str(emoji) != "\N{WHITE MEDIUM STAR}":
             return
 
         member = guild.get_member(user_id)
@@ -308,9 +335,12 @@ class Starboard(StarboardBase):
             pass
 
     def __unload(self):
-        self.bot.loop.create_task(self.empty_starboard_queue())
+        self._main_task.cancel()
+        self._case_task.cancel()
+        # Ensure that all remaining items in the queue are properly handled
+        self.bot.loop.create_task(self._empty_starboard_queue())
 
-    async def main_timer(self):
+    async def _main_timer(self):
         time_since = {}
         while self == self.bot.get_cog("Starboard"):
             # Update starboard messages - always runs every loop
@@ -324,31 +354,29 @@ class Starboard(StarboardBase):
             # Housekeeping - runs every hour
             housekeep_check = time_since.get("housekeep", datetime.fromtimestamp(0)) + timedelta(hours=1)
             if housekeep_check < datetime.utcnow():
-                log.debug("Pruning junk data")
-                self.bot.loop.create_task(self.handle_housekeeping())
+                self.bot.loop.create_task(self._handle_housekeeping())
                 time_since["housekeep"] = datetime.utcnow()
 
             # Cache cleanup - runs every 15 minutes
             cleanup_check = time_since.get("cache_clean", datetime.fromtimestamp(0)) + timedelta(minutes=15)
             if cleanup_check < datetime.utcnow():
-                log.debug("Pruning internal cache")
-                self.bot.loop.create_task(self.cache_cleanup())
+                self.bot.loop.create_task(self._cache_cleanup())
                 time_since["cache_clean"] = datetime.utcnow()
 
             # Sleep for 5 seconds
             await sleep(5)
 
-    async def cache_cleanup(self):
+    async def _cache_cleanup(self):
         for starboard in self.guild_starboard_cache():
             starboard = self.guild_starboard_cache()[starboard]
             await starboard.purge_cache()
 
-    async def handle_housekeeping(self):
+    async def _handle_housekeeping(self):
         for starboard in self.guild_starboard_cache():
             starboard = self.guild_starboard_cache()[starboard]
             await starboard.housekeep()
 
-    async def empty_starboard_queue(self):
+    async def _empty_starboard_queue(self):
         for starboard in self.guild_starboard_cache():
             starboard = self.guild_starboard_cache()[starboard]
             try:

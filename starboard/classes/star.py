@@ -63,7 +63,7 @@ class Star(StarboardBase):
         embed = discord.Embed(colour=discord.Colour.gold(),
                               timestamp=self.message.created_at,
                               description=self.message.content)
-        embed.set_author(name=self.author_name, icon_url=self.author.avatar_url)
+        embed.set_author(name=self.author_name, icon_url=self.author.avatar_url_as(format="png"))
         if self.message.attachments and len(self.message.attachments) > 0:
             embed.set_image(url=self.message.attachments[0].proxy_url)
         embed.set_footer(text="ID: {}".format(self.message.id))
@@ -131,11 +131,31 @@ class Star(StarboardBase):
     async def add_star(self, member: discord.Member) -> None:
         """Adds a member's star
 
-        :param member: discord.Member - a member to add the star for
-        :raises StarException: If the member has already starred this message
-        :raises BlockedException: If the passed member is blocked from the guild's starboard
-        :raises BlockedAuthorException: If the author of the message is blocked from using the guild's starboard
-        :raises NoMessageContent: If this message cannot be starred due to lack of content or attachments
+        Parameters
+        -----------
+
+            member: discord.Member
+
+                The member to add the star for
+
+        Raises
+        -------
+
+            StarException
+
+                Raised if the member given has already starred this message
+
+            BlockedException
+
+                Raised if the member given is blocked from using this guild's starboard
+
+            BlockedAuthorException
+
+                Raised if the author of this message is blocked from using this guild's starboard
+
+            NoMessageContent
+
+                Raised if the message cannot be starred due to a lack of content or attachments
         """
         if not self.can_star:
             raise NoMessageContent()
@@ -151,9 +171,23 @@ class Star(StarboardBase):
     async def remove_star(self, member: discord.Member) -> None:
         """Removes a member's star
 
-        :param member: discord.Member - a member to remove the star for
-        :raises: StarException - if the member hasn't starred this message
-        :raises: BlockedException - if the passed member is blocked from the guild's starboard
+        Parameters
+        ----------
+
+            member: discord.Member
+
+                The member to remove the star for
+
+        Raises
+        ------
+
+            StarException
+
+                Raised if the member given hasn't starred this message
+
+            BlockedException
+
+                Raised if the passed member is blocked from using this guild's starboard
         """
         if member.id not in self.members:
             raise StarException("The passed member hasn't starred this message")

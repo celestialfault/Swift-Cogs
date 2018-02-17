@@ -5,10 +5,14 @@ import discord
 
 import odinair_libs as libs
 
-import re
+import textwrap
 import inspect
 
-__all__ = ["td_format", "difference", "changed", "normalize", "attempt_emoji", "get_source"]
+__all__ = ["td_format", "difference", "changed", "normalize", "attempt_emoji", "get_source", "tick"]
+
+
+def tick(text: str):
+    return "\N{WHITE HEAVY CHECK MARK} {}".format(text)
 
 
 def get_source(fn):
@@ -30,28 +34,27 @@ def get_source(fn):
         If the source code cannot be retrieved, such as if the function is defined in a repl
     """
     lines, _ = inspect.getsourcelines(fn.__code__)
-    source = "".join(lines)
-    # search for indentation on the first source line
-    # usually the first line is the command decorator, so it's assumed to be safe
-    indent = re.compile(r"^([ \t]+)").search(lines[0])
-    if indent:
-        source = re.compile(r"^{}".format(indent.group(0)), re.MULTILINE).sub("", source)
-    return source
+    return textwrap.dedent("".join(lines))
 
 
-def attempt_emoji(*, emoji_id: int = None, emoji_name: str = None, fallback: str, guild: discord.Guild = None):
+def attempt_emoji(fallback: str, *, emoji_id: int = None, emoji_name: str = None,
+                  guild: discord.Guild = None, **kwargs):
     """Attempt to get an emoji from all guilds the bot is in or from a specific guild
 
     Parameters
     -----------
+    fallback: str
+        A fallback string to return if neither emoji_id nor emoji_id resolves
     emoji_id: int
         The emoji ID to attempt to resolve
     emoji_name: str
         An emoji name to attempt to resolve. This is ignored if ``emoji_id`` resolves
-    fallback: str
-        A fallback string to return if neither emoji_id nor emoji_id resolves
     guild: discord.Guild
         A guild to search instead of attempting all emojis the bot has access to
+    **kwargs
+        Any additional keyword arguments that can be used to find a specific emoji
+
+        An example would be `animated=False` to only find static emojis
 
     Returns
     --------
@@ -60,14 +63,16 @@ def attempt_emoji(*, emoji_id: int = None, emoji_name: str = None, fallback: str
     str
         The fallback string if neither ``emoji_id`` nor ``emoji_name`` resolve
     """
-    if not any([emoji_id, emoji_name]):
+    if not any([emoji_id, emoji_name, kwargs]):
         return fallback
     emojis = libs.bot.emojis if guild is None else guild.emojis
     emoji = None
     if emoji_id is not None:
-        emoji = discord.utils.get(emojis, id=emoji_id)
+        emoji = discord.utils.get(emojis, id=emoji_id, **kwargs)
     if emoji is None and emoji_name is not None:
-        emoji = discord.utils.get(emojis, name=emoji_name)
+        emoji = discord.utils.get(emojis, name=emoji_name, **kwargs)
+    if emoji is None and kwargs:
+        emoji = discord.utils.get(emojis, **kwargs)
     return emoji or fallback
 
 
