@@ -66,58 +66,50 @@ class Quotes:
         await self.data.guild(quote.guild).quotes.set(quotes)
 
     @commands.group(name="quote", aliases=["quotes"], invoke_without_command=True)
-    async def _quote(self, ctx: RedContext, *quotes: int):
-        """
-        Save and retrieve quotes
-
-        You can retrieve up to 3 quotes at once
-        """
-        if len(quotes) == 0 or len(quotes) > 3:
-            await ctx.send_help()
+    async def _quote(self, ctx: RedContext, quote: int):
+        """Save and retrieve quotes"""
+        quote = await self.get_quote(ctx.guild, quote)
+        if quote is None:
+            await ctx.send("\N{CROSS MARK} That quote doesn't exist".format(quote))
             return
-        retrieved = []
-        for quote_id in quotes:
-            if quote_id in retrieved:  # Don't send the same quote multiple times
-                continue
-            quote = await self.get_quote(ctx.guild, quote_id)
-            if quote is None:
-                await ctx.send("❌ Quote #{} doesn't exist".format(quote_id))
-                continue
-            embed = embed_quote(quote)
-            await ctx.send(embed=embed)
-            retrieved.append(quote_id)
+        embed = embed_quote(quote)
+        await ctx.send(embed=embed)
 
     @_quote.command(name="add")
     async def _quote_add(self, ctx: RedContext, *, message: str):
         """Add a quote"""
         quote = await self.add_quote(message, ctx.author, ctx.author)
-        await ctx.send("✅ Quote added", embed=embed_quote(quote))
+        await ctx.send("\N{WHITE HEAVY CHECK MARK} Quote added", embed=embed_quote(quote))
 
     @_quote.command(name="message")
     async def _quote_message(self, ctx: RedContext, message: int):
         """Quote a message by it's ID
 
-        The message specified must be in the same channel this command is executed in"""
+        The message specified must be in the same channel this command is executed in
+
+        You can obtain a message's ID by enabling Developer Mode in your Appearance settings,
+        and clicking Copy ID in the message's context menu
+        """
         try:
             message = await ctx.get_message(message)
         except discord.NotFound:
-            await ctx.send("❌ I couldn't find that message")
+            await ctx.send("\N{CROSS MARK} I couldn't find that message "
+                           "- this command can only retrieve messages in the same channel it's ran in")
         except discord.Forbidden:
-            await ctx.send("❌ I'm not allowed to retrieve that message")
+            await ctx.send("\N{CROSS MARK} I'm not allowed to retrieve that message")
         else:
             quote = await self.add_quote(message.content, ctx.author, message.author)
-            await ctx.send("✅ Quote added", embed=embed_quote(quote))
+            await ctx.send("\N{WHITE HEAVY CHECK MARK} Quote added", embed=embed_quote(quote))
 
     @_quote.command(name="attribute", aliases=["author"])
     async def _quote_attribute(self, ctx: RedContext, quote: int, *, author: discord.Member):
-        """
-        Attribute a quote to the specified user
+        """Attribute a quote to the specified user
 
         This requires you to be the quote creator, an administrator or moderator
         """
         _quote = await self.get_quote(ctx.guild, quote)
         if _quote is None:
-            await ctx.send("❌ That quote doesn't exist")
+            await ctx.send("\N{CROSS MARK} That quote doesn't exist")
             return
         if not _quote.author or _quote.author.id != ctx.author.id:
             if await self.bot.is_owner(ctx.author):
@@ -125,22 +117,21 @@ class Quotes:
             elif await self.bot.is_mod(ctx.author):
                 pass
             else:
-                return await ctx.send("❌ You aren't allowed to modify that quote")
+                return await ctx.send("\N{CROSS MARK} You aren't allowed to modify that quote")
         quotes = list(await self.data.guild(ctx.guild).quotes())
         quotes[quote - 1]["message_author_id"] = author.id
         await self.data.guild(ctx.guild).quotes.set(quotes)
-        await ctx.send("✅ Attributed quote #{} to **{}**.".format(quote, str(author)))
+        await ctx.send("\N{WHITE HEAVY CHECK MARK} Attributed quote #{} to **{}**.".format(quote, str(author)))
 
     @_quote.command(name="remove", aliases=["rm", "delete"])
     async def _quote_remove(self, ctx: RedContext, quote: int):
-        """
-        Remove a quote by it's ID
+        """"Remove a quote by it's ID
 
         This requires you to either be the quote's creator, an administrator, moderator, or the quoted message author
         """
         quote = await self.get_quote(ctx.guild, quote)
         if not quote:
-            return await ctx.send("❌ That quote doesn't exist")
+            return await ctx.send("\N{CROSS MARK} That quote doesn't exist")
         if not quote.author or quote.author.id != ctx.author.id:
             if quote.message_author and quote.message_author.id == ctx.author.id:
                 pass
@@ -149,14 +140,14 @@ class Quotes:
             elif await self.bot.is_mod(ctx.author):
                 pass
             else:
-                return ctx.send("❌ You aren't allowed to remove that quote")
+                return ctx.send("\N{CROSS MARK} You aren't allowed to remove that quote")
         await self.remove_quote(quote)
-        await ctx.send("✅ Quote removed.")
+        await ctx.send("\N{WHITE HEAVY CHECK MARK} Quote removed.")
 
 
 def embed_quote(quote: Quote) -> discord.Embed:
-    """
-    Returns a built Embed object for the given Quote
+    """Returns a built Embed object for the given Quote
+
     :param quote: A quote returned from get_quote or add_quote
     :return Embed: Created Embed of the given quote
     """

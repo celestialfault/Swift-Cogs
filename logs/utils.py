@@ -2,11 +2,17 @@ import discord
 from enum import Enum
 
 from redbot.core import RedContext
-from redbot.core.config import Value, Group
+from redbot.core.config import Group
 
-from typing import Optional, Iterable, Tuple, Union
+from typing import Optional, Union, Dict, Sequence, List
 
-from redbot.core.utils.chat_formatting import info
+from redbot.core.utils.chat_formatting import warning
+
+from odinair_libs.config import group_toggle
+from odinair_libs.formatting import tick
+
+
+__all__ = ["CheckType", "handle_group", "status_embed", "find_check"]
 
 
 class CheckType(Enum):
@@ -18,51 +24,51 @@ class CheckType(Enum):
         return self.value
 
 
-async def toggle(value: Value) -> bool:
-    """Toggles a single Value object. This assumes that the Value is of a bool"""
-    _val = await value()
-    if not isinstance(_val, bool) and _val is not None:
-        raise TypeError("Value object does not return a bool or None value")
-    _val = not _val
-    await value.set(_val)
-    return _val
-
-
-async def handle_group(ctx: RedContext, slots: list, types: Tuple[str], settings: Group, setting_type: str):
+async def handle_group(ctx: RedContext, slots: Sequence[str], types: Sequence[str], settings: Group, setting_type: str,
+                       descriptions: Dict[str, str] = None):
     if len(types) == 0:
-        _settings = await settings()
-        list1 = list(filter(None, _settings))
-        list2 = list(filter(lambda x: not x, _settings))
-        # Include items in `slots` that aren't in list1 or list2 in list2
-        # So that they show up in the disabled category of status embeds
-        list2 = list2 + [x for x in slots if x not in list1 and x not in list2]
-        embed = status_embed(list1=list1, list2=list2, title="Current {} Log Settings".format(setting_type.title()))
-        await ctx.send(embed=embed)
+        await ctx.send(embed=status_embed(settings={**{x: False for x in slots}, **await settings()},
+                                          title="Current {} Log Settings".format(setting_type.title()),
+                                          descriptions=descriptions))
         return
-    embed = await group_set(types, settings, slots)
-    await ctx.send(info("Updated {} log settings".format(setting_type)), embed=embed)
+    try:
+        settings = await group_toggle(group=settings, toggle_keys=types, slots=slots, strict_slots=True)
+    except KeyError as e:
+        await ctx.send(warning("'{0!s}' is not an available setting".format(e)))
+        return
+    embed = status_embed(settings=settings, title="{} Log Settings".format(setting_type.title()),
+                         descriptions=descriptions)
+    await ctx.send(tick("Updated {} log settings".format(setting_type)), embed=embed)
 
 
-async def group_set(set_items: Iterable[str], group: Group, slots: list = None) -> discord.Embed:
-    """Group settings toggle"""
-    slots = [x.lower() for x in slots or group.defaults]
-    set_items = [x.lower() for x in set_items if x.lower() in slots]
-    settings = await group()
-    if not settings:
-        settings = {x: False for x in slots}
-    for item in slots:
-        if item in set_items:
-            settings[item] = not settings[item] if item in settings else True
-        else:
-            settings[item] = settings[item] if item in settings else False
-    await group.set(settings)
-    return status_embed([x for x in settings if settings[x]], [x for x in settings if not settings[x]])
+def add_descriptions(items: List[str], descriptions: Dict[str, str] = None) -> str:
+    if descriptions is None:
+        descriptions = {}
+    for item in items:
+        index = items.index(item)
+        items[index] = "**{}** — {}".format(item, descriptions.get(item, "No description set"))
+    return "\n".join(items)
 
 
-def status_embed(list1: list, list2: list, title: str = discord.Embed.Empty) -> discord.Embed:
-    embed = discord.Embed(colour=discord.Colour.blurple(), title=title)
-    embed.add_field(name="Enabled", value=", ".join(list1 if list1 else ["None"]), inline=False)
-    embed.add_field(name="Disabled", value=", ".join(list2 if list2 else ["None"]), inline=False)
+def status_embed(settings: Dict[str, bool], descriptions: Dict[str, str] = None,
+                 title: str = discord.Embed.Empty) -> discord.Embed:
+    enabled = [x for x in settings if settings[x]] or None
+    disabled = [x for x in settings if not settings[x]] or None
+
+    if enabled is not None:
+        enabled = add_descriptions(enabled, descriptions)
+    else:
+        enabled = "**None** — All of these settings are disabled"
+
+    if disabled is not None:
+        disabled = add_descriptions(disabled, descriptions)
+    else:
+        disabled = "**None** — All of these settings are enabled"
+
+    embed = discord.Embed(colour=discord.Colour.blurple(), title=title,
+                          description="**❯ Enabled Log Settings**\n{}\n\n"
+                                      "**❯ Disabled Log Settings**\n{}"
+                                      "".format(enabled, disabled))
     return embed
 
 

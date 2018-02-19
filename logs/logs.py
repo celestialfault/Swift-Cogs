@@ -7,12 +7,14 @@ from redbot.core.bot import Red, RedContext
 from redbot.core import checks, Config
 from redbot.core.utils.chat_formatting import info, error, box, warning
 
-from logs.utils import toggle, handle_group
+from logs.utils import handle_group
 from logs.guildlog import GuildLog, LogType
 from logs.types import *
 
 from odinair_libs.converters import GuildChannel
+from odinair_libs.formatting import tick
 from odinair_libs.menus import cmd_help, confirm, ReactMenu
+from odinair_libs.config import toggle
 
 _guilds = {}
 
@@ -20,6 +22,56 @@ _guilds = {}
 # noinspection PyShadowingNames
 class Logs:
     """Log anything and everything that happens in your server"""
+    _descriptions = {
+        "guild": {
+            "2fa": "Two-factor authentication requirement",
+            "verification": "Member verification level",
+            "name": "Guild name",
+            "owner": "Ownership changes",
+            "afk": "AFK channel and timeout",
+            "region": "Voice region",
+            "content_filter": "Explicit content filter"
+        },
+        "channels": {
+            "create": "Channel creation",
+            "delete": "Channel deletion",
+            "name": "Channel name",
+            "topic": "Text channel topics",
+            "category": "Channel category",
+            "bitrate": "Voice channel bitrate",
+            "user_limit": "Voice channel user limit",
+            "position": "Channel position changes (this option can be spammy!)"
+        },
+        "messages": {
+            "edit": "Message edits",
+            "delete": "Message deletions"
+        },
+        "members": {
+            "join": "Member joining",
+            "leave": "Member leaving",
+            "name": "Member username changes",
+            "discriminator": "Member discriminator changes",
+            "nickname": "Member nickname changes",
+            "roles": "Member role changes"
+        },
+        "roles": {
+            "create": "Role creations",
+            "delete": "Role deletions",
+            "name": "Role name",
+            "hoist": "Role hoist status",
+            "mention": "Role mentionable status",
+            "permissions": "Role permissions",
+            "colour": "Role colour",
+            "position": "Role position changes (this option can be spammy!)"
+        },
+        "voice": {
+            "channel": "Member voice channel joining, leaving, or switching",
+            "selfmute": "Member self-mute",
+            "selfdeaf": "Member self-deaf",
+            "servermute": "Member server mute",
+            "serverdeaf": "Member server deafen"
+        }
+    }
 
     def __init__(self, bot: Red, config: Config):
         self.bot = bot
@@ -42,48 +94,70 @@ class Logs:
     @logset_logchannel.command(name="all")
     async def logchannel_all(self, ctx: RedContext, channel: discord.TextChannel = None):
         """Set or clear all log channels at once"""
-        channel = channel.id if channel else None
         # Half-assed workarounds 101
         channels = self.config.guild(ctx.guild).log_channels.defaults
         if channel is not None:
-            channels = {x: channel for x in channels}
+            channels = {x: channel.id if channel else None for x in channels}
         await self.config.guild(ctx.guild).log_channels.set(channels)
-        await ctx.tick()
+
+        if channel is not None:
+            await ctx.send(tick("Set all log channels to {}".format(channel.mention)))
+        else:
+            await ctx.send(tick("Cleared all set log channels"))
 
     @logset_logchannel.command(name="role")
     async def logchannel_role(self, ctx: RedContext, channel: discord.TextChannel = None):
         """Set the role log channel"""
         await self.config.guild(ctx.guild).log_channels.roles.set(channel.id if channel else None)
-        await ctx.tick()
+        if channel is not None:
+            await ctx.send(tick("Set the role log channel to {}".format(channel.mention)))
+        else:
+            await ctx.send(tick("Cleared the set role log channel"))
 
     @logset_logchannel.command(name="emoji")
     async def logchannel_emoji(self, ctx: RedContext, channel: discord.TextChannel = None):
+        """Set the emoji log channel"""
         await self.config.guild(ctx.guild).log_channels.emoji.set(channel.id if channel else None)
-        await ctx.tick()
+        if channel is not None:
+            await ctx.send(tick("Set the emoji log channel to {}".format(channel.mention)))
+        else:
+            await ctx.send(tick("Cleared the set emoji log channel"))
 
     @logset_logchannel.command(name="guild", aliases=["server"])
     async def logchannel_guild(self, ctx: RedContext, channel: discord.TextChannel = None):
         """Set the guild log channel"""
         await self.config.guild(ctx.guild).log_channels.guild.set(channel.id if channel else None)
-        await ctx.tick()
+        if channel is not None:
+            await ctx.send(tick("Set the guild log channel to {}".format(channel.mention)))
+        else:
+            await ctx.send(tick("Cleared the set guild log channel"))
 
     @logset_logchannel.command(name="message")
     async def logchannel_message(self, ctx: RedContext, channel: discord.TextChannel = None):
         """Set the message log channel"""
         await self.config.guild(ctx.guild).log_channels.messages.set(channel.id if channel else None)
-        await ctx.tick()
+        if channel is not None:
+            await ctx.send(tick("Set the message log channel to {}".format(channel.mention)))
+        else:
+            await ctx.send(tick("Cleared the set message log channel"))
 
     @logset_logchannel.command(name="channel")
     async def logchannel_channel(self, ctx: RedContext, channel: discord.TextChannel = None):
         """Set the channel log channel"""
         await self.config.guild(ctx.guild).log_channels.channels.set(channel.id if channel else None)
-        await ctx.tick()
+        if channel is not None:
+            await ctx.send(tick("Set the channel log channel to {}".format(channel.mention)))
+        else:
+            await ctx.send(tick("Cleared the set channel log channel"))
 
     @logset_logchannel.command(name="voice")
     async def logchannel_voice(self, ctx: RedContext, channel: discord.TextChannel = None):
         """Set the voice status log channel"""
         await self.config.guild(ctx.guild).log_channels.voice.set(channel.id if channel else None)
-        await ctx.tick()
+        if channel is not None:
+            await ctx.send(tick("Set the voice log channel to {}".format(channel.mention)))
+        else:
+            await ctx.send(tick("Cleared the set voice log channel"))
 
     @logset.group(name="format")
     async def logset_format(self, ctx: RedContext):
@@ -94,13 +168,13 @@ class Logs:
     async def format_embed(self, ctx: RedContext):
         """Set the guild's log format to embeds"""
         await self.config.guild(ctx.guild).format.set("EMBED")
-        await ctx.tick()
+        await ctx.send(tick("Log messages will now be embeds"))
 
     @logset_format.command(name="text")
     async def format_text(self, ctx: RedContext):
         """Set the guild's log format to text"""
         await self.config.guild(ctx.guild).format.set("TEXT")
-        await ctx.tick()
+        await ctx.send(tick("Log messages will now be plain text"))
 
     @logset.group(name="check")
     async def logset_check(self, ctx: RedContext):
@@ -113,116 +187,140 @@ class Logs:
     async def logset_both(self, ctx: RedContext):
         """Set logging to check both before and after values to determine ignore status"""
         await self.config.guild(ctx.guild).check_type.set("both")
-        await ctx.tick()
+        await ctx.send(tick("Log ignoring will now check the unchanged values in updates"))
 
     @logset_check.command(name="after")
     async def logset_after(self, ctx: RedContext):
         """Set logging to check the after values to determine ignore status"""
         await self.config.guild(ctx.guild).check_type.set("after")
-        await ctx.tick()
+        await ctx.send(tick("Log ignoring will now check the changed values in updates"))
 
     @logset_check.command(name="before")
     async def logset_before(self, ctx: RedContext):
         """Set logging to check the before values to determine ignore status"""
         await self.config.guild(ctx.guild).check_type.set("before")
-        await ctx.tick()
+        await ctx.send(tick("Log ignoring will now check the both the unchanged and changed values in updates"))
 
     @logset.command(name="guild", aliases=["server"])
-    async def logset_guild(self, ctx: RedContext, *types):
+    async def logset_guild(self, ctx: RedContext, *settings):
         """Set guild update logging
 
-        Available log types:
-        2fa, verification, name, owner, afk, region, content_filter
+        Available log settings:
+
+        **2fa** — Guild two factor authentication requirement
+        **verification** — Guild verification level
+        **name** — Guild name
+        **owner** — Guild ownership
+        **afk** — Guild AFK channel and timeout
+        **region** — Guild voice region
+        **content_filter** — Guild NSFW content filter
 
         Example:
-        **❯** **!logset guild name owner**
-        **❯** Toggles logging of guild name changes and ownership changes
+        **❯** `[p]logset guild name owner`
         """
-        slots = ["2fa", "verification", "name", "owner", "afk", "region", "content_filter"]
-        # noinspection PyTypeChecker
-        await handle_group(ctx, slots, types, self.config.guild(ctx.guild).guild, "guild")
+        await handle_group(ctx, types=settings, settings=self.config.guild(ctx.guild).guild, setting_type="guild",
+                           slots=["2fa", "verification", "name", "owner", "afk", "region", "content_filter"],
+                           descriptions=self._descriptions["guild"])
 
     @logset.command(name="channel")
-    async def logset_channel_update(self, ctx: RedContext, *types):
+    async def logset_channel_update(self, ctx: RedContext, *settings):
         """Manage channel logging
 
-        Available log types:
-        create, delete, name, topic, position, category, bitrate, user_limit
+        Available log settings:
+
+        **create** — Channel creation
+        **delete** — Channel deletion
+        **name** — Channel name
+        **topic** — Channel topic
+        **category** — Channel category
+        **bitrate** — Voice channel bitrate
+        **user_limit** — Voice channel user limit
+        **position** — Channel position - this option may result in log spam!
 
         Example:
-        **❯** **!logset channel update name topic bitrate**
-        **❯** Toggles logging of channel name, bitrate and topic changes
+        **❯** `[p]logset channel update name topic bitrate`
         """
-        slots = ["create", "delete", "name", "topic", "position", "category", "bitrate", "user_limit"]
-        # noinspection PyTypeChecker
-        await handle_group(ctx, slots, types, self.config.guild(ctx.guild).channels, "channel")
+        await handle_group(ctx, types=settings, settings=self.config.guild(ctx.guild).channels, setting_type="channel",
+                           slots=["create", "delete", "name", "topic", "position", "category", "bitrate", "user_limit"],
+                           descriptions=self._descriptions["channels"])
 
     @logset.command(name="message")
-    async def logset_message(self, ctx: RedContext, *types):
+    async def logset_message(self, ctx: RedContext, *settings):
         """Manage message logging
 
-        Available log types:
-        edit, delete
+        Available log settings:
+
+        **edit** — Message edits
+        **delete** — Message deletion
 
         Example:
-        **❯** **!logset message edit**
-        **❯** Toggles logging of message edits
+        **❯** `[p]logset message edit`
 
         **NOTE:** It's recommended to notify users about the presence of message logging in public servers
-
-        Due to a limitation of the Discord API, logs will only include messages that are in the bot's message cache
-        This means that if a message was pushed out of the bot's message cache for any reason,
-        such as enough messages being sent or if the bot is restarted, any edits or deletions
-        will not be logged.
         """
-        slots = ["edit", "delete"]
-        # noinspection PyTypeChecker
-        await handle_group(ctx, slots, types, self.config.guild(ctx.guild).messages, "message")
+        await handle_group(ctx, types=settings, settings=self.config.guild(ctx.guild).messages, setting_type="message",
+                           slots=["edit", "delete"], descriptions=self._descriptions["messages"])
 
     @logset.command(name="member")
-    async def logset_member(self, ctx: RedContext, *types: str):
+    async def logset_member(self, ctx: RedContext, *settings: str):
         """Manage member logging
 
-        Available log types:
-        join, leave, name, discriminator, nickname, roles
+        Available log settings:
+
+        **join** — Member joining
+        **leave** — Member leaving
+        **name** — Member username
+        **discriminator** — Member discriminator
+        **nickname** — Member nickname
+        **roles** — Member roles
 
         Example:
-        **❯** **!logset member update discriminator join roles**
-        **❯** Toggles logging of member joining, discriminator changes (the #0000 after a username), and role updates
+        **❯** `[p]logset member update discriminator join roles`
         """
-        slots = ["join", "leave", "name", "discriminator", "nickname", "roles"]
-        # noinspection PyTypeChecker
-        await handle_group(ctx, slots, types, self.config.guild(ctx.guild).members, "member")
+        await handle_group(ctx, types=settings, settings=self.config.guild(ctx.guild).members, setting_type="member",
+                           slots=["join", "leave", "name", "discriminator", "nickname", "roles"],
+                           descriptions=self._descriptions["members"])
 
     @logset.command(name="role")
-    async def logset_role_update(self, ctx: RedContext, *types):
+    async def logset_role_update(self, ctx: RedContext, *settings):
         """Manage role logging
 
-        Available log types:
-        create, delete, name, hoist, mention, position, permissions, colour
+        Available log settings:
+
+        **create** — Role creation
+        **delete** — Role deletion
+        **name** — Role name updates
+        **hoist** — Role hoist status updates
+        **mention** — Role mentionable status updates
+        **permissions** — Role permission updates
+        **colour** — Role colour updates
+        **position** — Role position updates - this option may result in log spam!
 
         Example:
-        **❯** **!logset role update name permissions**
-        **❯** Toggles logging of role name and permission changes
+        **❯** `[p]logset role update name permissions`
         """
-        slots = ["create", "delete", "name", "hoist", "mention", "position", "permissions", "colour"]
-        # noinspection PyTypeChecker
-        await handle_group(ctx, slots, types, self.config.guild(ctx.guild).roles, "role")
+        await handle_group(ctx, types=settings, settings=self.config.guild(ctx.guild).roles, setting_type="role",
+                           slots=["create", "delete", "name", "hoist", "mention", "position", "permissions", "colour"],
+                           descriptions=self._descriptions["roles"])
 
     @logset.command(name="voice")
-    async def logset_voice(self, ctx: RedContext, *types):
+    async def logset_voice(self, ctx: RedContext, *settings):
         """Manage voice status logging
 
-        Available types:
-        channel, selfmute, servermute, selfdeaf, serverdeaf
+        Available log settings:
+
+        **channel** — Member voice channel joining, leaving or switching
+        **selfmute** — Self mute
+        **selfdeaf** — Self deafen
+        **servermute** — Server mute
+        **serverdeaf** — Server deafen
 
         Example:
-        **❯** !logset voice servermute serverdeaf
-        **❯** Toggles logging server mute and deaf status changes
+        **❯** `[p]logset voice servermute serverdeaf`
         """
-        slots = ["channel", "selfmute", "selfdeaf", "servermute", "serverdeaf"]
-        # noinspection PyTypeChecker
-        await handle_group(ctx, slots, types, self.config.guild(ctx.guild).voice, "voice")
+        await handle_group(ctx, types=settings, settings=self.config.guild(ctx.guild).voice, setting_type="voice",
+                           slots=["channel", "selfmute", "selfdeaf", "servermute", "serverdeaf"],
+                           descriptions=self._descriptions["voice"])
 
     @logset.command(name="emoji")
     async def logset_emoji(self, ctx: RedContext):
@@ -240,15 +338,25 @@ class Logs:
 
         for channel in settings.get('log_channels', []):
             settings["log_channels"][channel] = ctx.guild.get_channel(settings["log_channels"][channel])
-        channels = ["**{type}:** {channel}".format(type=x.title(),
-                                                   channel=settings["log_channels"][x].mention
-                                                   if settings["log_channels"][x] else None)
-                    for x in settings["log_channels"]]
+        channels = {x: getattr(settings["log_channels"][x], "mention", None) for x in settings["log_channels"]}
 
         def build(group: str):
+            enabled = [x for x in settings[group] if settings[group][x]] or None
+            disabled = [x for x in settings[group] if not settings[group][x]] or None
+            strs = ["**Log channel:** {}\n".format(channels.get(group, None))]
+
+            if enabled is not None:
+                strs.append("\n".join("**{}**: Enabled — {}"
+                                      .format(x, self._descriptions[group].get(x, "No description provided"))
+                                      for x in enabled))
+
+            if disabled is not None:
+                strs.append("\n".join("**{}**: Disabled — {}"
+                                      .format(x, self._descriptions[group].get(x, "No description provided"))
+                                      for x in disabled))
+
             return {"title": "{} Settings".format(group.replace("_", " ").title()),
-                    "content": "\n".join(["**{}:** {}".format(x, settings.get(group, {})[x])
-                                          for x in settings.get(group, {})])}
+                    "content": "\n".join(strs)}
 
         pages = [
             [
@@ -258,16 +366,20 @@ class Logs:
             ],
             [
                 build("messages"),
-                build("guild"),
-                build("members")
+                build("members"),
+                build("voice")
             ],
             [
-                {"title": "Log Channels", "content": "\n".join(channels)},
-                {"title": "Emoji Updates", "content": str(settings.get("emojis", False))},
-                {"title": "Ignore Check Type", "content": str(settings.get("check_type", "after")).title()}
-            ],
-            [
-                {"title": "Log Format", "content": str(settings.get("format", "EMBED")).title()}
+                {"title": "Emoji Updates", "content": "**Log channel:** {}\n\n**Enabled:** {}".format(
+                    channels.get("emoji", None), str(settings.get("emojis", False)))},
+                {
+                    "title": "Log Settings",
+                    "content": "**Check type:** {type}\n"
+                               "**Log format:** {format}"
+                               "".format(
+                                         type=str(settings.get("check_type", "after")).title(),
+                                         format=str(settings.get("format", "EMBED")).title())
+                }
             ]
         ]
 
@@ -280,7 +392,7 @@ class Logs:
 
         embed = discord.Embed(colour=discord.Colour.blurple(), title="Log Settings")
         for item in pages[curr_page]:
-            embed.add_field(name=item["title"], value=item["content"])
+            embed.add_field(name=item["title"], value=item["content"], inline=False)
         embed.set_footer(text="Page {}/{}".format(curr_page + 1, len(pages)))
         menu = ReactMenu(ctx, actions, embed=embed, timeout=60.0,
                          post_action_check=lambda action: action != "close")
@@ -289,7 +401,7 @@ class Logs:
         while True:
             embed = discord.Embed(colour=discord.Colour.blurple(), title="Log Settings")
             for item in pages[curr_page]:
-                embed.add_field(name=item["title"], value=item["content"])
+                embed.add_field(name=item["title"], value=item["content"], inline=False)
             embed.set_footer(text="Page {}/{}".format(curr_page + 1, len(pages)))
             if result is not None:
                 await menu.message.edit(embed=embed)
@@ -564,17 +676,22 @@ class Logs:
         await self.get_guild_log(after.guild).log(MemberLogType, LogType.UPDATE, before=before, after=after)
 
     async def on_guild_channel_create(self, channel: discord.abc.GuildChannel):
+        # noinspection PyUnresolvedReferences
         guild = channel.guild
         if not await self.config.guild(guild).channels.create():
             return
+        # noinspection PyUnresolvedReferences
         await self.get_guild_log(channel.guild).log(ChannelLogType, LogType.CREATE, created=channel)
 
     async def on_guild_channel_delete(self, channel: discord.abc.GuildChannel):
+        # noinspection PyUnresolvedReferences
         if not await self.config.guild(channel.guild).channels.delete():
             return
+        # noinspection PyUnresolvedReferences
         await self.get_guild_log(channel.guild).log(ChannelLogType, LogType.DELETE, deleted=channel)
 
     async def on_guild_channel_update(self, before: discord.abc.GuildChannel, after: discord.abc.GuildChannel):
+        # noinspection PyUnresolvedReferences
         await self.get_guild_log(after.guild).log(ChannelLogType, LogType.UPDATE, before=before, after=after)
 
     async def on_voice_state_update(self, member: discord.Member, before: discord.VoiceState,

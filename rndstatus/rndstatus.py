@@ -11,6 +11,8 @@ from redbot.core.utils.chat_formatting import error, pagify, info, warning, box
 from random import choice, randint
 
 from odinair_libs.menus import confirm
+from odinair_libs.converters import FutureTime
+from odinair_libs.formatting import td_format, tick
 
 
 class RNDStatus:
@@ -32,18 +34,22 @@ class RNDStatus:
         if not ctx.invoked_subcommand:
             await ctx.send_help()
 
+    _min_duration = FutureTime.get_seconds("5 minutes")
+
     @rndstatus.command(name="delay")
-    async def rndstatus_delay(self, ctx: RedContext, seconds: int):
+    async def rndstatus_delay(self, ctx: RedContext, *,
+                              duration: FutureTime(min_duration=_min_duration, strict=True, max_duration=None)):
         """Set the amount of time required to pass in seconds to change the bot's playing status
 
-        Minimum amount of seconds between changes is 60
+        Duration can be formatted like `7.5m`, `1h7.5m`, `7.5 minutes`, or `1 hour 7.5 minutes`
+
+        Minimum duration between changes is 5 minutes
         Default delay is every 10 minutes, or every 600 seconds
         """
-        if seconds < 60:
-            await ctx.send_help()
-            return
-        await self.config.delay.set(seconds)
-        await ctx.tick()
+        await self.config.delay.set(duration.total_seconds())
+        await ctx.send(tick("Set time between status changes to {}.\n"
+                            "This will take effect after the next status change."
+                            "".format(td_format(duration))))
 
     async def _add_status(self, ctx: RedContext, game: str, game_type: int=0):
         try:
@@ -53,7 +59,7 @@ class RNDStatus:
 
         async with self.config.statuses() as statuses:
             statuses.append({"type": game_type, "game": game})
-            await ctx.tick()
+            await ctx.send(tick("Status **#{}** added.".format(len(statuses))))
 
     @rndstatus.command(name="add")
     async def rndstatus_add(self, ctx: RedContext, *, status: str):
@@ -67,6 +73,8 @@ class RNDStatus:
         **{SHARDS}**  Replaced with the total amount of shards the bot has loaded
         **{COMMANDS}**  Replaced with the amount of commands loaded
         **{COGS}**  Replaced with the amount of cogs loaded
+
+        The guilds that a shard contains will be used to parse a status, instead of every guild the bot is in.
 
         You can use `[p]rndstatus parse` to test your status strings
 
@@ -101,7 +109,7 @@ class RNDStatus:
         """
         shard = randint(1, self.bot.shard_count) if ctx.guild is None else ctx.guild.shard_id + 1
         try:
-            result, _ = self.format_status(status)
+            result, _ = self.format_status(status, shard=shard)
         except KeyError as e:
             await ctx.send(warning("Placeholder {0!s} does not exist\n\nSee `{1}help rndstatus add` for the list"
                                    " of replacement strings".format(e, ctx.prefix)))
@@ -151,7 +159,7 @@ class RNDStatus:
         shard = randint(1, self.bot.shard_count) if getattr(ctx, "guild", None) is None else ctx.guild.shard_id + 1
         for item in orig_statuses:
             try:
-                parsed, game_type = self.format_status(item, return_formatted=parse)  # Attempt to parse the string
+                parsed, game_type = self.format_status(item, shard=shard, return_formatted=parse)
                 statuses.append(parsed if not parse else parsed.format(SHARD=shard))
             except KeyError as e:
                 statuses.append("{0} [placeholder {1!s} does not exist]".format(item, e))
@@ -172,7 +180,7 @@ class RNDStatus:
         else:
             await ctx.send("Okay then.", delete_after=15.0)
 
-    def format_status(self, status: str or dict, shard: int=None, return_formatted=True):
+    def format_status(self, status: str or dict, shard: int = None, return_formatted=True):
         game_type = 0
         if isinstance(status, dict):
             game_type = status.get("type", 0)
@@ -196,23 +204,17 @@ class RNDStatus:
     async def update_status(self, statuses: List[str]):
         if not statuses:
             return
-        try:
-            game, game_type = self.format_status(choice(statuses))
-        except KeyError:
-            pass
-        else:
-            if game is None:
+        status = choice(statuses)
+        for shard in self.bot.shards.keys():
+            try:
+                game, game_type = self.format_status(status, shard=shard)
+            except KeyError:
                 return
-            for shard in self.bot.shards.keys():
-                shard_game = discord.Game(name=game.format(SHARD=shard+1), type=game_type)
-                await self.bot.change_presence(game=shard_game,
-                                               # If this isn't provided, discord.py sets the bot's status to Online,
-                                               # ignoring any previously set status - this depends on the bot being
-                                               # in at least one guild
-                                               status=self.bot.guilds[0].me.status,
-                                               # Individually set the status of each shard
-                                               # Doing this enables the possibility of the {SHARD} placeholder
-                                               shard_id=shard)
+            game = discord.Game(name=game.format(SHARD=shard + 1), type=game_type)
+            await self.bot.change_presence(game=game, status=self.bot.guilds[0].me.status,
+                                           # Individually set the status of each shard
+                                           # Doing this enables the possibility of the {SHARD} placeholder
+                                           shard_id=shard)
 
     async def timer(self):
         while self == self.bot.get_cog(self.__class__.__name__):

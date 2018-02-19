@@ -96,25 +96,37 @@ class FutureTime(commands.Converter):
                                    ("months", timedelta(days=30).total_seconds()),
                                    ("years", timedelta(days=365).total_seconds())])
     MAX_SECONDS = TIME_QUANTITIES["years"] * 2
+    MIN_SECONDS = None
     STRICT_MODE = False
 
-    def __init__(self, max_duration: Union[str, int, float, None] = "2y", strict: bool = False):
+    def __init__(self,
+                 max_duration: Union[str, int, float, None] = "2y",
+                 min_duration: Union[str, int, float, None] = None,
+                 strict: bool = False):
         """Create a FutureTime converter
 
         Parameters
         -----------
+        max_duration: Union[str, int, float, None]
+            How long in seconds to allow for a conversion to go up to. Set to None to disable this
 
-            max_duration: Union[str, int, float, None]
+            Defaults to ``"2y"``
+        min_duration: Union[str, int, float, None]
+            The minimum duration that can be parsed.
+            Setting this to 0 effectively acts as if this was set to None
 
-                How long in seconds to allow for a conversion to go up to. Set to None to disable this
+            Defaults to ``None``
+        strict: bool
+            If this is True, `convert` will throw a `commands.BadArgument` exception
+            if the argument passed fails to convert into a timedelta, such as if
+            the user only gave invalid time strings
 
-            strict: bool
+            Time durations that fail to pass either max or min durations will always throw a BadArgument exception
 
-                If this is True, `convert` will throw a `commands.BadArgument` exception
-                if the argument passed fails to convert into a timedelta, such as if
-                the user only gave invalid time strings
+            Defaults to ``False``
         """
         self.MAX_SECONDS = self.get_seconds(max_duration) if isinstance(max_duration, str) else max_duration
+        self.MIN_SECONDS = self.get_seconds(min_duration) if isinstance(min_duration, str) else min_duration
         self.STRICT_MODE = strict
 
     @staticmethod
@@ -132,9 +144,14 @@ class FutureTime(commands.Converter):
 
     async def convert(self, ctx, argument: str) -> Union[None, timedelta]:
         seconds = self.get_seconds(argument)
+
         if seconds and self.MAX_SECONDS is not None and seconds > self.MAX_SECONDS:
-            raise commands.BadArgument('Time duration exceeds {}'
-                                       .format(td_format(timedelta(seconds=self.MAX_SECONDS))))
+            raise commands.BadArgument('Time duration exceeds {}'.format(
+                td_format(timedelta(seconds=self.MAX_SECONDS))))
+        elif seconds and self.MIN_SECONDS is not None and seconds < self.MIN_SECONDS:
+            raise commands.BadArgument('Time duration does not exceed minimum of {}'.format(
+                td_format(timedelta(seconds=self.MIN_SECONDS))))
+
         if seconds is None and self.STRICT_MODE:
             raise commands.BadArgument("Failed to parse duration")
         return timedelta(seconds=seconds) if seconds else None

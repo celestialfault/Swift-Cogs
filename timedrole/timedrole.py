@@ -1,5 +1,4 @@
 import asyncio
-from typing import List
 
 import discord
 from discord.ext import commands
@@ -136,13 +135,17 @@ class TimedRole:
         """
         return GuildRoles(self.config, guild)
 
-    async def add_roles(self, member: discord.Member, granted_by: discord.Member, duration: timedelta,
-                        roles: List[discord.Role], expired_reason: str = None, reason: str = None,
+    async def add_roles(self, *roles: discord.Role, member: discord.Member, granted_by: discord.Member,
+                        duration: timedelta, expired_reason: str = None, reason: str = None,
                         hidden: bool = False):
         """Adds roles to a member.
 
         Parameters
         -----------
+
+            *roles: discord.Role
+
+                A list of roles to give to a member
 
             member: discord.Member
 
@@ -155,10 +158,6 @@ class TimedRole:
             duration: timedelta
 
                 How long to give the user the role for
-
-            roles: List[discord.Role]
-
-                A list of roles to give the member
 
             reason: str
 
@@ -268,7 +267,7 @@ class TimedRole:
                                    "or higher than my highest ranked role"))
             return
         try:
-            await self.add_roles(member=member, duration=duration, granted_by=ctx.author, roles=roles)
+            await self.add_roles(*roles, member=member, duration=duration, granted_by=ctx.author)
         except discord.Forbidden:
             await ctx.send(warning("I failed to give one or more of those roles to the specified user"))
         except RuntimeError as e:
@@ -317,5 +316,6 @@ class TimedRole:
         guild_roles = self.get_guild(member.guild)
         roles = await guild_roles.active_roles(member, member_has_role=False)
         if member.guild.me.guild_permissions.manage_roles and roles:
+            # Reapply any timed roles the member had before leaving that haven't expired
             for role in roles:
-                await member.add_roles(role.role, reason="{} (role reapplied after member rejoin)".format(role.reason))
+                await member.add_roles(role.role, reason="Timed role reapplied after member rejoin")

@@ -1,6 +1,3 @@
-from redbot.core.bot import Red
-from .quotes import Quotes
-
-
-def setup(bot: Red):
+def setup(bot):
+    from .quotes import Quotes
     bot.add_cog(Quotes(bot))

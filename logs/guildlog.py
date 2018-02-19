@@ -38,6 +38,7 @@ class GuildLog:
         check = await find_check(guildlog=self, **kwargs)
         if await self.is_ignored(check):
             return
+        # TODO: Change this to use cached log type classes to avoid re-instantiating the same classes constantly?
         group = group(self)
         log_type = str(log_type)
         log_func = getattr(group, log_type, None)

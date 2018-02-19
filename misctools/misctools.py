@@ -51,11 +51,11 @@ class MiscTools:
         await ctx.trigger_typing()
         time_to_typing = td_format(datetime.utcnow() - now, milliseconds=True, short_format=True)
         full_round_trip = td_format(datetime.utcnow() - ctx.message.created_at, milliseconds=True, short_format=True)
-        await ctx.send(content="\N{TABLE TENNIS PADDLE AND BALL} Pong!"
-                                "\nTime to command execution: {execution}"
-                                "\nTyping indicator: {typing}"
-                                "\n\nFull round trip: {rt}".format(execution=to_execution, typing=time_to_typing,
-                                                                   rt=full_round_trip))
+        await ctx.send("\N{TABLE TENNIS PADDLE AND BALL} Pong!"
+                       "\nTime to command execution: {execution}"
+                       "\nTyping indicator: {typing}"
+                       "\n\nFull round trip: {rt}"
+                       "".format(execution=to_execution, typing=time_to_typing, rt=full_round_trip))
 
     @commands.command()
     async def snowflake(self, ctx: RedContext, *snowflakes: int):
@@ -91,11 +91,14 @@ class MiscTools:
         # For more information on the following fields used, please check the docs for the ReactMenu function
 
         # The following function attempts to retrieve a guild emoji by ID and / or name, with a fallback unicode emoji
+        # In this instance, the fallback unicode emoji is simply an empty string, however you can for example
+        # pass in a unicode emoji as a fallback (such as '\N{CROSS MARK}')
         # The emoji used below: https://cdn.discordapp.com/emojis/379046291386400769.png
         # Example usages can include guild-configurable emojis for actions
         null_tick = attempt_emoji(
-            # an emoji id to get, this can be useful for cogs designed for a specific bot
-            # otherwise, if guilds have their own version of the same emoji,
+            bot=self.bot,
+            # an emoji id to attempt to retrieve, this can be useful for cogs designed for a specific bot
+            # otherwise, if guilds have their own copy of the same or a variation of a specific emoji,
             # emoji_name may be better suited
             emoji_id=379046291386400769,
             # a case sensitive emoji name to try to resolve
@@ -104,26 +107,21 @@ class MiscTools:
             # fallback is used if neither emoji_id nor emoji_name finds an emoji
             fallback="")
 
-        # This is a dict of actions in the form of { (action: Any): (emoji: discord.Emoji or str) }
+        # This is a dict of actions in the form of { action: emoji }
+        # Note that the default value (passed as the `default` keyword argument when creating a ReactMenu)
+        # does *not* need to be in the actions dict
+        # Accepted emoji types are unicode emojis (such as below), or `discord.Emoji` items
+        # The action is returned as an attribute named `action` in a MenuResult class, in the form of either
+        # a key in the actions dict you passed when creating the ReactMenu, or the value of `default`
         actions = {
-            # Available emoji types are plain unicode emojis (such as below), or `discord.Emoji` items
-            # The action is what's returned back to you in `<MenuResult>.action`
             "One": "\N{DIGIT ONE}\N{COMBINING ENCLOSING KEYCAP}",
             "Two": "\N{DIGIT TWO}\N{COMBINING ENCLOSING KEYCAP}",
             "Three": "\N{DIGIT THREE}\N{COMBINING ENCLOSING KEYCAP}"
         }
         if null_tick != "":
             actions["Null Tick"] = null_tick
-        # Content is the text that appears on the message that the react menu is enabled on
-        # The following fields are also available:
-        #  embed: discord.Embed - a embed to use, this can be combined with `content`
-        #  message: discord.Message - a message that's already been sent, if this isn't None then `content` and `embed`
-        #                             are ignored and the message given is used instead
-        # The returned action taken can be accessed with `.action`, and is in the form of either an item in `actions`,
-        # or the value of `default`
-        # In the event that you can't import ReactMenu, you can also access it with `libs.menus.ReactMenu`,
-        # where `libs` is the loaded OdinairLibs cog class, or the return value of bot.get_cog('OdinairLibs')
         menu = ReactMenu(ctx, actions, content="Choose a number", post_action=PostMenuAction.DELETE, default="Default")
+        # Prompt the user for a choice
         result = await menu.prompt()
-        # Echo back the response the user chose
-        await ctx.send("You chose: {0.action}".format(result))
+        # Send the result in chat
+        await ctx.send("Result:\n```\n{0!r}\n```".format(result))

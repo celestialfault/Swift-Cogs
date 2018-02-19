@@ -2,8 +2,7 @@ from datetime import timedelta
 from typing import Iterable, Tuple, Any, Dict, Union
 
 import discord
-
-import odinair_libs as libs
+from redbot.core.bot import Red
 
 import textwrap
 import inspect
@@ -15,12 +14,12 @@ def tick(text: str):
     return "\N{WHITE HEAVY CHECK MARK} {}".format(text)
 
 
-def get_source(fn):
+def get_source(fn: "function") -> str:
     """Get the source code for a function
 
     Parameters
     ----------
-    fn
+    fn: function
       The function to get the source for
 
     Returns
@@ -37,12 +36,14 @@ def get_source(fn):
     return textwrap.dedent("".join(lines))
 
 
-def attempt_emoji(fallback: str, *, emoji_id: int = None, emoji_name: str = None,
+def attempt_emoji(bot: Red, fallback: str, *, emoji_id: int = None, emoji_name: str = None,
                   guild: discord.Guild = None, **kwargs):
     """Attempt to get an emoji from all guilds the bot is in or from a specific guild
 
     Parameters
     -----------
+    bot: Red
+        The Red bot instance
     fallback: str
         A fallback string to return if neither emoji_id nor emoji_id resolves
     emoji_id: int
@@ -65,7 +66,7 @@ def attempt_emoji(fallback: str, *, emoji_id: int = None, emoji_name: str = None
     """
     if not any([emoji_id, emoji_name, kwargs]):
         return fallback
-    emojis = libs.bot.emojis if guild is None else guild.emojis
+    emojis = bot.emojis if guild is None else guild.emojis
     emoji = None
     if emoji_id is not None:
         emoji = discord.utils.get(emojis, id=emoji_id, **kwargs)

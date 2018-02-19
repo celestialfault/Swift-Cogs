@@ -191,7 +191,7 @@ class Starboard(StarboardBase):
         # force a recache of the message
         await starboard.remove_from_cache(star.message)
         star = await starboard.message_by_id(message_id)  # type: Star
-        await starboard.queue.put(star)
+        star.in_queue = True
         await ctx.send(tick("The message sent by **{0.message.author!s}** has been queued to be updated".format(star)))
 
     @commands.group(name="starboard")
@@ -299,8 +299,8 @@ class Starboard(StarboardBase):
             return
 
         message = await self.starboard(guild).message_by_id(message_id=message_id,
-                                                                  channel_id=channel_id,
-                                                                  auto_create=True)
+                                                            channel_id=channel_id,
+                                                            auto_create=True)
         if message.has_starred(member):
             return
         try:

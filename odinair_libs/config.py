@@ -39,7 +39,7 @@ async def toggle(value: Value) -> bool:
 
 
 async def group_toggle(group: Group, toggle_keys: Sequence[str], *, defaults: Dict[str, bool] = None,
-                       slots: Sequence[str] = None) -> Dict[str, bool]:
+                       slots: Sequence[str] = None, strict_slots: bool = False) -> Dict[str, bool]:
     """Group config toggle
 
     Parameters
@@ -52,7 +52,10 @@ async def group_toggle(group: Group, toggle_keys: Sequence[str], *, defaults: Di
     defaults: Dict[str, bool]
         The ``Group`` defaults. Defaults to `group.defaults`
     slots: Sequence[str]
-        The available keys in the ``Group`` to allow modification of
+        The available keys in the ``Group`` to allow modification of. Defaults to the values of ``toggle_keys``
+    strict_slots: bool
+        Whether or not a KeyError is raised if any keys passed in ``toggle_keys`` are not in ``slots``.
+        If this is False, any items not in ``slots`` are simply ignored.
 
     Returns
     --------
@@ -62,16 +65,20 @@ async def group_toggle(group: Group, toggle_keys: Sequence[str], *, defaults: Di
     Raises
     -------
     RuntimeError
-        If the given ``Group`` does not return a dict value
+        Raised if the given ``Group`` does not return a dict value
+    KeyError
+        Raised if ``strict_slots`` is True and an item in ``toggle_keys`` does not exist in ``slots``
     """
     if defaults is None:
         defaults = group.defaults
     if slots is None:
-        slots = toggle_keys
-    toggle_keys = [x for x in toggle_keys if x.split("=")[0] in slots or x in slots]
+        slots = [x.split("=")[0] for x in toggle_keys]
+    toggle_keys = [x for x in toggle_keys if x.split("=")[0] in slots]
     toggles = {}
     for item in toggle_keys:
         item = parse_setting_param(item)
+        if item[0] not in slots and strict_slots is True:
+            raise KeyError(item[0])
         toggles[item[0]] = item[1]
     async with group() as settings:
         if not isinstance(settings, dict):
@@ -85,4 +92,4 @@ async def group_toggle(group: Group, toggle_keys: Sequence[str], *, defaults: Di
             if val is None:
                 val = not settings.get(key, False)
             settings[key] = val
-        return settings
+        return {**defaults, **settings}

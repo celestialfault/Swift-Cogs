@@ -205,8 +205,8 @@ class UserProfile:
             descriptor = "**{0!s}**'s".format(user)
 
         if await confirm(ctx,
-                         "Are you sure you want to reset {} profile?\n\nThis action is irreversible!"
-                                 .format(descriptor),
+                         "Are you sure you want to reset {} profile?\n\nThis action is irreversible!".format(
+                             descriptor),
                          colour=discord.Colour.red()):
             await self.config.user(user).set(self.defaults_user)
             await ctx.send("\N{WHITE HEAVY CHECK MARK} Profile reset.", delete_after=15)
