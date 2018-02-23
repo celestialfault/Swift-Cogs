@@ -194,7 +194,7 @@ class MenuResult:
         return str(self.action)
 
     def __eq__(self, other):
-        return isinstance(other, MenuResult) and self.action == other.action
+        return self.action == other
 
     def __repr__(self):
         return f"<MenuResult action={self.action!r} timed_out={self.timed_out} menu={self.menu!r}>"
