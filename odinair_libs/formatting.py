@@ -1,4 +1,5 @@
 from datetime import timedelta
+from types import FunctionType
 from typing import Iterable, Tuple, Any, Dict, Union
 
 import discord
@@ -11,15 +12,15 @@ __all__ = ["td_format", "difference", "changed", "normalize", "attempt_emoji", "
 
 
 def tick(text: str):
-    return "\N{WHITE HEAVY CHECK MARK} {}".format(text)
+    return f"\N{WHITE HEAVY CHECK MARK} {text}"
 
 
-def get_source(fn: "function") -> str:
+def get_source(fn: FunctionType) -> str:
     """Get the source code for a function
 
     Parameters
     ----------
-    fn: function
+    fn: FunctionType
       The function to get the source for
 
     Returns

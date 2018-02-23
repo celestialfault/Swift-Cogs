@@ -1,10 +1,12 @@
 from asyncio import TimeoutError
 
 from enum import Enum
-from typing import Union, Any, Dict
+from typing import Union, Any, Dict, Sequence, Callable, Tuple
 
 import discord
 from redbot.core import RedContext
+
+__all__ = ["PostMenuAction", "ReactMenu", "MenuResult", "paginate", "confirm", "cmd_help"]
 
 
 class PostMenuAction(Enum):
@@ -108,6 +110,13 @@ class ReactMenu:
         self.member = kwargs.get("member", ctx.author)
         self._reactions_task = None
 
+    def __repr__(self):
+        return (
+            f"<ReactMenu content={self.content!r} embed={self.embed!r} message={self.message!r} "
+            f"default={self.default!r} action_count={len(self.actions)} post_action={self.post_action} "
+            f"member={self.member!r}>"
+        )
+
     async def _add_reactions(self):
         """Internal task to add reactions to sent messages"""
         try:
@@ -115,8 +124,11 @@ class ReactMenu:
                 _reaction = discord.utils.get(self.message.reactions, emoji=emoji)
                 if _reaction is None or _reaction.me is False:
                     await self.message.add_reaction(emoji)
-        except (discord.NotFound, AttributeError):
-            return
+        except (discord.HTTPException, AttributeError) as e:
+            # check if the exception is a bad request
+            if isinstance(e, discord.HTTPException) and e.status == 400:
+                raise
+            # ... silently swallow it otherwise
 
     async def _handle_post_action(self, timed_out: bool, reaction: discord.Reaction = None, result: Any = None):
         """Internal helper function to handle cleanup"""
@@ -140,8 +152,9 @@ class ReactMenu:
     def _reaction_check(self, reaction: discord.Reaction, user: discord.User):
         """Check for discord.py's wait_for function"""
         msg = reaction.message
-        return msg.id == self.message.id and user.id == self.member.id \
-               and (str(reaction.emoji) in self.emojis or reaction.emoji in self.emojis)
+        ret = (msg.id == self.message.id and user.id == self.member.id
+               and (str(reaction.emoji) in self.emojis or reaction.emoji in self.emojis))
+        return ret
 
     async def prompt(self):
         """Prompt for a choice
@@ -175,11 +188,108 @@ class MenuResult:
         self.action = action
         self.timed_out = timed_out
         self.menu = menu
-        self.message = menu.message
+        self.message = getattr(menu, "message", None)
+
+    def __str__(self):
+        return str(self.action)
+
+    def __eq__(self, other):
+        return isinstance(other, MenuResult) and self.action == other.action
+
+    def __repr__(self):
+        return f"<MenuResult action={self.action!r} timed_out={self.timed_out} menu={self.menu!r}>"
 
     async def reinvoke(self):
         """Reinvoke the reaction menu"""
         return await self.menu.prompt()
+
+
+async def paginate(ctx: RedContext, pages: Sequence[Any], page: int = 0,
+                   title: str = discord.Embed.Empty, colour: discord.Colour = discord.Embed.Empty,
+                   actions: Dict[Any, Union[str, discord.Emoji]] = None,
+                   page_converter: Callable[[Any], Union[str, discord.Embed]] = None,
+                   **kwargs) -> Tuple[MenuResult, Any]:
+    """Pagination helper
+
+    Parameters
+    -----------
+    ctx: RedContext
+        The Red context object
+    pages: Sequence[Any]
+        A sequence of page items. If these are neither string nor Embed objects,
+        it's expected that a ``page_converter`` function is given to convert them into string or Embed objects.
+    page: int
+        The page shown upon creating the pagination menu
+    title: str
+        The embed title
+    colour: discord.Colour
+        The embed colour
+    actions: Dict[Any, Union[str, discord.Emoji]]
+        A list of actions. If any of these are selected, then the function returns with a Tuple of
+        the MenuResult and the current page.
+    page_converter: Callable[[Any], str]
+        An optional page converter function. This is expected to be given if the items in ``pages`` are not
+        string or embed objects.
+
+    Returns
+    --------
+    Tuple[MenuResult, Any]
+        The MenuResult returned from ReactMenu and the current page
+
+    Raises
+    -------
+    ValueError
+        Raised if no pages are given
+    TypeError
+        Raised if ``page_converter`` returns a value that isn't `str` or `discord.Embed`, or if any item
+        in ``pages`` is neither of the two and ``page_converter`` is not given
+    """
+    if len(pages) == 0:
+        raise ValueError("No pages were given")
+    if actions is None:
+        actions = {}
+    actions = {
+        "__paginate_backward": "\N{LEFTWARDS BLACK ARROW}",
+        **{x: actions[x] for x in actions},
+        "__paginate_forward": "\N{BLACK RIGHTWARDS ARROW}"
+    }
+
+    def build_embed():
+        description = pages[page]
+        if page_converter:
+            description = page_converter(description)
+        if isinstance(description, str):
+            embed = discord.Embed(title=title, description=description, colour=colour)
+            embed.set_footer(text="Page {}/{}".format(page + 1, len(pages)))
+        elif isinstance(description, discord.Embed):
+            embed = description
+        else:
+            raise TypeError(f"Description for page index {page} is neither a str nor Embed type")
+        return embed
+
+    menu = ReactMenu(ctx=ctx, actions=actions, embed=build_embed(), post_action=PostMenuAction.REMOVE_REACTION,
+                     **kwargs)
+    result = None
+    while True:
+        if hasattr(result, "message"):
+            await result.message.edit(embed=build_embed())
+        result = await menu.prompt()
+        if result == "__paginate_backward":
+            if page == 0:
+                continue
+            page -= 1
+            continue
+        elif result == "__paginate_forward":
+            if page >= len(pages) - 1:
+                continue
+            page += 1
+            continue
+        elif result.timed_out:
+            try:
+                await result.message.clear_reactions()
+            except (discord.HTTPException, AttributeError):
+                pass
+        return result, pages[page]
 
 
 async def confirm(ctx: RedContext, message: str, timeout: float = 30.0,
@@ -213,9 +323,8 @@ async def confirm(ctx: RedContext, message: str, timeout: float = 30.0,
         if the timeout was reached
     """
     message = (
-        "{}\n\n"
-        "**Click \N{WHITE HEAVY CHECK MARK} to confirm or \N{REGIONAL INDICATOR SYMBOL LETTER X} to cancel**"
-        "".format(message)
+        f"{message}\n\n"
+        f"**Click \N{WHITE HEAVY CHECK MARK} to confirm or \N{REGIONAL INDICATOR SYMBOL LETTER X} to cancel**"
     )
     actions = {True: "\N{WHITE HEAVY CHECK MARK}", False: "\N{REGIONAL INDICATOR SYMBOL LETTER X}"}
     return (await ReactMenu(ctx, actions, embed=discord.Embed(description=message, colour=colour),
@@ -232,5 +341,7 @@ async def react_menu(ctx: RedContext, actions: Dict[Any, Union[discord.Emoji, di
 
 async def cmd_help(ctx: RedContext, cmd: str) -> None:
     """Sends sub-command help"""
+    # This probably isn't the cleanest solution, but it works well enough,
+    # so this is mostly what I'd consider "good enough"
     if not ctx.invoked_subcommand or ctx.invoked_subcommand.name == cmd:
         await ctx.send_help()

@@ -1,5 +1,4 @@
-import asyncio
-from typing import Union, Optional
+from typing import Union, Optional, Sequence
 
 from collections import OrderedDict
 from datetime import timedelta
@@ -12,70 +11,87 @@ from discord.ext import commands
 from redbot.core.bot import RedContext
 
 from odinair_libs.formatting import td_format
+from odinair_libs.menus import paginate, MenuResult
+
+__all__ = ["GuildChannel", "FutureTime", "chunks", "get_role_or_member"]
+
+
+def chunks(l, n):  # https://stackoverflow.com/a/312464
+    """Yield successive n-sized chunks from l."""
+    for i in range(0, len(l), n):
+        yield l[i:i + n]
 
 
 def get_role_or_member(snowflake: int, guild: discord.Guild):
     return guild.get_member(snowflake) or discord.utils.get(guild.roles, id=snowflake)
 
 
-async def ask_channel(ctx: RedContext, *channels: discord.abc.GuildChannel):
+async def ask_channel(ctx: RedContext, *channels: discord.abc.GuildChannel, message: str = None):
     """Prompt a user choice for a channel from a list of GuildChannel objects"""
-    # Dear future adventurers:
-    # Turn back while you still can
-    if not hasattr(ctx, "guild"):  # Ensure this is called from a guild context
+    if not hasattr(ctx.message, "guild"):  # Ensure this is called from a guild context
         return None
-    bot = ctx.bot
     channels = [x for x in channels if hasattr(x, "id")]  # Remove channels without an id attribute
-    _msg = ("More than one channel matches that name\n"
-            "Please select which channel you'd like to use:\n\n"
-            "{channels}\n\n"
-            "Or type `cancel` to cancel".format(channels="\n".join(["**{}**: {}".format(channels.index(x) + 1,
-                                                                                        x.mention)
-                                                                    for x in channels])))
-    msg = await ctx.send(_msg)
+    if len(channels) == 1:
+        return channels[0]
+    elif len(channels) == 0:
+        return None
 
-    async def ask():
-        try:
-            msg_response = await bot.wait_for('message',
-                                              check=lambda message: message.author.id == ctx.author.id
-                                                                    and message.channel.id == ctx.channel.id,
-                                              timeout=30.0)
-        except asyncio.TimeoutError:
-            return None
-        return msg_response
+    actions = {
+        "one": "\N{DIGIT ONE}\N{COMBINING ENCLOSING KEYCAP}",
+        "two": "\N{DIGIT TWO}\N{COMBINING ENCLOSING KEYCAP}",
+        "three": "\N{DIGIT THREE}\N{COMBINING ENCLOSING KEYCAP}",
+        "four": "\N{DIGIT FOUR}\N{COMBINING ENCLOSING KEYCAP}",
+        "cancel": "\N{CROSS MARK}"
+    }
+    channels = list(chunks(channels, 4))
 
-    channel = None
-    response = None
-    while channel is None:
-        response = await ask()
+    emojis = ["\N{DIGIT ONE}\N{COMBINING ENCLOSING KEYCAP}", "\N{DIGIT TWO}\N{COMBINING ENCLOSING KEYCAP}",
+              "\N{DIGIT THREE}\N{COMBINING ENCLOSING KEYCAP}", "\N{DIGIT FOUR}\N{COMBINING ENCLOSING KEYCAP}"]
 
-        if response is not None:
-            if response.content.lower() == "cancel":
-                break
+    if message is None:
+        message = "One or more of those channels matches that name.\nPlease select which channel you'd like to use:"
+
+    # noinspection PyShadowingNames
+    def build_page(page: Sequence[discord.abc.GuildChannel]) -> str:
+        def ctype(x):
+            return (
+                "\N{SPIRAL NOTE PAD}" if isinstance(x, discord.TextChannel) else
+                "\N{SPEAKER}" if isinstance(x, discord.VoiceChannel) else
+                "\N{FILE FOLDER}"
+            )
+
+        channels__ = [f"{emojis[page.index(x)]} {ctype(x)} {x.mention}" for x in page]
+
+        channels__ = "\n".join(channels__)
+        return f"{message}\n\n{channels__}"
+
+    # noinspection PyTypeChecker
+    result = MenuResult(menu=None, timed_out=False, action=None)
+    page = channels[0]
+    while True:
+        result, page = await paginate(ctx, channels, actions=actions, page_converter=build_page,
+                                      colour=getattr(ctx.me, "colour", discord.Embed.Empty), message=result.message,
+                                      page=channels.index(page))
+        if result.timed_out is True or result.action == "cancel":
+            channel = None
+            break
+        if result.action in ("one", "two", "three", "four"):
+            action = (
+                0 if result == "one" else
+                1 if result == "two" else
+                2 if result == "three" else
+                3 if result == "four" else None
+            )
             try:
-                channel_id = int(response.content)
-                if channel_id < 1 or channel_id > len(channels):
-                    if ctx.channel.permissions_for(ctx.guild.me).manage_messages:
-                        await response.delete()
-                        response = None
-                    await ctx.send("Please select a channel index between **1** and **{}**".format(len(channels)),
-                                   delete_after=10.0)
-                    continue
-                channel = channels[channel_id - 1]
-            except (ValueError, IndexError):
-                if ctx.channel.permissions_for(ctx.guild.me).manage_messages:
-                    await response.delete()
-                    response = None
+                channel = page[action]
+            except IndexError:
                 continue
-        else:
             break
 
-    # Try to cleanup the response if we have permissions to do so
-    if response is not None and ctx.channel.permissions_for(ctx.guild.me).manage_messages:
-        await ctx.channel.delete_messages([response, msg])
-    else:
-        await msg.delete()
-
+    try:
+        await result.message.delete()
+    except (discord.HTTPException, AttributeError):
+        pass
     return getattr(channel, "id", None)
 
 
@@ -84,8 +100,8 @@ class FutureTime(commands.Converter):
     # https://github.com/ZeLarpMaster/ZeCogs/blob/master/reminder/reminder.py
     # The following changes have been made from the original source:
     #  - Changed TIME_QUANTITIES to use timedeltas, to be more consistent with td_format
-    #  - Added float support, meaning time periods like '0.5h' are accepted,
-    #    and converted as if it was given as '30m'
+    #  - Added float support, meaning values similar to '0.5h' are accepted,
+    #    and converted as if they were given as '30m'
     #  - Properly handle spaces between the duration and time period
     #  - Ported to a proper Converter
     TIME_AMNT_REGEX = re.compile("([0-9]+\.?[0-9]*) ?([a-z]+)", re.IGNORECASE)
@@ -157,9 +173,6 @@ class FutureTime(commands.Converter):
         return timedelta(seconds=seconds) if seconds else None
 
 
-TimeDuration = FutureTime
-
-
 class GuildChannel(commands.IDConverter):
     # Yes, it would have been quicker to specify all the channel types similar to
     # 'discord.TextChannel or discord.VoiceChannel or discord.CategoryChannel' instead of making this,
@@ -180,7 +193,7 @@ class GuildChannel(commands.IDConverter):
                     if len(channels_matched) > 1:
                         cid = await ask_channel(ctx, *channels_matched)
                         if cid is None:
-                            raise commands.BadArgument("Cannot find channel `{}`".format(argument))
+                            raise commands.BadArgument(f"Cannot find channel {argument}")
                     else:
                         cid = channels_matched[0].id
             else:  # get the channel id from the mention
@@ -188,4 +201,4 @@ class GuildChannel(commands.IDConverter):
 
         if cid:
             return guild.get_channel(cid)
-        raise commands.BadArgument("Cannot find channel `{}`".format(argument))
+        raise commands.BadArgument(f"Cannot find channel {argument}")

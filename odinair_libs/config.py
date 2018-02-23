@@ -1,8 +1,63 @@
 from typing import Sequence, Dict, Optional, Tuple
 
-from redbot.core.config import Value, Group
+import discord
+from redbot.core.bot import Red
+from redbot.core.config import Value, Group, Config
 
-__all__ = ["toggle", "group_toggle"]
+__all__ = ["toggle", "group_toggle", "fix_config_fuckup"]
+
+
+async def fix_config_fuckup(config: Config, identifier: int, bot: Red):
+    """Fix a Config fuckup involving `type` being used for cog identifiers
+
+    This issue affects `Logs`, `Starboard`, and any other cogs that may
+    instantiate a Config object with a non-instantiated cog class
+
+    It'd probably be important to note that this does not seem to be the result of a bug
+    in the Red core, but instead an issue with how the above cogs created their Config objects
+    """
+    conf_type = Config.get_conf(None, identifier=identifier, cog_name="type")
+    # Fix globals
+    globals_ = await conf_type.all()
+    fixed_globals_ = await config.all()
+    for item in globals_:
+        if item in fixed_globals_:
+            continue
+        await config.set_raw(item, globals_[item])
+    # Fix guilds
+    guilds = await conf_type.all_guilds()
+    fixed_guilds = await config.all_guilds()
+    for gid in guilds:
+        if gid in fixed_guilds:
+            continue
+        guild = bot.get_guild(gid)
+        if guild is None:
+            continue
+        await config.guild(guild).set(guilds[gid])
+    # Fix members
+    members = await conf_type.all_members()
+    fixed_members = await config.all_members()
+    for gid in members:
+        guild: discord.Guild = bot.get_guild(gid)
+        if guild is None:
+            continue
+        for mid in members[gid]:
+            if mid in fixed_members.get(gid, {}):
+                continue
+            member = guild.get_member(mid)
+            if member is None:
+                continue
+            await config.member(member).set(members[gid][mid])
+    # Fix channels
+    channels = await conf_type.all_channels()
+    fixed_channels = await config.all_channels()
+    for cid in channels:
+        if cid in fixed_channels:
+            continue
+        channel = bot.get_channel(cid)
+        if channel is None:
+            continue
+        await config.channel(channel).set(channels[cid])
 
 
 def parse_bool(val: str) -> Optional[bool]:
@@ -82,7 +137,7 @@ async def group_toggle(group: Group, toggle_keys: Sequence[str], *, defaults: Di
         toggles[item[0]] = item[1]
     async with group() as settings:
         if not isinstance(settings, dict):
-            raise RuntimeError("Group does not return a dict value")
+            raise RuntimeError("group did not return a dict")
         for key in defaults:
             val = defaults.get(key, False)
             if key not in settings:
