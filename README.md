@@ -1,8 +1,6 @@
 # odinair's Red v3 Cogs
 
-These cogs require [Red v3](https://github.com/Cog-Creators/Red-DiscordBot/tree/V3/develop/) to properly work.
-
-## Setup
+**These cogs require Python 3.6 to work**
 
 ```
 [p]repo add odinair https://github.com/notodinair/Red-Cogs.git v3
@@ -23,20 +21,11 @@ Monitors specified bots and sends a message in the specified channel when they g
 
 ### Cog Whitelist
 
-Restricts use of specific cogs in servers that aren't added to a whitelist by the bot owner/co-owner
+Restricts use of specific cogs in guilds that aren't added to a whitelist by the bot owner
 
 ```
 [p]cog install odinair cogwhitelist
 [p]load cogwhitelist
-```
-
-### Giveaways
-
-(Possibly) Advanced giveaway management cog
-
-```
-[p]cog install odinair giveaways
-[p]load giveaways
 ```
 
 ### Logs
@@ -57,15 +46,15 @@ Mainly a cog to help with development of other cogs, or advanced server administ
 [p]load misctools
 ```
 
-### Punish
+### Timed Mute
+
+**This cog requires [Timed Role](#timed-role)**
 
 Temporarily mute a user in voice and text channels across an entire server
 
-This cog requires [Timed Role](#timed-role) to function
-
 ```
-[p]cog install odinair punish
-[p]load punish
+[p]cog install odinair timedmute
+[p]load timedmute
 ```
 
 ### Quotes
@@ -97,7 +86,7 @@ Randomly change the bot's Playing status on a set interval to one in a set of st
 
 ### Starboard
 
-The poor man's channel pins
+It's almost like channel pins, except with stars
 
 ```
 [p]cog install odinair starboard

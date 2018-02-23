@@ -13,7 +13,7 @@ from odinair_libs.checks import cogs_loaded
 from odinair_libs.formatting import td_format, tick
 
 
-class Punish:
+class TimedMute:
     CHANNEL_OVERWRITES = discord.PermissionOverwrite(speak=False, send_messages=False, add_reactions=False)
 
     def __init__(self, bot: Red):
@@ -31,7 +31,7 @@ class Punish:
     async def _setup_cases():
         try:
             await modlog.register_casetype(name="punish", default_setting=True, image="\N{FACE WITHOUT MOUTH}",
-                                           case_str="Punish")
+                                           case_str="Timed Mute")
         except RuntimeError:
             pass
 
@@ -40,14 +40,14 @@ class Punish:
         if not channel.permissions_for(channel.guild.me).manage_roles:
             return
         await channel.set_permissions(
-            target=role, overwrite=self.CHANNEL_OVERWRITES, reason="Punished role permissions")
+            target=role, overwrite=self.CHANNEL_OVERWRITES, reason="Timed mute role permissions")
 
     async def create_role(self, guild: discord.Guild):
         # > create_role is a coroutine
         # > Class 'Role' does not define __await__
         # ??????????????????
         # noinspection PyUnresolvedReferences
-        role = await guild.create_role(name="Punished", permissions=discord.Permissions.none())
+        role = await guild.create_role(name="Muted", permissions=discord.Permissions.none())
         # Setup channel overwrites
         for channel in guild.channels:
             await self.add_overwrite(role, channel)
@@ -61,29 +61,30 @@ class Punish:
             role = await self.create_role(guild)
         return role
 
-    max_duration = FutureTime.get_seconds('6 months')
+    max_duration = FutureTime.get_seconds('2 years')
     min_duration = FutureTime.get_seconds('2 minutes')
 
-    @commands.command()
+    @commands.command(aliases=["tempmute"])
     @commands.guild_only()
     @cogs_loaded("TimedRole")
     @checks.mod_or_permissions(manage_roles=True)
     @commands.bot_has_permissions(manage_roles=True)
-    async def punish(self, ctx: RedContext, member: discord.Member,
-                     duration: FutureTime(max_duration=max_duration, min_duration=min_duration, strict=True),
-                     *, reason: str=None):
-        """Punish a user for a set amount of time.
+    async def timedmute(self, ctx: RedContext, member: discord.Member,
+                        duration: FutureTime(max_duration=max_duration, min_duration=min_duration, strict=True),
+                        *, reason: str=None):
+        """Mute a user for a set amount of time.
 
-        Punished users will not be able to send messages, add new reactions to messages, or speak in voice channels.
+        Muted users will not be able to send messages, add new reactions to messages, or speak in voice channels.
 
-        Examples for duration: `5d`, `1mo`, `2.5mo3w3.73d5m6s`
+        Examples for duration: `1h30m`, `3d`, `1mo`
 
         Abbreviations: `s` for seconds, `m` for minutes, `h` for hours, `d` for days, `w` for weeks,
-        `mo` for months. Any longer abbreviation is accepted. `m` assumes minutes instead of months.
+        `mo` for months, `y` for years. Any longer abbreviation is accepted. `m` assumes minutes instead of months.
 
-        One month is counted as 30 days. Maximum duration for a punishment is 6 months.
+        One month is counted as 30 days, and one year is counted as 365 days.
+        Maximum duration for a mute is 2 years.
 
-        Expired punishments are checked alongside expired timed roles assigned with `[p]timedrole`
+        Expired mutes are checked alongside expired timed roles assigned with `[p]timedrole`
         """
         mod_cog = self.bot.get_cog('Mod')
         if mod_cog and not await is_allowed_by_hierarchy(bot=ctx.bot, settings=mod_cog.settings, guild=ctx.guild,
@@ -92,18 +93,18 @@ class Punish:
             return
         role = await self.get_punished_role(ctx.guild, create=False)
         if role is None:
-            tmp_msg = await ctx.send("Setting up punished role...\n"
+            tmp_msg = await ctx.send("Setting up muted role...\n"
                                      "(this may take a while, depending on how many channels you have)")
             async with ctx.typing():
                 role = await self.create_role(ctx.guild)
             await tmp_msg.delete()
         try:
-            audit_reason = "Punished by {0!s} (ID {0.id}).".format(ctx.author)
+            audit_reason = f"Muted by {ctx.author!s} (ID {ctx.author.id})."
             if reason is not None:
-                audit_reason += " Reason: {0}".format(reason)
+                audit_reason = f"{audit_reason} Reason: {reason}"
             timed_role = self.bot.get_cog("TimedRole")
             await timed_role.add_roles(role, member=member, duration=duration, granted_by=ctx.author,
-                                       reason=audit_reason, expired_reason="Punishment expired",
+                                       reason=audit_reason, expired_reason="Timed mute expired",
                                        hidden=True)
         except RuntimeError as e:
             await ctx.send(warning(str(e)))
@@ -112,10 +113,10 @@ class Punish:
                 # noinspection PyTypeChecker
                 await modlog.create_case(guild=ctx.guild, created_at=datetime.utcnow(),
                                          until=(datetime.utcnow() + duration).timestamp(),
-                                         action_type="punish", user=member, moderator=ctx.author, reason=reason)
+                                         action_type="timedmute", user=member, moderator=ctx.author, reason=reason)
             except RuntimeError:
                 pass
-            await ctx.send(tick("**{}** is now punished for for {}".format(member, td_format(duration))))
+            await ctx.send(tick(f"**{member!s}** is now muted for for {td_format(duration)}"))
 
     async def on_guild_channel_create(self, channel: discord.abc.GuildChannel):
         # noinspection PyUnresolvedReferences
