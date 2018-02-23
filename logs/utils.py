@@ -28,7 +28,7 @@ async def handle_group(ctx: RedContext, slots: Sequence[str], types: Sequence[st
                        descriptions: Dict[str, str] = None):
     if len(types) == 0:
         await ctx.send(embed=status_embed(settings={**{x: False for x in slots}, **await settings()},
-                                          title="Current {} Log Settings".format(setting_type.title()),
+                                          title=f"Current {setting_type.title()} Log Settings",
                                           descriptions=descriptions))
         return
     try:
@@ -46,12 +46,11 @@ def add_descriptions(items: List[str], descriptions: Dict[str, str] = None) -> s
         descriptions = {}
     for item in items:
         index = items.index(item)
-        items[index] = "**{}** — {}".format(item, descriptions.get(item, "No description set"))
+        items[index] = f"**{item}** — {descriptions.get(item, 'No description set')}"
     return "\n".join(items)
 
 
-def status_embed(settings: Dict[str, bool], descriptions: Dict[str, str] = None,
-                 title: str = discord.Embed.Empty) -> discord.Embed:
+def status_embed(settings: Dict[str, bool], title: str, descriptions: Dict[str, str] = None) -> discord.Embed:
     enabled = [x for x in settings if settings[x]] or None
     disabled = [x for x in settings if not settings[x]] or None
 
@@ -65,10 +64,10 @@ def status_embed(settings: Dict[str, bool], descriptions: Dict[str, str] = None,
     else:
         disabled = "**None** — All of these settings are enabled"
 
+    arrow = "\N{HEAVY RIGHT-POINTING ANGLE QUOTATION MARK ORNAMENT}"
     embed = discord.Embed(colour=discord.Colour.blurple(), title=title,
-                          description="**❯ Enabled Log Settings**\n{}\n\n"
-                                      "**❯ Disabled Log Settings**\n{}"
-                                      "".format(enabled, disabled))
+                          description=f"**{arrow} Enabled Log Settings**\n{enabled}\n\n"
+                                      f"**{arrow} Disabled Log Settings**\n{disabled}")
     return embed
 
 

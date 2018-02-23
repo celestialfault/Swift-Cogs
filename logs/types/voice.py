@@ -2,12 +2,19 @@ from datetime import datetime
 
 import discord
 
-from .base import LogType
+from ._base import BaseLog
 from logs.logentry import LogEntry
 
 
-class VoiceLogType(LogType):
+class VoiceLog(BaseLog):
     name = "voice"
+    descriptions = {
+        "channel": "Member voice channel joining, leaving, or switching",
+        "selfmute": "Member self-mute",
+        "selfdeaf": "Member self-deaf",
+        "servermute": "Member server mute",
+        "serverdeaf": "Member server deafen"
+    }
 
     async def update(self, before: discord.VoiceState, after: discord.VoiceState, **kwargs):
         try:
@@ -15,11 +22,11 @@ class VoiceLogType(LogType):
         except KeyError:  # Silently fail if the member in question wasn't given
             return None
 
-        settings = await self.guild.config.voice()
+        settings = self.settings
         ret = LogEntry(self, colour=discord.Colour.greyple())
-        ret.set_title(title="Voice status updated", icon_url=member.avatar_url, emoji="\N{SPEAKER}")
-        ret.set_footer(footer="User ID: {0.id}".format(member), timestamp=datetime.utcnow())
-        ret.description = "Member: **{0!s}**".format(member)
+        ret.set_title(title="Member Voice Status", icon_url=member.avatar_url, emoji="\N{SPEAKER}")
+        ret.description = f"Member: **{member!s}**"
+        ret.set_footer(footer=f"User ID: {member.id}", timestamp=datetime.utcnow())
 
         if before.channel != after.channel and settings.get("channel", False):
             ret.add_diff_field(title="Voice Channel",
@@ -44,7 +51,7 @@ class VoiceLogType(LogType):
         return ret
 
     def create(self, created, **kwargs):
-        raise NotImplementedError
+        return NotImplemented
 
     def delete(self, deleted, **kwargs):
-        raise NotImplementedError
+        return NotImplemented

@@ -1,5 +1,6 @@
 {
   "author": ["odinair"],
+  "bot_version": [3, 0, 0],
   "description": "Log anything and everything that happens in your Discord guild with fine-tuned controls. Inspired by Grenzpolizei",
   "short": "Log anything and everything that happens in your Discord guild",
   "type": "COG"

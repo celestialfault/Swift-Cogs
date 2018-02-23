@@ -3,13 +3,22 @@ from datetime import timedelta, datetime
 import discord
 from redbot.core.utils.chat_formatting import escape
 
-from .base import LogType
+from ._base import BaseLog
 from logs.logentry import LogEntry
 from odinair_libs.formatting import td_format, normalize
 
 
-class GuildLogType(LogType):
+class GuildLog(BaseLog):
     name = "guild"
+    descriptions = {
+        "2fa": "Two-factor authentication requirement",
+        "verification": "Member verification level",
+        "name": "Guild name",
+        "owner": "Ownership changes",
+        "afk": "AFK channel and timeout",
+        "region": "Voice region",
+        "content_filter": "Explicit content filter"
+    }
 
     async def update(self, before: discord.Guild, after: discord.Guild, **kwargs):
         if before.unavailable or after.unavailable:
@@ -18,7 +27,7 @@ class GuildLogType(LogType):
 
         settings = await self.guild.config.guild()
         ret = LogEntry(self, colour=discord.Colour.blurple())
-        ret.set_title(title="Guild updated", emoji="\N{MEMO}")
+        ret.set_title(title="Guild Updated", emoji="\N{MEMO}")
         ret.set_footer(footer="Guild ID: {0.id}".format(after), timestamp=datetime.utcnow())
 
         if before.name != after.name and settings.get("name", False):
@@ -63,7 +72,7 @@ class GuildLogType(LogType):
         return ret
 
     def create(self, created, **kwargs):
-        raise NotImplementedError
+        return NotImplemented
 
     def delete(self, deleted, **kwargs):
-        raise NotImplementedError
+        return NotImplemented

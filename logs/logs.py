@@ -1,205 +1,180 @@
-from collections import namedtuple
+from typing import Sequence
+from copy import deepcopy
 
 import discord
 from discord.ext import commands
 
 from redbot.core.bot import Red, RedContext
 from redbot.core import checks, Config
-from redbot.core.utils.chat_formatting import info, error, box, warning
+from redbot.core.utils.chat_formatting import box, warning, escape
 
 from logs.utils import handle_group
 from logs.guildlog import GuildLog, LogType
-from logs.types import *
+from logs import types
 
-from odinair_libs.converters import GuildChannel
+from odinair_libs.converters import GuildChannel, chunks
 from odinair_libs.formatting import tick
-from odinair_libs.menus import cmd_help, confirm, ReactMenu
-from odinair_libs.config import toggle
+from odinair_libs.menus import cmd_help, confirm, paginate
 
 _guilds = {}
+_defaults_guild = {
+    "log_channels": {
+        "roles": None,
+        "guild": None,
+        "messages": None,
+        "members": None,
+        "channels": None,
+        "voice": None
+    },
+    "roles": {
+        "create": False,
+        "delete": False,
+        "name": False,
+        "permissions": False,
+        "hoist": False,
+        "mention": False,
+        "position": False,
+        "colour": False
+    },
+    "guild": {
+        "name": False,
+        "2fa": False,
+        "verification": False,
+        "afk": False,
+        "region": False,
+        "content_filter": False,
+        "owner": False
+    },
+    "messages": {
+        "edit": False,
+        "delete": False
+    },
+    "members": {
+        "join": False,
+        "leave": False,
+        "name": False,
+        "discriminator": False,
+        "nickname": False,
+        "roles": False
+    },
+    "channels": {
+        "create": False,
+        "delete": False,
+        "name": False,
+        "topic": False,
+        "position": False,
+        "category": False,
+        "bitrate": False,
+        "user_limit": False
+    },
+    "voice": {
+        "channel": False,
+        "selfmute": False,
+        "servermute": False,
+        "selfdeaf": False,
+        "serverdeaf": False
+    },
+    "ignored": False,
+    "check_type": "after"
+}
 
 
-# noinspection PyShadowingNames
 class Logs:
     """Log anything and everything that happens in your server"""
-    _descriptions = {
-        "guild": {
-            "2fa": "Two-factor authentication requirement",
-            "verification": "Member verification level",
-            "name": "Guild name",
-            "owner": "Ownership changes",
-            "afk": "AFK channel and timeout",
-            "region": "Voice region",
-            "content_filter": "Explicit content filter"
-        },
-        "channels": {
-            "create": "Channel creation",
-            "delete": "Channel deletion",
-            "name": "Channel name",
-            "topic": "Text channel topics",
-            "category": "Channel category",
-            "bitrate": "Voice channel bitrate",
-            "user_limit": "Voice channel user limit",
-            "position": "Channel position changes (this option can be spammy!)"
-        },
-        "messages": {
-            "edit": "Message edits",
-            "delete": "Message deletions"
-        },
-        "members": {
-            "join": "Member joining",
-            "leave": "Member leaving",
-            "name": "Member username changes",
-            "discriminator": "Member discriminator changes",
-            "nickname": "Member nickname changes",
-            "roles": "Member role changes"
-        },
-        "roles": {
-            "create": "Role creations",
-            "delete": "Role deletions",
-            "name": "Role name",
-            "hoist": "Role hoist status",
-            "mention": "Role mentionable status",
-            "permissions": "Role permissions",
-            "colour": "Role colour",
-            "position": "Role position changes (this option can be spammy!)"
-        },
-        "voice": {
-            "channel": "Member voice channel joining, leaving, or switching",
-            "selfmute": "Member self-mute",
-            "selfdeaf": "Member self-deaf",
-            "servermute": "Member server mute",
-            "serverdeaf": "Member server deafen"
-        }
-    }
+    _descriptions = {x.name: x.descriptions for x in types.iterable}
 
-    def __init__(self, bot: Red, config: Config):
+    def __init__(self, bot: Red):
         self.bot = bot
-        self.config = config
+        self.config = Config.get_conf(self, identifier=35908345472, force_registration=True)
+        self.config.register_guild(**_defaults_guild)
+        self.config.register_member(ignored=False)
+        self.config.register_channel(ignored=False)
+
+    async def get_guild_log(self, guild: discord.Guild) -> GuildLog:
+        if guild.id not in _guilds:
+            guild_ = GuildLog(guild, bot=self.bot, config=self.config)
+            await guild_.init()
+            _guilds[guild.id] = guild_
+        return _guilds[guild.id]
 
     @commands.group(name="logset")
     @commands.guild_only()
     @checks.guildowner_or_permissions(administrator=True)
     async def logset(self, ctx: RedContext):
         """Manage guild log settings"""
-        if ctx.guild.id not in _guilds:
-            _guilds[ctx.guild.id] = GuildLog(ctx.guild)
+        await self.get_guild_log(ctx.guild)  # the return value is intentionally ignored here
         await cmd_help(ctx, "")
 
-    @logset.group(name="logchannel")
-    async def logset_logchannel(self, ctx: RedContext):
-        """Manage the guild's log channels"""
-        await cmd_help(ctx, "logchannel")
+    @logset.group(name="logchannel", invoke_without_command=True)
+    async def logset_logchannel(self, ctx: RedContext, channel: discord.TextChannel, *log_types: str):
+        """Manage the guild's log channels
 
-    @logset_logchannel.command(name="all")
-    async def logchannel_all(self, ctx: RedContext, channel: discord.TextChannel = None):
-        """Set or clear all log channels at once"""
-        # Half-assed workarounds 101
-        channels = self.config.guild(ctx.guild).log_channels.defaults
-        if channel is not None:
-            channels = {x: channel.id if channel else None for x in channels}
-        await self.config.guild(ctx.guild).log_channels.set(channels)
+        Available log types:
 
-        if channel is not None:
-            await ctx.send(tick("Set all log channels to {}".format(channel.mention)))
-        else:
-            await ctx.send(tick("Cleared all set log channels"))
+        **guild**, **members**, **roles**, **messages**, **channels**, **voice**
 
-    @logset_logchannel.command(name="role")
-    async def logchannel_role(self, ctx: RedContext, channel: discord.TextChannel = None):
-        """Set the role log channel"""
-        await self.config.guild(ctx.guild).log_channels.roles.set(channel.id if channel else None)
-        if channel is not None:
-            await ctx.send(tick("Set the role log channel to {}".format(channel.mention)))
-        else:
-            await ctx.send(tick("Cleared the set role log channel"))
+        `all` is also accepted to set all of the above log types at once
+        """
+        if not log_types:
+            await ctx.send_help()
+            return
+        guild = await self.get_guild_log(ctx.guild)
+        if any([x for x in log_types if x.lower() not in guild.config.log_channels.defaults])\
+                and "all" not in log_types:
+            await ctx.send_help()
+            return
+        async with guild.config.log_channels() as channels:
+            if "all" in log_types:
+                defaults = guild.config.log_channels.defaults
+                channels.update({x: channel.id for x in defaults})
+                await ctx.send(tick(f"Set all log channels to {channel.mention}"))
+            else:
+                formatted_types = ", ".join([f"**{x.title()}**" for x in log_types])
+                await ctx.send(tick(f"Set log channels for types {formatted_types} to {channel.mention}"))
+        await guild.reload_settings()
 
-    @logset_logchannel.command(name="emoji")
-    async def logchannel_emoji(self, ctx: RedContext, channel: discord.TextChannel = None):
-        """Set the emoji log channel"""
-        await self.config.guild(ctx.guild).log_channels.emoji.set(channel.id if channel else None)
-        if channel is not None:
-            await ctx.send(tick("Set the emoji log channel to {}".format(channel.mention)))
-        else:
-            await ctx.send(tick("Cleared the set emoji log channel"))
+    @logset_logchannel.command(name="clear")
+    async def logchannel_clear(self, ctx: RedContext, *log_types: str):
+        """Clear log channels for specific types or all log types
 
-    @logset_logchannel.command(name="guild", aliases=["server"])
-    async def logchannel_guild(self, ctx: RedContext, channel: discord.TextChannel = None):
-        """Set the guild log channel"""
-        await self.config.guild(ctx.guild).log_channels.guild.set(channel.id if channel else None)
-        if channel is not None:
-            await ctx.send(tick("Set the guild log channel to {}".format(channel.mention)))
-        else:
-            await ctx.send(tick("Cleared the set guild log channel"))
+        If no log types are passed, all log channels are cleared
+        """
+        guild = await self.get_guild_log(ctx.guild)
+        if any([x for x in log_types if x.lower() not in guild.config.log_channels.defaults]):
+            await ctx.send_help()
+            return
+        if not log_types:
+            if not await confirm(ctx, message="Are you sure you want to clear all log channels?"):
+                await ctx.send_help()
+                return
+        async with guild.config.log_channels() as channels:
+            if not log_types:
+                channels.update(guild.config.log_channels.defaults)
+                await ctx.send(tick("Cleared all log channels"))
+            else:
+                channels.update({x: None for x in log_types})
+                formatted_types = ", ".join([f"**{x.title()}**" for x in log_types])
+                await ctx.send(tick(f"Cleared log channels for log types {formatted_types}"))
+        await guild.reload_settings()
 
-    @logset_logchannel.command(name="message")
-    async def logchannel_message(self, ctx: RedContext, channel: discord.TextChannel = None):
-        """Set the message log channel"""
-        await self.config.guild(ctx.guild).log_channels.messages.set(channel.id if channel else None)
-        if channel is not None:
-            await ctx.send(tick("Set the message log channel to {}".format(channel.mention)))
-        else:
-            await ctx.send(tick("Cleared the set message log channel"))
+    @logset.command(name="updatecheck")
+    async def logset_check(self, ctx: RedContext, check_type: str):
+        """Change the check type for log ignoring in update events
 
-    @logset_logchannel.command(name="channel")
-    async def logchannel_channel(self, ctx: RedContext, channel: discord.TextChannel = None):
-        """Set the channel log channel"""
-        await self.config.guild(ctx.guild).log_channels.channels.set(channel.id if channel else None)
-        if channel is not None:
-            await ctx.send(tick("Set the channel log channel to {}".format(channel.mention)))
-        else:
-            await ctx.send(tick("Cleared the set channel log channel"))
+        This setting is most visible with voice status updates and voice channel ignores
 
-    @logset_logchannel.command(name="voice")
-    async def logchannel_voice(self, ctx: RedContext, channel: discord.TextChannel = None):
-        """Set the voice status log channel"""
-        await self.config.guild(ctx.guild).log_channels.voice.set(channel.id if channel else None)
-        if channel is not None:
-            await ctx.send(tick("Set the voice log channel to {}".format(channel.mention)))
-        else:
-            await ctx.send(tick("Cleared the set voice log channel"))
+        Available check types:
 
-    @logset.group(name="format")
-    async def logset_format(self, ctx: RedContext):
-        """Manage the guild's log format"""
-        await cmd_help(ctx, "format")
-
-    @logset_format.command(name="embed")
-    async def format_embed(self, ctx: RedContext):
-        """Set the guild's log format to embeds"""
-        await self.config.guild(ctx.guild).format.set("EMBED")
-        await ctx.send(tick("Log messages will now be embeds"))
-
-    @logset_format.command(name="text")
-    async def format_text(self, ctx: RedContext):
-        """Set the guild's log format to text"""
-        await self.config.guild(ctx.guild).format.set("TEXT")
-        await ctx.send(tick("Log messages will now be plain text"))
-
-    @logset.group(name="check")
-    async def logset_check(self, ctx: RedContext):
-        """Change the check type for changes
-
-        This setting is most visible with voice status updates and voice channel ignores"""
-        await cmd_help(ctx, "check")
-
-    @logset_check.command(name="both")
-    async def logset_both(self, ctx: RedContext):
-        """Set logging to check both before and after values to determine ignore status"""
-        await self.config.guild(ctx.guild).check_type.set("both")
-        await ctx.send(tick("Log ignoring will now check the unchanged values in updates"))
-
-    @logset_check.command(name="after")
-    async def logset_after(self, ctx: RedContext):
-        """Set logging to check the after values to determine ignore status"""
-        await self.config.guild(ctx.guild).check_type.set("after")
-        await ctx.send(tick("Log ignoring will now check the changed values in updates"))
-
-    @logset_check.command(name="before")
-    async def logset_before(self, ctx: RedContext):
-        """Set logging to check the before values to determine ignore status"""
-        await self.config.guild(ctx.guild).check_type.set("before")
-        await ctx.send(tick("Log ignoring will now check the both the unchanged and changed values in updates"))
+        **before** — Check the unchanged values
+        **after** — Check the changed values
+        **both** — Check *both* changed and unchanged values
+        """
+        check_type = check_type.lower()
+        if check_type not in ('before', 'after', 'both'):
+            await ctx.send_help()
+            return
+        await self.config.guild(ctx.guild).check_type.set(check_type)
+        await ctx.send(tick(f"Log ignore checking changed to `{check_type}`"))
 
     @logset.command(name="guild", aliases=["server"])
     async def logset_guild(self, ctx: RedContext, *settings):
@@ -255,8 +230,6 @@ class Logs:
 
         Example:
         **❯** `[p]logset message edit`
-
-        **NOTE:** It's recommended to notify users about the presence of message logging in public servers
         """
         await handle_group(ctx, types=settings, settings=self.config.guild(ctx.guild).messages, setting_type="message",
                            slots=["edit", "delete"], descriptions=self._descriptions["messages"])
@@ -322,19 +295,10 @@ class Logs:
                            slots=["channel", "selfmute", "selfdeaf", "servermute", "serverdeaf"],
                            descriptions=self._descriptions["voice"])
 
-    @logset.command(name="emoji")
-    async def logset_emoji(self, ctx: RedContext):
-        """Toggle emoji creation / deletion logging"""
-        toggled = await toggle(self.config.guild(ctx.guild).emojis)
-        if toggled:
-            await ctx.send(info("Now logging emoji creations/deletions"))
-        else:
-            await ctx.send(info("No longer logging emoji creations/deletions"))
-
-    @logset.group(name="info", invoke_without_command=True)
+    @logset.command(name="info")
     async def logset_info(self, ctx: RedContext):
         """Returns some information on the guild's log settings"""
-        settings = await self.config.guild(ctx.guild)()
+        settings = await self.config.guild(ctx.guild).all()
 
         for channel in settings.get('log_channels', []):
             settings["log_channels"][channel] = ctx.guild.get_channel(settings["log_channels"][channel])
@@ -359,128 +323,66 @@ class Logs:
                     "content": "\n".join(strs)}
 
         pages = [
+            [build("channels"), build("guild"), build("roles")],
+            [build("messages"), build("members"), build("voice")],
             [
-                build("channels"),
-                build("guild"),
-                build("roles")
-            ],
-            [
-                build("messages"),
-                build("members"),
-                build("voice")
-            ],
-            [
-                {"title": "Emoji Updates", "content": "**Log channel:** {}\n\n**Enabled:** {}".format(
-                    channels.get("emoji", None), str(settings.get("emojis", False)))},
+                {
+                    "title": "Emoji Updates",
+                    "content": "**Log channel:** {channel}\n\n"
+                               "**Enabled:** {enabled}"
+                               "".format(channel=channels.get("emoji", None),
+                                         enabled=str(settings.get("emojis", False)))
+                },
                 {
                     "title": "Log Settings",
                     "content": "**Check type:** {type}\n"
                                "**Log format:** {format}"
-                               "".format(
-                                         type=str(settings.get("check_type", "after")).title(),
+                               "".format(type=str(settings.get("check_type", "after")).title(),
                                          format=str(settings.get("format", "EMBED")).title())
                 }
             ]
         ]
 
+        def convert_page(page: Sequence[dict]) -> str:
+            return "\n\n".join(["**\N{HEAVY RIGHT-POINTING ANGLE QUOTATION MARK ORNAMENT} {title}**\n\n{content}"
+                                .format(**x) for x in page])
+
         actions = {
-            "prev": "\N{BLACK LEFT-POINTING TRIANGLE}",
-            "close": "\N{CROSS MARK}",
-            "next": "\N{BLACK RIGHT-POINTING TRIANGLE}"
+            "close": "\N{CROSS MARK}"
         }
-        curr_page = 0
 
-        embed = discord.Embed(colour=discord.Colour.blurple(), title="Log Settings")
-        for item in pages[curr_page]:
-            embed.add_field(name=item["title"], value=item["content"], inline=False)
-        embed.set_footer(text="Page {}/{}".format(curr_page + 1, len(pages)))
-        menu = ReactMenu(ctx, actions, embed=embed, timeout=60.0,
-                         post_action_check=lambda action: action != "close")
-        result = None
+        r, _ = await paginate(ctx=ctx, pages=pages, page_converter=convert_page, actions=actions,
+                              title="Log Settings", colour=ctx.me.colour,
+                              post_menu_check=lambda x: x != "close")
+        try:
+            if not r.timed_out:
+                await r.message.clear_reactions()
+        except (discord.HTTPException, AttributeError):
+            pass
 
-        while True:
-            embed = discord.Embed(colour=discord.Colour.blurple(), title="Log Settings")
-            for item in pages[curr_page]:
-                embed.add_field(name=item["title"], value=item["content"], inline=False)
-            embed.set_footer(text="Page {}/{}".format(curr_page + 1, len(pages)))
-            if result is not None:
-                await menu.message.edit(embed=embed)
-            result = await menu.prompt()
-            if result.action == "close" or result.timed_out is True:
-                try:
-                    await menu.message.clear_reactions()
-                except discord.Forbidden:
-                    pass
-                break
-            elif result.action == "next":
-                if curr_page + 1 > len(pages) - 1:
-                    continue
-                curr_page += 1
-            elif result.action == "prev":
-                if curr_page - 1 < 0:
-                    continue
-                curr_page -= 1
-
-    @logset_info.command(name="ignored")
+    @logset.command(name="ignored")
     async def info_ignored(self, ctx: RedContext):
+        """List all ignored channels in the current guild"""
         ignored_channels = await self.config.all_channels()
         ignored_channels = [x for x in ignored_channels if ignored_channels[x].get("ignored", False) is True]
-        ignored_channels = [x.mention for x in map(lambda x: self.bot.get_channel(x), ignored_channels) if x]
+        ignored_channels = [x.mention for x in [self.bot.get_channel(x) for x in ignored_channels]
+                            if x and getattr(x, "guild", None) == ctx.guild]
 
         if not len(ignored_channels):
             await ctx.send(warning("There's no ignored channels in this guild"))
 
-        pages = []
-        items = []
-        for item in ignored_channels:
-            items.append(item)
-            if len(items) == 10:
-                pages.append("\n".join(items))
-                items = []
-        if items:
-            pages.append("\n".join(items))
-
-        if len(pages) == 1:
-            embed = discord.Embed(colour=discord.Colour.blurple(), title="Ignored Channels", description=pages[0])
-            embed.set_footer(text="Page 1/1")
-            await ctx.send(embed=embed)
-            return
-
+        pages = ["\n".join(x) for x in chunks(ignored_channels, 10)]
         actions = {
-            "prev": "\N{BLACK LEFT-POINTING TRIANGLE}",
-            "close": "\N{CROSS MARK}",
-            "next": "\N{BLACK RIGHT-POINTING TRIANGLE}"
+            "close": "\N{CROSS MARK}"
         }
-        curr_page = 0
 
-        embed = discord.Embed(colour=discord.Colour.blurple(), title="Ignored Channels",
-                              description=pages[curr_page])
-        embed.set_footer(text="Page {}/{}".format(curr_page + 1, len(pages)))
-        menu = ReactMenu(ctx, actions, embed=embed, timeout=60.0,
-                         post_action_check=lambda action: action != "close")
-        result = None
-
-        while True:
-            embed = discord.Embed(colour=discord.Colour.blurple(), title="Ignored Channels",
-                                  description=pages[curr_page])
-            embed.set_footer(text="Page {}/{}".format(curr_page + 1, len(pages)))
-            if result is not None:
-                await menu.message.edit(embed=embed)
-            result = await menu.prompt()
-            if result.action == "close" or result.timed_out is True:
-                try:
-                    await menu.message.clear_reactions()
-                except discord.Forbidden:
-                    pass
-                break
-            elif result.action == "next":
-                if curr_page + 1 > len(pages) - 1:
-                    continue
-                curr_page += 1
-            elif result.action == "prev":
-                if curr_page - 1 < 0:
-                    continue
-                curr_page -= 1
+        r, _ = await paginate(ctx=ctx, actions=actions, pages=pages,
+                              post_menu_check=lambda x: x != "close",
+                              title="Ignored Channels", colour=ctx.me.colour)
+        try:
+            await r.message.clear_reactions()
+        except (discord.HTTPException, AttributeError):
+            pass
 
     @logset.group(name="ignore")
     async def logset_ignore(self, ctx: RedContext):
@@ -493,16 +395,16 @@ class Logs:
         """Ignore the current or specified guild"""
         guild = ctx.guild if not guild_id else self.bot.get_guild(guild_id)
         if not guild:
-            await ctx.send(error("I couldn't find that guild"))
+            await ctx.send(warning("I couldn't find that guild"))
             return
         await self.config.guild(guild).ignored.set(True)
-        await ctx.send("Now ignoring guild **{}**".format(guild.name))
+        await ctx.send(tick(f"Now ignoring guild **{escape(guild.name, mass_mentions=True)}**"))
 
     @logset_ignore.command(name="member")
     async def logset_ignore_member(self, ctx: RedContext, member: discord.Member):
         """Ignore a specified member from logging"""
         await self.config.member(member).ignored.set(True)
-        await ctx.send("Now ignoring member **{}**".format(str(member)))
+        await ctx.send(tick(f"Now ignoring member **{member!s}**"))
 
     @logset_ignore.command(name="channel")
     async def logset_ignore_channel(self, ctx: RedContext, channel: GuildChannel = None):
@@ -511,7 +413,7 @@ class Logs:
             await ctx.send(warning("Use `{}logset ignore category` to ignore categories").format(ctx.prefix))
             return
         await self.config.channel(channel or ctx.channel).ignored.set(True)
-        await ctx.send("Now ignoring channel {}".format((channel or ctx.channel).mention))
+        await ctx.send(tick(f"Now ignoring channel {(channel or ctx.channel).mention}"))
 
     @logset_ignore.command(name="category")
     async def logset_ignore_category(self, ctx: RedContext, category: discord.CategoryChannel):
@@ -521,12 +423,12 @@ class Logs:
             await self.config.channel(channel).ignored.set(True)
             ignored.append(channel)
         if not ignored:
-            await ctx.send(error("Failed to ignore any channels in that category"))
+            await ctx.send(warning("Failed to ignore any channels in that category"))
             return
         _ignored = ["**❯** " + x.mention for x in ignored]
         ignored = "\n".join(_ignored)
-        await ctx.send(info("Successfully ignored the following channel{}:\n\n{}").format(
-            "s" if len(_ignored) > 1 else "", ignored))
+        plural = "s" if len(_ignored) != 1 else ""
+        await ctx.send(tick(f"Successfully ignored the following channel{plural}:\n\n{ignored}"))
 
     @logset.group(name="unignore")
     async def logset_unignore(self, ctx: RedContext):
@@ -539,16 +441,16 @@ class Logs:
         """Unignore the current or specified guild"""
         guild = ctx.guild if not guild_id else self.bot.get_guild(guild_id)
         if not guild:
-            await ctx.send(error("I couldn't find that guild"))
+            await ctx.send(warning("I couldn't find that guild"))
             return
         await self.config.guild(guild).ignored.set(False)
-        await ctx.send("No longer ignoring guild **{}**".format(guild.name))
+        await ctx.send(tick(f"No longer ignoring guild **{escape(guild.name, mass_mentions=True)}**"))
 
     @logset_unignore.command(name="member")
     async def logset_unignore_member(self, ctx: RedContext, member: discord.Member):
         """Unignore a specified member from logging"""
         await self.config.member(member).ignored.set(False)
-        await ctx.send("No longer ignoring member **{}**".format(str(member)))
+        await ctx.send(tick(f"No longer ignoring member **{member!s}**"))
 
     @logset_unignore.command(name="channel")
     async def logset_unignore_channel(self, ctx: RedContext, channel: GuildChannel = None):
@@ -557,7 +459,7 @@ class Logs:
             await ctx.send(warning("Use `{}logset unignore category` to unignore categories").format(ctx.prefix))
             return
         await self.config.channel(channel or ctx.channel).ignored.set(False)
-        await ctx.send("No longer ignoring channel {}".format((channel or ctx.channel).mention))
+        await ctx.send(tick(f"No longer ignoring channel {(channel or ctx.channel).mention}"))
 
     @logset_unignore.command(name="category")
     async def logset_unignore_category(self, ctx: RedContext, category: discord.CategoryChannel):
@@ -567,13 +469,12 @@ class Logs:
             await self.config.channel(channel).ignored.set(False)
             ignored.append(channel)
         if not ignored:
-            await ctx.send(error("Failed to unignore any channels in that category\n\n"
-                                 "(I'm only able to ignore text channels)"))
+            await ctx.send(warning("Failed to unignore any channels in that category"))
             return
         _ignored = ["**❯** " + x.mention for x in ignored]
         ignored = "\n".join(_ignored)
-        await ctx.send(info("No longer ignoring the following channel{}:\n\n{}").format(
-            "s" if len(_ignored) > 1 else "", ignored))
+        plural = "s" if len(_ignored) != 1 else ""
+        await ctx.send(tick(f"No longer ignoring the following channel{plural}:\n\n{ignored}"))
 
     @logset.command(name="reset")
     async def logset_reset(self, ctx: RedContext):
@@ -583,12 +484,6 @@ class Logs:
             await ctx.send(embed=discord.Embed(description="Guild log settings reset.", colour=discord.Colour.green()))
         else:
             await ctx.send(embed=discord.Embed(description="Okay then.", colour=discord.Colour.gold()))
-
-    @staticmethod
-    def get_guild_log(guild: discord.Guild) -> GuildLog:
-        if guild.id not in _guilds:
-            _guilds[guild.id] = GuildLog(guild)
-        return _guilds[guild.id]
 
     ####################
     #  Debug Commands  #
@@ -600,44 +495,27 @@ class Logs:
         """Debug utilities"""
         await cmd_help(ctx, "debug")
 
-    @logset_debug.command(name="fakeleave")
-    async def debug_fakeleave(self, ctx: RedContext, member: discord.Member = None):
-        """Fake a member leave"""
-        await self.on_member_leave(member or ctx.author)
-
     @logset_debug.command(name="fakejoin")
     async def debug_fakejoin(self, ctx: RedContext, member: discord.Member = None):
         """Fake a member join"""
         await self.on_member_join(member or ctx.author)
 
-    @logset_debug.command(name="fakeemoji")
-    async def debug_fakeemoji(self, ctx: RedContext, emoji: discord.Emoji, remove: bool=False):
-        """Fake an emoji addition/removal"""
-        if emoji.guild != ctx.guild:
-            await ctx.send("That emoji isn't in the current guild")
-            return
-        guild = ctx.guild
-        after = guild.emojis
-        if remove:
-            before = guild.emojis
-            after = [x for x in guild.emojis if x != emoji]
-        else:
-            before = [x for x in guild.emojis if x != emoji]
-        await self.on_guild_emojis_update(guild, before, after)
+    @logset_debug.command(name="fakeleave")
+    async def debug_fakeleave(self, ctx: RedContext, member: discord.Member = None):
+        """Fake a member leave"""
+        await self.on_member_leave(member or ctx.author)
 
     @logset_debug.command(name="fakeedit")
     async def debug_fakeedit(self, ctx: RedContext, *, text: str):
         """Fake a message edit with the provided text"""
-        FakeMessage = namedtuple("Message", "guild author content channel type")
-        after = FakeMessage(author=ctx.author, guild=ctx.guild, channel=ctx.channel, content=text,
-                            type=ctx.message.type)
-        # noinspection PyTypeChecker
+        after = deepcopy(ctx.message)
+        after.content = text
         await self.on_message_edit(ctx.message, after)
 
     @logset_debug.command(name="getchannel")
     async def debug_getchannel(self, ctx: RedContext, *, channel: GuildChannel):
         """Get a channel by name and return it's channel type"""
-        await ctx.send(box("{} (type: {})".format(str(channel), type(channel)), lang="python"))
+        await ctx.send(box(f"{channel!r}"))
 
     @logset_debug.command(name="fakedelete")
     async def debug_fakedelete(self, ctx: RedContext):
@@ -651,71 +529,61 @@ class Logs:
     async def on_message_delete(self, message: discord.Message):
         if isinstance(message.channel, discord.abc.PrivateChannel):
             return
-        if not await self.config.guild(message.guild).messages.delete():
-            return
-        await self.get_guild_log(message.guild).log(MessageLogType, LogType.DELETE, deleted=message)
+        guild = await self.get_guild_log(message.guild)
+        await guild.log("messages", LogType.DELETE, deleted=message)
 
     async def on_message_edit(self, before: discord.Message, after: discord.Message):
         if isinstance(after.channel, discord.abc.PrivateChannel):
             return
-        if not await self.config.guild(after.guild).messages.edit():
-            return
-        await self.get_guild_log(after.guild).log(MessageLogType, LogType.UPDATE, before=before, after=after)
+        guild = await self.get_guild_log(after.guild)
+        await guild.log("messages", LogType.UPDATE, before=before, after=after)
 
     async def on_member_join(self, member: discord.Member):
-        if not await self.config.guild(member.guild).members.join():
-            return
-        await self.get_guild_log(member.guild).log(MemberLogType, LogType.CREATE, created=member)
+        guild = await self.get_guild_log(member.guild)
+        await guild.log("member", LogType.CREATE, created=member)
 
     async def on_member_leave(self, member: discord.Member):
-        if not await self.config.guild(member.guild).members.leave():
-            return
-        await self.get_guild_log(member.guild).log(MemberLogType, LogType.DELETE, deleted=member)
+        guild = await self.get_guild_log(member.guild)
+        await guild.log("members", LogType.DELETE, deleted=member)
 
     async def on_member_update(self, before: discord.Member, after: discord.Member):
-        await self.get_guild_log(after.guild).log(MemberLogType, LogType.UPDATE, before=before, after=after)
+        guild = await self.get_guild_log(after.guild)
+        await guild.log("members", LogType.UPDATE, before=before, after=after)
 
     async def on_guild_channel_create(self, channel: discord.abc.GuildChannel):
-        # noinspection PyUnresolvedReferences
-        guild = channel.guild
-        if not await self.config.guild(guild).channels.create():
-            return
-        # noinspection PyUnresolvedReferences
-        await self.get_guild_log(channel.guild).log(ChannelLogType, LogType.CREATE, created=channel)
+        if hasattr(channel, "guild"):
+            guild = await self.get_guild_log(channel.guild)
+            await guild.log("channels", LogType.CREATE, created=channel)
 
     async def on_guild_channel_delete(self, channel: discord.abc.GuildChannel):
-        # noinspection PyUnresolvedReferences
-        if not await self.config.guild(channel.guild).channels.delete():
-            return
-        # noinspection PyUnresolvedReferences
-        await self.get_guild_log(channel.guild).log(ChannelLogType, LogType.DELETE, deleted=channel)
+        if hasattr(channel, "guild"):
+            guild = await self.get_guild_log(channel.guild)
+            await guild.log("channels", LogType.DELETE, deleted=channel)
 
     async def on_guild_channel_update(self, before: discord.abc.GuildChannel, after: discord.abc.GuildChannel):
-        # noinspection PyUnresolvedReferences
-        await self.get_guild_log(after.guild).log(ChannelLogType, LogType.UPDATE, before=before, after=after)
+        if hasattr(after, "guild"):
+            guild = await self.get_guild_log(after.guild)
+            await guild.log("channels", LogType.UPDATE, before=before, after=after)
 
     async def on_voice_state_update(self, member: discord.Member, before: discord.VoiceState,
                                     after: discord.VoiceState):
-        await self.get_guild_log(member.guild).log(VoiceLogType, LogType.UPDATE, before=before, after=after,
-                                                   member=member)
+        if not hasattr(member, "guild"):
+            return
+        guild = await self.get_guild_log(member.guild)
+        await guild.log("voice", LogType.UPDATE, before=before, after=after, member=member)
 
     async def on_guild_role_create(self, role: discord.Role):
-        if not await self.config.guild(role.guild).roles.create():
-            return
-        await self.get_guild_log(role.guild).log(RoleLogType, LogType.CREATE, created=role)
+        guild = await self.get_guild_log(role.guild)
+        await guild.log("roles", LogType.CREATE, created=role)
 
     async def on_guild_role_delete(self, role: discord.Role):
-        if not await self.config.guild(role.guild).roles.delete():
-            return
-        await self.get_guild_log(role.guild).log(RoleLogType, LogType.DELETE, deleted=role)
+        guild = await self.get_guild_log(role.guild)
+        await guild.log("roles", LogType.DELETE, deleted=role)
 
     async def on_guild_role_update(self, before: discord.Role, after: discord.Role):
-        await self.get_guild_log(after.guild).log(RoleLogType, LogType.UPDATE, before=before, after=after)
+        guild = await self.get_guild_log(after.guild)
+        await guild.log("roles", LogType.UPDATE, before=before, after=after)
 
     async def on_guild_update(self, before: discord.Guild, after: discord.Guild):
-        await self.get_guild_log(after).log(GuildLogType, LogType.UPDATE, before=before, after=after)
-
-    async def on_guild_emojis_update(self, guild: discord.Guild, before, after):
-        if not await self.config.guild(guild).emojis():
-            return
-        await self.get_guild_log(guild).log(EmojiLogType, LogType.UPDATE, guild=guild, before=before, after=after)
+        guild = await self.get_guild_log(after)
+        await guild.log("guild", LogType.UPDATE, before=before, after=after)
