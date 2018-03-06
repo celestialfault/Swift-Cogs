@@ -35,35 +35,35 @@ class ChannelLog(BaseLog):
 
     async def update(self, before: discord.abc.GuildChannel, after: discord.abc.GuildChannel, **kwargs):
         ret = LogEntry(self, colour=discord.Colour.blurple())
-        ret.set_title(title="Channel Updated", emoji="\N{MEMO}")
+        ret.set_title(title="Channel Updated")
         ret.set_footer(timestamp=datetime.utcnow())
         ret.description = f"Channel: {after.mention}"
 
         if hasattr(before, "name") and hasattr(after, "name"):  # you win this time pycharm
-            if before.name != after.name and self.settings.get("name", False):
+            if self.has_changed(before.name, after.name, "name"):
                 ret.add_diff_field(title="Channel Name", before=before.name, after=after.name)
 
         if isinstance(before, discord.TextChannel) and isinstance(after, discord.TextChannel):
-            if before.topic != after.topic and self.settings.get("topic", False):
+            if self.has_changed(before.topic, after.topic, "topic"):
                 ret.add_diff_field(title="Channel Topic", before=before.topic, after=after.topic, box_lang="")
 
         elif isinstance(before, discord.VoiceChannel) and isinstance(after, discord.VoiceChannel):
-            if before.bitrate != after.bitrate and self.settings.get("bitrate", False):
+            if self.has_changed(before.bitrate, after.bitrate, "bitrate"):
                 ret.add_diff_field("Channel Bitrate",
                                    before=format_bitrate(before.bitrate),
                                    after=format_bitrate(after.bitrate))
 
-            if before.user_limit != after.user_limit and self.settings.get("user_limit", False):
+            if self.has_changed(before.user_limit, after.user_limit, "user_limit"):
                 ret.add_diff_field(title="User Limit",
                                    before=format_userlimit(before.user_limit),
                                    after=format_userlimit(after.user_limit))
 
-        if before.category != after.category and self.settings.get("category", False):
+        if self.has_changed(before.category, after.category, "category"):
             ret.add_diff_field(title="Channel Category",
                                before=before.category.name if before.category is not None else "Uncategorized",
                                after=after.category.name if after.category is not None else "Uncategorized")
 
-        if before.position != after.position and self.settings.get("position", False):
+        if self.has_changed(before.position, after.position, "position"):
             ret.add_diff_field(title="Channel Position", before=before.position, after=after.position)
         return ret
 
@@ -72,7 +72,7 @@ class ChannelLog(BaseLog):
             return None
 
         ret = LogEntry(self, colour=discord.Colour.green(), require_fields=False)
-        ret.set_title(title="Channel Created", emoji="\N{LOWER LEFT BALLPOINT PEN}")
+        ret.set_title(title="Channel Created")
         ret.set_footer(timestamp=datetime.utcnow())
         ret.description = f"Channel {created.mention} created"
         return ret
@@ -82,7 +82,7 @@ class ChannelLog(BaseLog):
             return None
 
         ret = LogEntry(self, colour=discord.Colour.red(), require_fields=False)
-        ret.set_title(title="Channel Deleted", emoji="\N{WASTEBASKET}")
+        ret.set_title(title="Channel Deleted")
         ret.set_footer(timestamp=datetime.utcnow())
         ret.description = f"Channel {str(deleted)} deleted"
         return ret

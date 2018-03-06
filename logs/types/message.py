@@ -22,10 +22,12 @@ class MessageLog(BaseLog):
             return None
 
         ret = LogEntry(self, colour=discord.Colour.blurple())
-        author = after.author
-        ret.description = f"Message author: **{author!s}** ({author.id})\nChannel: {after.channel.mention}"
+        author: discord.Member = after.author
+        ret.description = (f"Message author: **{author.mention}** ({author.id})\n"
+                           f"Channel: {after.channel.mention}"
+                           )
 
-        ret.set_title(title="Message Edited", emoji="\N{MEMO}", icon_url=after.author.avatar_url)
+        ret.set_title(title="Message Edited", icon_url=after.author.avatar_url_as(format="png"))
         ret.set_footer(footer=f"Message ID: {after.id}", timestamp=datetime.utcnow())
 
         ret.add_field(title="Previous Content", value=before.content)
@@ -39,9 +41,11 @@ class MessageLog(BaseLog):
 
         author = deleted.author
         ret = LogEntry(self, colour=discord.Colour.red())
-        ret.description = f"Message author: **{author!s}** ({author.id})\nChannel: {deleted.channel.mention}"
+        ret.description = (f"Message author: **{author.mention}** ({author.id})\n"
+                           f"Channel: {deleted.channel.mention}"
+                           )
 
-        ret.set_title(title="Message Deleted", emoji="\N{WASTEBASKET}", icon_url=deleted.author.avatar_url)
+        ret.set_title(title="Message Deleted", icon_url=deleted.author.avatar_url_as(format="png"))
         ret.set_footer(footer=f"Message ID: {deleted.id}", timestamp=datetime.utcnow())
 
         ret.add_field(title="Message Content", value=deleted.content or "*No message content*")

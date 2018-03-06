@@ -1,7 +1,6 @@
-import discord
-from abc import ABC
+from abc import ABC, abstractmethod
 
-from typing import Dict, Optional
+from typing import Dict, Hashable
 
 
 class BaseLog(ABC):
@@ -17,18 +16,24 @@ class BaseLog(ABC):
     def __str__(self):
         return self.name
 
-    def channel(self) -> Optional[discord.TextChannel]:
-        return self.guild.bot.get_channel(self.guild.settings["log_channels"].get(self.name))
-
     @property
     def settings(self) -> Dict[str, bool]:
         return self.guild.settings.get(self.name, {})
 
+    def has_changed(self, before, after, config_setting: str):
+        if isinstance(before, Hashable) and isinstance(after, Hashable):
+            before = hash(before)
+            after = hash(after)
+        return before != after and self.settings.get(config_setting, False) is not False
+
+    @abstractmethod
     async def create(self, created, **kwargs):
         return NotImplemented
 
+    @abstractmethod
     async def update(self, before, after, **kwargs):
         return NotImplemented
 
+    @abstractmethod
     async def delete(self, deleted, **kwargs):
         return NotImplemented

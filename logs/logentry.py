@@ -7,29 +7,24 @@ from typing import Optional
 
 
 class LogEntry:
-    def __init__(self, group, require_fields: bool=True, colour: discord.Colour=None):
+    def __init__(self, group, require_fields: bool = True, colour: discord.Colour = None, description: str = None):
         self.group = group
         self.guild = group.guild
         self.require_fields = require_fields  # Set this to False to allow sending a log message with just a description
-        # Visible on text + embeds
+
         self.title = discord.Embed.Empty
-        self.description = discord.Embed.Empty
+        self.description = description or discord.Embed.Empty
         self.fields = []
         self.footer = discord.Embed.Empty
-        # Visible on text
-        self.emoji = None
-        # Visible on embeds
         self.icon_url = self.guild.guild.icon_url
         self.timestamp = discord.Embed.Empty
         self.colour = colour or discord.Embed.Empty
 
-    def set_title(self, title: str, icon_url: str=None, emoji: str=None):
+    def set_title(self, title: str, icon_url: str=None):
         """Set the title, icon url and/or emoji. Returns self for chaining"""
         self.title = title
         if icon_url:
             self.icon_url = icon_url
-        if emoji:
-            self.emoji = emoji
         return self
 
     def set_footer(self, footer: str=None, timestamp: datetime=None):
@@ -41,14 +36,13 @@ class LogEntry:
 
     def add_diff_field(self, title: str, before, after, description: str=None, box_lang: str=None):
         """Adds a before and after field"""
-        before = str(before)
-        after = str(after)
+        before, after = (str(before), str(after))
         if box_lang is not None:
-            value = "**Before**:\n{}\n**After:**\n{}".format(box(before, lang=box_lang), box(after, lang=box_lang))
+            value = f"**Before:**\n{box(before, lang=box())}\n**After:**\n{box(after, lang=box_lang)}"
         else:
-            value = "**Before:** {}\n**After:** {}".format(before, after)
+            value = f"**Before:**\n{before}\n**After:**\n{after}"
         if description is not None:
-            value = "{}\n\n{}".format(description, value)
+            value = f"{description}\n\n{value}"
         self.add_field(title=title, value=value)
 
     def add_field(self, title: str, value, inline: bool = False):

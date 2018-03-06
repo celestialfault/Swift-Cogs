@@ -54,9 +54,7 @@ class GuildLog:
             return
 
         group = self._logs.get(group)
-        log_channel = group.channel()
-
-        # This is probably a terrible idea, but what's the worst that could possibly happen??
+        log_channel = self.log_channel(group.name)
         log_func = getattr(group, str(log_type), lambda *args, **k_args: None)
 
         with contextlib.suppress(NotImplementedError):

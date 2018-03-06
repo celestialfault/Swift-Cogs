@@ -16,36 +16,36 @@ class VoiceLog(BaseLog):
         "serverdeaf": "Member server deafen"
     }
 
-    async def update(self, before: discord.VoiceState, after: discord.VoiceState, **kwargs):
+    def update(self, before: discord.VoiceState, after: discord.VoiceState, **kwargs):
         try:
-            member = kwargs["member"]
+            member: discord.Member = kwargs["member"]
         except KeyError:  # Silently fail if the member in question wasn't given
             return None
 
         settings = self.settings
         ret = LogEntry(self, colour=discord.Colour.greyple())
-        ret.set_title(title="Member Voice Status", icon_url=member.avatar_url, emoji="\N{SPEAKER}")
-        ret.description = f"Member: **{member!s}**"
+        ret.set_title(title="Member Voice Status", icon_url=member.avatar_url_as(format="png"))
+        ret.description = f"Member: {member.mention}"
         ret.set_footer(footer=f"User ID: {member.id}", timestamp=datetime.utcnow())
 
-        if before.channel != after.channel and settings.get("channel", False):
+        if self.has_changed(before.channel, after.channel, "channel"):
             ret.add_diff_field(title="Voice Channel",
                                before=before.channel or "Not in voice",
                                after=after.channel or "Not in voice")
 
-        if before.self_deaf != after.self_deaf and settings.get("selfdeaf", False):
+        if self.has_changed(before.self_deaf, after.self_deaf, "selfdeaf"):
             ret.add_field(title="Self Deaf",
                           value="{} self deafened".format("Now" if after.self_deaf else "No longer"))
 
-        if before.deaf != after.deaf and settings.get("serverdeaf", False):
+        if self.has_changed(before.deaf, after.deaf, "serverdeaf"):
             ret.add_field(title="Server Deaf",
                           value="{} server deafened".format("Now" if after.deaf else "No longer"))
 
-        if before.self_mute != after.self_mute and settings.get("selfmute", False):
+        if self.has_changed(before.self_mute, after.self_mute, "selfmute"):
             ret.add_field(title="Self Mute",
                           value="{} self muted".format("Now" if after.self_mute else "No longer"))
 
-        if before.mute != after.mute and settings.get("servermute", False):
+        if self.has_changed(before.mute, after.mute, "servermute"):
             ret.add_field(title="Server Mute",
                           value="{} server muted".format("Now" if after.mute else "No longer"))
         return ret
