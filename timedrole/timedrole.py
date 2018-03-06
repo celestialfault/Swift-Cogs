@@ -164,10 +164,10 @@ class TimedRole:
             If this is None, a generic reason is displayed instead
         hidden: bool
             If this is True, this role will not be displayed in [p]timedrole list
-        modlog_type: dict
+        modlog_type: str
             A modlog action type. If this is a string, a mod log case is attempted to be created.
         modlog_reason: str
-            An optional reason to show in the mod log. If this is None, ``reason`` is used instead
+            An optional reason to show in the created modlog case. If ``modlog_type`` is None, this is ignored.
         """
         roles = list(roles)
         if member.guild.default_role in roles:
@@ -184,7 +184,6 @@ class TimedRole:
         now = datetime.utcnow()
         duration = duration.total_seconds()
 
-        raw_reason = reason
         if reason is None:
             reason = "Timed role granted by {0!s}".format(granted_by)
         await member.add_roles(*roles, reason=reason)
@@ -205,7 +204,7 @@ class TimedRole:
                 await modlog.create_case(guild=member.guild, action_type=modlog_type,
                                          until=(now + timedelta(seconds=duration)).timestamp(),
                                          created_at=now, user=member, moderator=granted_by,
-                                         reason=modlog_reason or raw_reason)
+                                         reason=modlog_reason)
             except RuntimeError:
                 pass
 
