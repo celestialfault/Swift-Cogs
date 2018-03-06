@@ -1,6 +1,6 @@
 # odinair's Red v3 Cogs
 
-**These cogs require Python 3.6 to work**
+**These cogs require Python 3.6!**
 
 ```
 [p]repo add odinair https://github.com/notodinair/Red-Cogs.git v3
@@ -46,17 +46,6 @@ Mainly a cog to help with development of other cogs, or advanced server administ
 [p]load misctools
 ```
 
-### Timed Mute
-
-**This cog requires [Timed Role](#timed-role)**
-
-Temporarily mute a user in voice and text channels across an entire server
-
-```
-[p]cog install odinair timedmute
-[p]load timedmute
-```
-
 ### Quotes
 
 Save and retrieve quotes. Supports author attribution!
@@ -75,13 +64,23 @@ Require a role (or a lack of) out of a list of roles to use the bot in a server
 [p]load requirerole
 ```
 
-### RNDStatus
+### Random Status
 
-Randomly change the bot's Playing status on a set interval to one in a set of statuses. Has placeholder support
+Randomly change the bot's Playing status on a set interval to one in a set of statuses.
 
 ```
 [p]cog install odinair rndstatus
 [p]load rndstatus
+```
+
+### Role Mention
+
+Mention configurable roles on demand.
+This can be helpful if you have roles which you don't want everyone to be able to mention, but still need to mention from time to time.
+
+```
+[p]cog install odinair rolemention
+[p]load rolemention
 ```
 
 ### Starboard
@@ -93,6 +92,17 @@ It's almost like channel pins, except with stars
 [p]load starboard
 ```
 
+### Timed Mute
+
+**This cog requires [Timed Role](#timed-role)**
+
+Temporarily mute a user in voice and text channels across an entire server
+
+```
+[p]cog install odinair timedmute
+[p]load timedmute
+```
+
 ### Timed Role
 
 Add roles to users for a set amount of time, and automatically remove them after that time is up
@@ -102,13 +112,11 @@ Add roles to users for a set amount of time, and automatically remove them after
 [p]load timedrole
 ```
 
-### User Profiles
+### UInfo
 
-It's *almost* like Facebook, but in Discord!
-
-Also featuring a slightly improved variation of the `userinfo` command.
+Yet another slightly different variation of the userinfo command.
 
 ```
-[p]cog install odinair userprofiles
-[p]load userprofiles
+[p]cog install odinair uinfo
+[p]load uinfo
 ```

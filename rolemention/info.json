@@ -1,0 +1,7 @@
+{
+  "author": ["odinair"],
+  "bot_version": [3, 0, 0],
+  "description": "Quickly mention one of a configurable list of roles",
+  "short": "Quickly mention one of a configurable list of roles",
+  "type": "COG"
+}
