@@ -10,9 +10,8 @@ async def setup(bot: Red):
     from .starboard import Starboard
     from .classes.starboardbase import setup as setup_base
     from odinair_libs.config import fix_config_fuckup
-    config = Config.get_conf(None, identifier=45351212589, force_registration=True, cog_name="Starboard")
+    config = Config.get_conf(None, identifier=45351212589, cog_name="Starboard")
     config.register_guild(**{
-        "messages": [],
         "blocks": [],
         "ignored_channels": [],
         "channel": None,

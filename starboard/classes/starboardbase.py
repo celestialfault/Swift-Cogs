@@ -3,6 +3,8 @@ import discord
 from redbot.core import Config
 from redbot.core.bot import Red
 
+guild_cache = {}
+
 
 class StarboardBase:
     @staticmethod
@@ -16,16 +18,14 @@ class StarboardBase:
     def guild_starboard_cache():
         return guild_cache
 
-    async def message(self, message: discord.Message, auto_create: bool=False):
+    async def message(self, *, message: discord.Message, auto_create: bool = False, message_id: int = None):
         if not message.guild:
             raise ValueError("Message must be in a Guild")
         return await self.starboard(message.guild).message(message, auto_create=auto_create)
 
 
-def setup(_bot: Red, _config: Config):
+def setup(bot_: Red, config_: Config):
     global bot
-    bot = _bot
+    bot = bot_
     global config
-    config = _config
-    global guild_cache
-    guild_cache = {}
+    config = config_
