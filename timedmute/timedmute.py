@@ -1,5 +1,3 @@
-from datetime import datetime
-
 import discord
 from discord.ext import commands
 
@@ -30,7 +28,8 @@ class TimedMute:
     @staticmethod
     async def _setup_cases():
         try:
-            await modlog.register_casetype(name="punish", default_setting=True, image="\N{FACE WITHOUT MOUTH}",
+            await modlog.register_casetype(name="timedmute", default_setting=True,
+                                           image="\N{STOPWATCH}\N{SPEAKER WITH CANCELLATION STROKE}",
                                            case_str="Timed Mute")
         except RuntimeError:
             pass
@@ -105,17 +104,10 @@ class TimedMute:
             timed_role = self.bot.get_cog("TimedRole")
             await timed_role.add_roles(role, member=member, duration=duration, granted_by=ctx.author,
                                        reason=audit_reason, expired_reason="Timed mute expired",
-                                       hidden=True)
+                                       hidden=True, modlog_type="timedmute")
         except RuntimeError as e:
             await ctx.send(warning(str(e)))
         else:
-            try:
-                # noinspection PyTypeChecker
-                await modlog.create_case(guild=ctx.guild, created_at=datetime.utcnow(),
-                                         until=(datetime.utcnow() + duration).timestamp(),
-                                         action_type="timedmute", user=member, moderator=ctx.author, reason=reason)
-            except RuntimeError:
-                pass
             await ctx.send(tick(f"**{member!s}** is now muted for for {td_format(duration)}"))
 
     async def on_guild_channel_create(self, channel: discord.abc.GuildChannel):

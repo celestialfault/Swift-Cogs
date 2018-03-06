@@ -1,5 +1,7 @@
 {
   "author": ["odinair"],
   "bot_version": [3, 0, 0],
-  "description": "Mute users for a set amount of time. Requires the Timed Role cog."
+  "description": "Mute users for a set amount of time. This requires my timedrole cog.",
+  "short": "Mute users for a set amount of time. Requires the timedrole cog",
+  "type": "COG"
 }
