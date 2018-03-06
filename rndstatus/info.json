@@ -1,5 +1,6 @@
 {
   "author": ["odinair"],
+  "bot_version": [3, 0, 0],
   "description": "Random bot playing statuses.\n\nDue to how the status switching works, this cog doesn't respect manually set playing statuses, nor statuses set by other cogs",
   "short": "Random bot playing statuses",
   "type": "COG"
