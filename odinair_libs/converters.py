@@ -10,16 +10,10 @@ from discord.ext import commands
 
 from redbot.core.bot import RedContext
 
-from odinair_libs.formatting import td_format
+from odinair_libs.formatting import td_format, chunks
 from odinair_libs.menus import paginate, MenuResult
 
-__all__ = ["GuildChannel", "FutureTime", "chunks", "get_role_or_member"]
-
-
-def chunks(l, n):  # https://stackoverflow.com/a/312464
-    """Yield successive n-sized chunks from l."""
-    for i in range(0, len(l), n):
-        yield l[i:i + n]
+__all__ = ["GuildChannel", "FutureTime", "get_role_or_member"]
 
 
 def get_role_or_member(snowflake: int, guild: discord.Guild):
@@ -51,14 +45,15 @@ async def ask_channel(ctx: RedContext, *channels: discord.abc.GuildChannel, mess
     if message is None:
         message = "One or more of those channels matches that name.\nPlease select which channel you'd like to use:"
 
+    def ctype(x):
+        return (
+            "\N{SPIRAL NOTE PAD}" if isinstance(x, discord.TextChannel) else
+            "\N{SPEAKER}" if isinstance(x, discord.VoiceChannel) else
+            "\N{FILE FOLDER}"
+        )
+
     # noinspection PyShadowingNames
     def build_page(page: Sequence[discord.abc.GuildChannel]) -> str:
-        def ctype(x):
-            return (
-                "\N{SPIRAL NOTE PAD}" if isinstance(x, discord.TextChannel) else
-                "\N{SPEAKER}" if isinstance(x, discord.VoiceChannel) else
-                "\N{FILE FOLDER}"
-            )
 
         channels__ = [f"{emojis[page.index(x)]} {ctype(x)} {x.mention}" for x in page]
 

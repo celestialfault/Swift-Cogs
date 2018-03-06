@@ -1,4 +1,7 @@
+import re
 from datetime import timedelta
+
+from redbot.core import RedContext
 from types import FunctionType
 from typing import Iterable, Tuple, Any, Dict, Union
 
@@ -8,7 +11,8 @@ from redbot.core.bot import Red
 import textwrap
 import inspect
 
-__all__ = ["td_format", "difference", "changed", "normalize", "attempt_emoji", "get_source", "tick"]
+__all__ = ["td_format", "difference", "changed", "normalize", "attempt_emoji", "get_source", "tick", "chunks",
+           "cmd_help"]
 
 
 def tick(text: str):
@@ -33,8 +37,10 @@ def get_source(fn: FunctionType) -> str:
     OSError
         If the source code cannot be retrieved, such as if the function is defined in a repl
     """
-    lines, _ = inspect.getsourcelines(fn.__code__)
-    return textwrap.dedent("".join(lines))
+    lines, firstln = inspect.getsourcelines(fn.__code__)
+    lastln = firstln + len(lines) - 1
+    lines = textwrap.dedent("".join(lines))
+    return f"# lines {firstln}-{lastln}\n\n{lines}"
 
 
 def attempt_emoji(bot: Red, fallback: str, *, emoji_id: int = None, emoji_name: str = None,
@@ -78,8 +84,28 @@ def attempt_emoji(bot: Red, fallback: str, *, emoji_id: int = None, emoji_name: 
     return emoji or fallback
 
 
-def td_format(td_object: timedelta, short_format: bool = False, as_string: bool = True,
-              milliseconds: bool = False) -> str:
+_time_periods = {
+    "long": {
+        "year": 60 * 60 * 24 * 365,
+        "month": 60 * 60 * 24 * 30,
+        "day": 60 * 60 * 24,
+        "hour": 60 * 60,
+        "minute": 60,
+        "second": 1
+    },
+    "short": {
+        "y": 60 * 60 * 24 * 365,
+        "mo": 60 * 60 * 24 * 30,
+        "d": 60 * 60 * 24,
+        "h": 60 * 60,
+        "m": 60,
+        "s": 1
+    }
+}
+
+
+def td_format(td_object: timedelta, short_format: bool = False, milliseconds: bool = False,
+              append_str: bool = False) -> str:
     """Format a timedelta into a human readable output
 
     Parameters
@@ -88,39 +114,44 @@ def td_format(td_object: timedelta, short_format: bool = False, as_string: bool 
         A timedelta object to format
     short_format: bool
         Returns in short format, such as '10d2h' instead of '10 days 2 hours'
-    as_string: bool
-        If this is False, all the strings are returned in a list instead of a joined string
     milliseconds: bool
-        If this is True, milliseconds are also appended
+        If this is True, milliseconds are also appended.
+
+        Note: Milliseconds are rounded to the nearest full number, and as such this may not be fully accurate
+    append_str: bool
+        Whether or not to append or prepend `in` or `ago` depending on if `td_object` is in the future or past
     """
     # this function is originally from StackOverflow with modifications made
     # https://stackoverflow.com/a/13756038
     seconds = int(td_object.total_seconds())
-    periods = [
-        ('year', 60 * 60 * 24 * 365), ('month', 60 * 60 * 24 * 30),
-        ('day', 60 * 60 * 24), ('hour', 60 * 60), ('minute', 60), ('second', 1)]
-    if short_format is True:
-        periods = [
-            ('y', 60 * 60 * 24 * 365), ('mo', 60 * 60 * 24 * 30),
-            ('d', 60 * 60 * 24), ('h', 60 * 60), ('m', 60), ('s', 1)]
+    iter_ = "long" if not short_format else "short"
+    periods_ = [(x, _time_periods[iter_][x]) for x in _time_periods[iter_]]
+    past = False
+
+    if seconds < 0:
+        past = True
+        seconds = int(re.sub(r"^-+", "", str(seconds)))
 
     strings = []
-    for period_name, period_seconds in periods:
+    for period_name, period_seconds in periods_:
         if seconds >= period_seconds:
             period_value, seconds = divmod(seconds, period_seconds)
-            if short_format:
-                strings.append("%s%s" % (period_value, period_name))
-            elif period_value == 1:
-                strings.append("%s %s" % (period_value, period_name))
-            else:
-                strings.append("%s %ss" % (period_value, period_name))
+            plural = "s" if period_value != 1 and short_format is False else ""
+            strings.append("{value}{space}{name}{plural}".format(
+                value=period_value, name=period_name, plural=plural, space=" " if not short_format else ""))
 
     if milliseconds is True and (td_object.microseconds / 1000) > 0:
-        ms = td_object.microseconds / 1000
-        strings.append("%s%s%s%s" % (ms, " " if not short_format else "", "ms" if short_format else "millisecond",
-                                     "s" if ms != 1 and not short_format else ""))
+        ms = round(td_object.microseconds / 1000)
+        if ms:
+            space = " " if not short_format else ""
+            period_name = "ms" if short_format else "millisecond" + "s" if ms != 1 else ""
+            strings.append(f"{ms!s}{space}{period_name}")
 
-    return (", " if not short_format else "").join(strings) if as_string is True else strings
+    built = (", " if not short_format else "").join(strings)
+    if not append_str:
+        return built
+    fmt = "in {}" if not past else "{} ago"
+    return fmt.format(built)
 
 
 def difference(list1: Iterable, list2: Iterable, *, check_val: bool = False, dict_values: bool = False)\
@@ -210,3 +241,17 @@ def normalize(text, *, title_case: bool = True, underscores: bool = True, **kwar
     if title_case:
         text = text.title()
     return text
+
+
+def chunks(l, n):  # https://stackoverflow.com/a/312464
+    """Yield successive n-sized chunks from l."""
+    for i in range(0, len(l), n):
+        yield l[i:i + n]
+
+
+async def cmd_help(ctx: RedContext, cmd: str) -> None:
+    """Sends sub-command help"""
+    # This probably isn't the cleanest solution, but it works well enough,
+    # so this is mostly what I'd consider "good enough"
+    if not ctx.invoked_subcommand or ctx.invoked_subcommand.name == cmd:
+        await ctx.send_help()

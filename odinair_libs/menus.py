@@ -6,7 +6,7 @@ from typing import Union, Any, Dict, Sequence, Callable, Tuple
 import discord
 from redbot.core import RedContext
 
-__all__ = ["PostMenuAction", "ReactMenu", "MenuResult", "paginate", "confirm", "cmd_help"]
+__all__ = ["PostMenuAction", "ReactMenu", "MenuResult", "paginate", "confirm"]
 
 
 class PostMenuAction(Enum):
@@ -337,11 +337,3 @@ async def react_menu(ctx: RedContext, actions: Dict[Any, Union[discord.Emoji, di
                      **kwargs) -> MenuResult:
     """This function is deprecated and will be removed in the future; please use the ReactMenu class instead"""
     return await ReactMenu(ctx, actions, **kwargs).prompt()
-
-
-async def cmd_help(ctx: RedContext, cmd: str) -> None:
-    """Sends sub-command help"""
-    # This probably isn't the cleanest solution, but it works well enough,
-    # so this is mostly what I'd consider "good enough"
-    if not ctx.invoked_subcommand or ctx.invoked_subcommand.name == cmd:
-        await ctx.send_help()
