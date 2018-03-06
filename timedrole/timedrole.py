@@ -6,7 +6,7 @@ from discord.ext import commands
 
 from redbot.core.bot import Red, RedContext
 from redbot.core import checks, Config, modlog
-from redbot.core.utils.chat_formatting import warning, bold
+from redbot.core.utils.chat_formatting import warning, bold, escape
 
 from datetime import datetime, timedelta
 
@@ -143,7 +143,7 @@ class TimedRole:
 
     async def add_roles(self, *roles: discord.Role, member: discord.Member, granted_by: discord.Member,
                         duration: timedelta, expired_reason: str = None, reason: str = None,
-                        hidden: bool = False, modlog_type: str = None):
+                        hidden: bool = False, modlog_type: str = None, modlog_reason: str = None):
         """Adds roles to a member.
 
         Parameters
@@ -166,6 +166,8 @@ class TimedRole:
             If this is True, this role will not be displayed in [p]timedrole list
         modlog_type: dict
             A modlog action type. If this is a string, a mod log case is attempted to be created.
+        modlog_reason: str
+            An optional reason to show in the mod log. If this is None, ``reason`` is used instead
         """
         roles = list(roles)
         if member.guild.default_role in roles:
@@ -202,8 +204,8 @@ class TimedRole:
                 # noinspection PyTypeChecker
                 await modlog.create_case(guild=member.guild, action_type=modlog_type,
                                          until=(now + timedelta(seconds=duration)).timestamp(),
-                                         created_at=now,
-                                         user=member, moderator=granted_by, reason=raw_reason)
+                                         created_at=now, user=member, moderator=granted_by,
+                                         reason=modlog_reason or raw_reason)
             except RuntimeError:
                 pass
 
@@ -292,17 +294,14 @@ class TimedRole:
 
         cannot_add = {}
         for role in roles:
-            if role > ctx.author.top_role and not ctx.guild.owner == ctx.author:
-                cannot_add[role] = "Role is above author's highest ranked role"
-            elif role == ctx.author.top_role and not ctx.guild.owner == ctx.author:
-                cannot_add[role] = "Role is author's highest ranked role"
-            elif role > ctx.me.top_role:
-                cannot_add[role] = "Role is above my highest ranked role"
-            elif role == ctx.me.top_role:
-                cannot_add[role] = "Role is my highest ranked role"
+            if role >= ctx.author.top_role and not ctx.guild.owner == ctx.author:
+                cannot_add[role] = "Role is equal to or above your highest ranked role"
+            elif role >= ctx.me.top_role:
+                cannot_add[role] = "Role is equal to or above my highest ranked role"
 
         if any(cannot_add):
-            cannot_add = "\n".join(f"`{x.name}` \N{EM DASH} {cannot_add[x]}" for x in cannot_add)
+            cannot_add = "\n".join(f"`{escape(x.name, mass_mentions=True, formatting=True)}` "
+                                   f"\N{EM DASH} {cannot_add[x]}" for x in cannot_add)
             await ctx.send(warning(f"Cannot add one or more of the given roles for the following reasons:\n\n"
                                    f"{cannot_add}"))
             return

@@ -104,7 +104,7 @@ class TimedMute:
             timed_role = self.bot.get_cog("TimedRole")
             await timed_role.add_roles(role, member=member, duration=duration, granted_by=ctx.author,
                                        reason=audit_reason, expired_reason="Timed mute expired",
-                                       hidden=True, modlog_type="timedmute")
+                                       hidden=True, modlog_type="timedmute", modlog_reason=reason)
         except RuntimeError as e:
             await ctx.send(warning(str(e)))
         else:
