@@ -271,7 +271,7 @@ class Starboard(StarboardBase):
             await ctx.send(content=warning(f"No messages were found that needed migration."))
         else:
             await ctx.send(content=tick(f"Successfully migrated {migrated} starboard "
-                                        f"message{'es' if migrated > 1 else ''}."))
+                                        f"message{'s' if migrated > 1 else ''}."))
 
     @cmd_starboard.command(name="clearcache", hidden=True)
     async def starboard_clearcache(self, ctx: RedContext, max_duration: int = 30 * 60):
