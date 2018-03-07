@@ -3,8 +3,9 @@ from datetime import datetime
 import discord
 
 from logs.logentry import LogEntry
-from odinair_libs.formatting import difference, normalize
 from ._base import BaseLog
+
+from odinair_libs.formatting import difference, normalize
 
 
 class RoleLog(BaseLog):

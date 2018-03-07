@@ -1,18 +1,11 @@
 from datetime import datetime
 
 import discord
-from redbot.core.utils.chat_formatting import escape
 
 from ._base import BaseLog
-from odinair_libs.formatting import td_format, difference
 from logs.logentry import LogEntry
 
-
-def safe_escape(text: str, formatting: bool=True, mass_mentions: bool=True):
-    """Calls escape(), but with proper handling of NoneType values"""
-    if text is None:
-        return ""
-    return escape(text, formatting=formatting, mass_mentions=mass_mentions)
+from odinair_libs.formatting import td_format, difference
 
 
 class MemberLog(BaseLog):
@@ -36,9 +29,7 @@ class MemberLog(BaseLog):
             ret.add_diff_field(title="Username", before=before.name, after=after.name)
 
         if self.has_changed(before.nick, after.nick, "nickname"):
-            ret.add_diff_field(title="Nickname",
-                               before=safe_escape(before.nick) if before.nick else "*No nickname*",
-                               after=safe_escape(after.nick) if after.nick else "*No nickname*")
+            ret.add_diff_field(title="Nickname", before=before.nick, after=after.nick)
 
         if self.has_changed(before.discriminator, after.discriminator, "discriminator"):
             ret.add_diff_field(title="Discriminator", before=before.discriminator, after=after.discriminator)
@@ -46,9 +37,9 @@ class MemberLog(BaseLog):
         if self.has_changed(before.roles, after.roles, "roles"):
             added, removed = difference(before.roles, after.roles, check_val=False)
             if len(added) > 0:
-                ret.add_field(title="Roles Added", value=", ".join([safe_escape(x.name) for x in added]))
+                ret.add_field(title="Roles Added", value=", ".join([x.name for x in added]))
             if len(removed) > 0:
-                ret.add_field(title="Roles Removed", value=", ".join([safe_escape(x.name) for x in removed]))
+                ret.add_field(title="Roles Removed", value=", ".join([x.name for x in removed]))
         return ret
 
     def create(self, created: discord.Member, **kwargs):

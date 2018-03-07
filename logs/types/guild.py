@@ -1,10 +1,10 @@
 from datetime import timedelta, datetime
 
 import discord
-from redbot.core.utils.chat_formatting import escape
 
 from ._base import BaseLog
 from logs.logentry import LogEntry
+
 from odinair_libs.formatting import td_format, normalize
 
 
@@ -25,15 +25,12 @@ class GuildLog(BaseLog):
             # Ignore unavailable guilds, as we have no promise of the accuracy of any data
             return None
 
-        settings = await self.guild.config.guild()
         ret = LogEntry(self, colour=discord.Colour.blurple())
         ret.set_title(title="Guild Updated")
         ret.set_footer(footer="Guild ID: {0.id}".format(after), timestamp=datetime.utcnow())
 
         if self.has_changed(before.name, after.name, "name"):
-            ret.add_diff_field(title="Guild Name",
-                               before=escape(before.name, mass_mentions=True),
-                               after=escape(after.name, mass_mentions=True))
+            ret.add_diff_field(title="Guild Name", before=before.name, after=after.name)
 
         if self.has_changed(before.verification_level, after.verification_level, "verification"):
             ret.add_diff_field(title="Verification Level",
@@ -46,29 +43,22 @@ class GuildLog(BaseLog):
                                after=normalize(str(after.explicit_content_filter), title_case=True))
 
         if self.has_changed(before.owner, after.owner, "owner"):
-            ret.add_diff_field(title="Guild Owner",
-                               before=str(before.owner),
-                               after=str(after.owner))
+            ret.add_diff_field(title="Guild Owner", before=before.owner.mention, after=after.owner.mention)
 
         if self.has_changed(before.mfa_level, after.mfa_level, "2fa"):
-            ret.add_diff_field(title="2FA Requirement",
-                               before="Enabled" if before.mfa_level else "Disabled",
+            ret.add_diff_field(title="2FA Requirement", before="Enabled" if before.mfa_level else "Disabled",
                                after="Enabled" if after.mfa_level else "Disabled")
 
         if self.has_changed(before.afk_channel, after.afk_channel, "afk"):
-            ret.add_diff_field(title="AFK Channel",
-                               before=str(before.afk_channel or "No AFK channel"),
+            ret.add_diff_field(title="AFK Channel", before=str(before.afk_channel or "No AFK channel"),
                                after=str(after.afk_channel or "No AFK channel"))
 
         if self.has_changed(before.afk_timeout, after.afk_timeout, "afk"):
-            ret.add_diff_field(title="AFK Timeout",
-                               before=td_format(timedelta(seconds=before.afk_timeout)),
+            ret.add_diff_field(title="AFK Timeout", before=td_format(timedelta(seconds=before.afk_timeout)),
                                after=td_format(timedelta(seconds=after.afk_timeout)))
 
         if self.has_changed(before.region, after.region, "region"):
-            ret.add_diff_field(title="Voice Region",
-                               before=before.region,
-                               after=after.region)
+            ret.add_diff_field(title="Voice Region", before=before.region, after=after.region)
         return ret
 
     def create(self, created, **kwargs):

@@ -6,11 +6,6 @@ from logs.logentry import LogEntry
 from ._base import BaseLog
 
 
-def format_bitrate(bitrate: int):
-    bitrate = str(bitrate)[:-3]
-    return f"{bitrate} kbps"
-
-
 def format_userlimit(user_limit: int = None):
     if user_limit is None or user_limit == 0:
         return "No limit"
@@ -49,9 +44,9 @@ class ChannelLog(BaseLog):
 
         elif isinstance(before, discord.VoiceChannel) and isinstance(after, discord.VoiceChannel):
             if self.has_changed(before.bitrate, after.bitrate, "bitrate"):
-                ret.add_diff_field("Channel Bitrate",
-                                   before=format_bitrate(before.bitrate),
-                                   after=format_bitrate(after.bitrate))
+                # noinspection PyUnresolvedReferences
+                ret.add_diff_field("Channel Bitrate", before=f"{str(before.bitrate)[:-3]} kbps",
+                                   after=f"{str(after.bitrate)[:-3]} kbps")
 
             if self.has_changed(before.user_limit, after.user_limit, "user_limit"):
                 ret.add_diff_field(title="User Limit",

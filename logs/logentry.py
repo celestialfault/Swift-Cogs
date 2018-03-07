@@ -40,7 +40,7 @@ class LogEntry:
         if box_lang is not None:
             value = f"**Before:**\n{box(before, lang=box())}\n**After:**\n{box(after, lang=box_lang)}"
         else:
-            value = f"**Before:**\n{before}\n**After:**\n{after}"
+            value = f"**Before:** {before}\n**After:** {after}"
         if description is not None:
             value = f"{description}\n\n{value}"
         self.add_field(title=title, value=value)
@@ -57,11 +57,11 @@ class LogEntry:
 
         If this LogEntry is improperly setup or has no content, this will instead return None
         """
-        if self.title is None:  # require a title
+        if self.title is None:
+            raise ValueError("title attribute was not set")
+        if not self.fields and not self.description:
             return None
-        if not len(self.fields) and not self.description:  # require at least one field or a description
-            return None
-        if self.require_fields and not len(self.fields):  # check if allowing no fields is enabled
+        if self.require_fields and not self.fields:
             return None
 
         embed = discord.Embed(colour=self.colour, timestamp=self.timestamp, description=self.description)

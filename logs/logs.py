@@ -1,26 +1,27 @@
-from typing import Sequence
+from typing import Sequence, Dict, List
 
 import discord
 from discord.ext import commands
 
 from redbot.core.bot import Red, RedContext
 from redbot.core import checks, Config
-from redbot.core.utils.chat_formatting import warning, escape
+from redbot.core.config import Group
+from redbot.core.utils.chat_formatting import warning, escape, bold
 
-from logs.utils import handle_group
 from logs.guildlog import GuildLog, LogType
-from logs import types
+from logs import types as log_types
 
-from odinair_libs.converters import GuildChannel
+from odinair_libs.config import group_toggle
 from odinair_libs.formatting import tick, normalize, chunks, cmd_help
 from odinair_libs.menus import confirm, paginate
 
 _guilds = {}
 
 
+# noinspection PyShadowingNames
 class Logs:
     """Log anything and everything that happens in your server"""
-    _descriptions = {x.name: x.descriptions for x in types.iterable}
+    _descriptions = {x.name: x.descriptions for x in log_types.iterable}
     defaults_guild = {
         "log_channels": {
             "roles": None,
@@ -78,8 +79,7 @@ class Logs:
             "selfdeaf": False,
             "serverdeaf": False
         },
-        "ignored": False,
-        "check_type": "after"
+        "ignored": False
     }
 
     def __init__(self, bot: Red):
@@ -117,17 +117,17 @@ class Logs:
             await ctx.send_help()
             return
         guild = await self.get_guild_log(ctx.guild)
-        if any([x for x in log_types if x.lower() not in guild.config.log_channels.defaults]) \
+        if any([x for x in log_types if x.lower() not in guild.guild_config.log_channels.defaults]) \
                 and "all" not in log_types:
             await ctx.send_help()
             return
-        async with guild.config.log_channels() as channels:
+        async with guild.guild_config.log_channels() as channels:
             if "all" in log_types:
-                defaults = guild.config.log_channels.defaults
+                defaults = guild.guild_config.log_channels.defaults
                 channels.update({x: channel.id for x in defaults})
                 await ctx.send(tick(f"Set all log channels to {channel.mention}"))
             else:
-                formatted_types = ", ".join([f"**{x.title()}**" for x in log_types])
+                formatted_types = ", ".join([bold(x.title()) for x in log_types])
                 await ctx.send(tick(f"Set log channels for types {formatted_types} to {channel.mention}"))
         await guild.reload_settings()
 
@@ -138,43 +138,22 @@ class Logs:
         If no log types are passed, all log channels are cleared
         """
         guild = await self.get_guild_log(ctx.guild)
-        if any([x for x in log_types if x.lower() not in guild.config.log_channels.defaults]):
+        if any([x for x in log_types if x.lower() not in guild.guild_config.log_channels.defaults]):
             await ctx.send_help()
             return
         if not log_types:
             if not await confirm(ctx, message="Are you sure you want to clear all log channels?"):
                 await ctx.send_help()
                 return
-        async with guild.config.log_channels() as channels:
+        async with guild.guild_config.log_channels() as channels:
             if not log_types:
-                channels.update(guild.config.log_channels.defaults)
+                channels.update(guild.guild_config.log_channels.defaults)
                 await ctx.send(tick("Cleared all log channels"))
             else:
                 channels.update({x: None for x in log_types})
                 formatted_types = ", ".join([f"**{x.title()}**" for x in log_types])
                 await ctx.send(tick(f"Cleared log channels for log types {formatted_types}"))
         await guild.reload_settings()
-
-    @logset.command(name="updatecheck")
-    async def logset_check(self, ctx: RedContext, check_type: str):
-        """Change the check type for log ignoring in update events
-
-        This setting is most visible with voice status updates and voice channel ignores
-
-        Available check types:
-
-        **before** — Check the unchanged values
-        **after** — Check the changed values
-        **both** — Check *both* changed and unchanged values
-        """
-        check_type = check_type.lower()
-        if check_type not in ('before', 'after', 'both'):
-            await ctx.send_help()
-            return
-        guild = await self.get_guild_log(ctx.guild)
-        await self.config.guild(ctx.guild).check_type.set(check_type)
-        await guild.reload_settings()
-        await ctx.send(tick(f"Log ignore checking changed to `{check_type}`"))
 
     @logset.command(name="guild", aliases=["server"])
     async def logset_guild(self, ctx: RedContext, *settings):
@@ -407,11 +386,9 @@ class Logs:
         await ctx.send(tick(f"Now ignoring member **{member!s}**"))
 
     @logset_ignore.command(name="channel")
-    async def logset_ignore_channel(self, ctx: RedContext, channel: GuildChannel = None):
+    async def logset_ignore_channel(self, ctx: RedContext,
+                                    channel: discord.TextChannel or discord.VoiceChannel = None):
         """Ignore a specified text channel from logging"""
-        if channel is not None and isinstance(channel, discord.CategoryChannel):
-            await ctx.send(warning("Use `{}logset ignore category` to ignore categories").format(ctx.prefix))
-            return
         await self.config.channel(channel or ctx.channel).ignored.set(True)
         await (await self.get_guild_log(ctx.guild)).reload_settings()
         await ctx.send(tick(f"Now ignoring channel {(channel or ctx.channel).mention}"))
@@ -457,7 +434,8 @@ class Logs:
         await ctx.send(tick(f"No longer ignoring member **{member!s}**"))
 
     @logset_unignore.command(name="channel")
-    async def logset_unignore_channel(self, ctx: RedContext, channel: GuildChannel = None):
+    async def logset_unignore_channel(self, ctx: RedContext,
+                                      channel: discord.TextChannel or discord.VoiceChannel = None):
         """Unignore a specified text channel from logging"""
         if channel is not None and isinstance(channel, discord.CategoryChannel):
             await ctx.send(warning("Use `{}logset unignore category` to unignore categories").format(ctx.prefix))
@@ -557,3 +535,50 @@ class Logs:
     async def on_guild_update(self, before: discord.Guild, after: discord.Guild):
         guild = await self.get_guild_log(after)
         await guild.log("guild", LogType.UPDATE, before=before, after=after)
+
+
+async def handle_group(ctx: RedContext, slots: Sequence[str], types: Sequence[str], settings: Group, setting_type: str,
+                       descriptions: Dict[str, str] = None):
+    if len(types) == 0:
+        await ctx.send(embed=status_embed(settings={**{x: False for x in slots}, **await settings()},
+                                          title=f"Current {setting_type.title()} Log Settings",
+                                          descriptions=descriptions))
+        return
+    try:
+        settings = await group_toggle(group=settings, toggle_keys=types, slots=slots, strict_slots=True)
+    except KeyError as e:
+        await ctx.send(warning("'{0!s}' is not an available setting".format(e)))
+        return
+    embed = status_embed(settings=settings, title="{} Log Settings".format(setting_type.title()),
+                         descriptions=descriptions)
+    await ctx.send(tick("Updated {} log settings".format(setting_type)), embed=embed)
+
+
+def add_descriptions(items: List[str], descriptions: Dict[str, str] = None) -> str:
+    if descriptions is None:
+        descriptions = {}
+    for item in items:
+        index = items.index(item)
+        items[index] = f"**{item}** — {descriptions.get(item, 'No description set')}"
+    return "\n".join(items)
+
+
+def status_embed(settings: Dict[str, bool], title: str, descriptions: Dict[str, str] = None) -> discord.Embed:
+    enabled = [x for x in settings if settings[x]] or None
+    disabled = [x for x in settings if not settings[x]] or None
+
+    if enabled is not None:
+        enabled = add_descriptions(enabled, descriptions)
+    else:
+        enabled = "**None** — All of these settings are disabled"
+
+    if disabled is not None:
+        disabled = add_descriptions(disabled, descriptions)
+    else:
+        disabled = "**None** — All of these settings are enabled"
+
+    arrow = "\N{HEAVY RIGHT-POINTING ANGLE QUOTATION MARK ORNAMENT}"
+    embed = discord.Embed(colour=discord.Colour.blurple(), title=title,
+                          description=f"**{arrow} Enabled Log Settings**\n{enabled}\n\n"
+                                      f"**{arrow} Disabled Log Settings**\n{disabled}")
+    return embed

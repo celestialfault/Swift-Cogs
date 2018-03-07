@@ -22,7 +22,6 @@ class VoiceLog(BaseLog):
         except KeyError:  # Silently fail if the member in question wasn't given
             return None
 
-        settings = self.settings
         ret = LogEntry(self, colour=discord.Colour.greyple())
         ret.set_title(title="Member Voice Status", icon_url=member.avatar_url_as(format="png"))
         ret.description = f"Member: {member.mention}"

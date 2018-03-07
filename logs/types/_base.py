@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from typing import Dict, Hashable
+from typing import Dict
 
 
 class BaseLog(ABC):
@@ -21,9 +21,10 @@ class BaseLog(ABC):
         return self.guild.settings.get(self.name, {})
 
     def has_changed(self, before, after, config_setting: str):
-        if isinstance(before, Hashable) and isinstance(after, Hashable):
-            before = hash(before)
-            after = hash(after)
+        try:
+            before, after = (hash(before), hash(after))
+        except TypeError:
+            pass
         return before != after and self.settings.get(config_setting, False) is not False
 
     @abstractmethod
