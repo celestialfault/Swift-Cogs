@@ -1,8 +1,11 @@
+import discord
 from discord.ext import commands
 
 from redbot.core.bot import Red, RedContext
 from redbot.core import checks, Config
-from redbot.core.utils.chat_formatting import warning, pagify
+from redbot.core.utils.chat_formatting import warning, pagify, escape
+
+from odinair_libs.formatting import tick
 
 
 class CogWhitelist:
@@ -26,13 +29,8 @@ class CogWhitelist:
         return True
 
     def find_cog(self, name: str):
-        """Case-insensitive function to find a cog
-
-        Returns a tuple of the cog name and cog class"""
-        for cog_name in self.bot.cogs:
-            if cog_name.lower() == name.lower():
-                return cog_name, self.bot.cogs[cog_name]
-        return None, None
+        """Returns a case-sensitive name from a case-insensitive cog name"""
+        return discord.utils.find(lambda x: x.lower() == name.lower(), self.bot.cogs.keys())
 
     @commands.group(name="cogwhitelist")
     @checks.is_owner()
@@ -48,22 +46,29 @@ class CogWhitelist:
         If a guild ID is specified, the guild is added to the cog's list of allowed guilds
         """
         cog = cog.lower()
-        cogs = [x.lower() for x in self.bot.cogs]
-        if cog not in cogs:
-            await ctx.send(warning("I couldn't find that cog (use `{0.prefix}cogs` for a list of cogs)".format(ctx)))
+        proper_name = self.find_cog(cog)
+        if proper_name is None:
+            await ctx.send(warning(f"That cog either doesn't exist or it isn't currently loaded "
+                                   f"(use `{ctx.prefix}cogs` for a list of cogs)"))
             return
         async with self.config.cogs() as cogs:
             if cog not in cogs:
                 cogs[cog] = []
+                if not guild_id:
+                    await ctx.send(tick(f"**{proper_name}** now requires a whitelist to use"))
             elif not guild_id:
-                await ctx.send(warning("That cog already requires a whitelist to use"))
+                await ctx.send(warning(f"**{proper_name}** already requires a whitelist to use"))
                 return
             if guild_id:
                 guild = self.bot.get_guild(guild_id)
                 if not guild:
                     await ctx.send(warning("I couldn't find a guild with that ID"))
+                if guild.id in cogs[cog]:
+                    await ctx.send(warning(f"That guild is already allowed to use **{proper_name}**"))
+                    return
                 cogs[cog].append(guild.id)
-            await ctx.tick()
+                await ctx.send(tick(f"**{escape(guild.name, mass_mentions=True, formatting=True)}** "
+                                    f"is now allowed to use **{proper_name}**"))
 
     @cogwhitelist.command(name="remove")
     async def cog_remove(self, ctx: RedContext, cog: str, guild_id: int=None):
@@ -72,18 +77,20 @@ class CogWhitelist:
         If a guild ID is specified, it's removed from the specified cogs' list of allowed guilds
         """
         cog = cog.lower()
+        proper_name = self.find_cog(cog) or cog
         async with self.config.cogs() as cogs:
             if cog not in cogs:
-                await ctx.send(warning("That cog doesn't require a whitelist to use"))
+                await ctx.send(warning(f"**{proper_name}** doesn't require a whitelist to use"))
                 return
             if guild_id:
                 if guild_id not in cogs[cog]:
-                    await ctx.send(warning("That guild isn't allowed to use that cog"))
+                    await ctx.send(warning(f"That guild isn't allowed to use **{proper_name}**"))
                     return
                 cogs[cog].remove(guild_id)
+                await ctx.send(warning(f"That guild is no longer allowed to use **{proper_name}**."))
             else:
-                cogs.remove(cog)
-            await ctx.tick()
+                cogs.pop(cog)
+                await ctx.send(warning(f"**{proper_name}** no longer requires a whitelist to use."))
 
     @cogwhitelist.command(name="list")
     async def cog_list(self, ctx: RedContext, cog: str=None):
@@ -95,17 +102,17 @@ class CogWhitelist:
         if not cog:
             __cogs = []
             for _cog in cogs:
-                c, _ = self.find_cog(_cog)
-                __cogs.append("[{cog}] {guilds} guilds".format(cog=c or _cog, guilds=len(cogs[_cog])))
+                c = self.find_cog(_cog) or _cog
+                __cogs.append(f"[{c}] {len(cogs[_cog])} guilds")
             msg = "{cogs}".format(cogs="\n".join(__cogs))
             await ctx.send_interactive(pagify(msg), box_lang="ini")
         else:
             guilds = [self.bot.get_guild(x) for x in cogs[cog.lower()]]
-            guilds = [x.name for x in guilds if x]
+            guilds = [x for x in guilds if x]
             if not len(guilds):
                 await ctx.send(warning("No guilds that I'm currently in are allowed to use that cog"))
                 return
-            cog_name, _ = self.find_cog(cog)
-            msg = "Guilds that are allowed to use {cog}:\n\n{guilds}".format(cog=cog_name or cog,
-                                                                             guilds="\n".join(guilds))
-            await ctx.send_interactive(pagify(msg), box_lang="")
+            c = self.find_cog(cog) or cog
+            guilds = "\n".join(f"{x.name!r}  # ID: {x.id}" for x in guilds)
+            msg = f"# Guilds that are allowed to use {c!r}:\n\n{guilds}"
+            await ctx.send_interactive(pagify(msg), box_lang="py")

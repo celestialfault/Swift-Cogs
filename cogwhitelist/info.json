@@ -1,5 +1,6 @@
 {
   "author": ["odinair"],
+  "bot_version": [3, 0, 0],
   "description": "Set a list of cogs that requires a per-guild whitelist from the bot owner to use",
   "short": "Require a per-guild whitelist to use specified cogs"
 }
