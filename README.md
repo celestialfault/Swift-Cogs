@@ -64,13 +64,13 @@ Require a role (or a lack of) out of a list of roles to use the bot in a server
 [p]load requirerole
 ```
 
-### Random Status
+### Random Activity
 
-Randomly change the bot's Playing status on a set interval to one in a set of statuses.
+Randomly change the bot's activity status on a set interval to one in a set list.
 
 ```
-[p]cog install odinair rndstatus
-[p]load rndstatus
+[p]cog install odinair rndactivity
+[p]load rndactivity
 ```
 
 ### Role Mention
