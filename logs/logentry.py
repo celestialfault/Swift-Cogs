@@ -38,7 +38,7 @@ class LogEntry:
         """Adds a before and after field"""
         before, after = (str(before), str(after))
         if box_lang is not None:
-            value = f"**Before:**\n{box(before, lang=box())}\n**After:**\n{box(after, lang=box_lang)}"
+            value = f"**Before:**\n{box(before, lang=box_lang)}\n**After:**\n{box(after, lang=box_lang)}"
         else:
             value = f"**Before:** {before}\n**After:** {after}"
         if description is not None:
