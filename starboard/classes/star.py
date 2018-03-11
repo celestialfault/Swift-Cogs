@@ -64,6 +64,7 @@ class Star(StarboardBase):
             return attach.url
         elif isinstance(attach, discord.Embed):
             return attach.thumbnail.url
+        return discord.Embed.Empty
 
     @property
     def is_message_valid(self) -> bool:
@@ -82,7 +83,11 @@ class Star(StarboardBase):
         embed = discord.Embed(colour=discord.Colour.gold(), timestamp=self.message.created_at,
                               description=self.message.content or discord.Embed.Empty)
         embed.set_author(name=self.author.display_name, icon_url=self.author.avatar_url_as(format="png"))
-        embed.set_image(url=self.attachment_url)
+
+        attach = self.attachment_url
+        if attach:
+            embed.set_image(url=attach)
+
         return embed
 
     async def init(self, auto_create: bool = False) -> None:
