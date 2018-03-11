@@ -18,11 +18,6 @@ class StarboardBase:
     def guild_starboard_cache():
         return guild_cache
 
-    async def message(self, *, message: discord.Message, auto_create: bool = False, message_id: int = None):
-        if not message.guild:
-            raise ValueError("Message must be in a Guild")
-        return await self.starboard(message.guild).message(message, auto_create=auto_create)
-
 
 def setup(bot_: Red, config_: Config):
     global bot

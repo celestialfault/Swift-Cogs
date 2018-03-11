@@ -146,16 +146,20 @@ class GuildStarboard(StarboardBase):
         Optional[Star]
         """
         if not any([message, message_id]):
-            raise ValueError
+            raise TypeError("neither 'message' nor 'message_id' arguments were given")
 
-        if message_id:
+        if message_id is not None:
+            if message_id in self._star_cache:
+                return self._star_cache[message_id]
+
             if channel is None:
-                data = await self.messages.get_attr(str(message_id))(None)
+                data = await self.messages.get_raw(str(message_id), default=None)
                 if data is None:
                     return None
                 channel = self.bot.get_channel(data.get("channel_id", None))
                 if channel is None:
                     return None
+
             try:
                 message = await channel.get_message(message_id)
             except discord.HTTPException:
@@ -164,16 +168,17 @@ class GuildStarboard(StarboardBase):
         if message is not None:
             if message.id not in self._star_cache:
                 star = Star(self, message)
-                await star.setup(auto_create=auto_create)
+                await star.init(auto_create=auto_create)
                 self._star_cache[message.id] = star
             return self._star_cache[message.id]
+        return None
 
-    async def channel(self, channel: discord.TextChannel=False) -> Optional[discord.TextChannel]:
+    async def channel(self, channel: Optional[discord.TextChannel]=False) -> Optional[discord.TextChannel]:
         """Set or clear the current guild's starboard
 
         Parameters
         -----------
-        channel: discord.TextChannel
+        channel: Optional[discord.TextChannel]
             The channel to set the guild's starboard channel to. If this is set to False,
             the current channel is returned instead.
 

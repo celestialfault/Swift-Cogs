@@ -15,7 +15,6 @@ from starboard.checks import allowed_starboard, guild_has_starboard
 
 from odinair_libs.checks import cogs_loaded
 from odinair_libs.formatting import tick
-from odinair_libs.menus import confirm
 
 
 class Starboard(StarboardBase):
@@ -73,14 +72,14 @@ class Starboard(StarboardBase):
             return
         if message.has_starred(ctx.author):
             await ctx.send(
-                warning("You've already starred that message\n\n(you can use `{}unstar` to remove your star)"
-                        .format(ctx.prefix)),
+                warning(f"You've already starred that message\n\n"
+                        f"(you can use `{ctx.prefix}unstar` to remove your star)"),
                 delete_after=15)
             return
         try:
             await message.add_star(ctx.author)
         except StarboardException as e:
-            await ctx.send(warning(f"Failed to add star \N{EM DASH} `{str(e)}`"))
+            await ctx.send(warning(f"Failed to add star \N{EM DASH} `{e!s}`"))
         else:
             await ctx.tick()
 
@@ -91,7 +90,7 @@ class Starboard(StarboardBase):
         """Unstar a message by it's ID"""
         if not await guild_has_starboard(ctx):
             return
-        message = await self.starboard(ctx.guild).message(message_id=message_id, channel=ctx.channel)
+        message = await self.starboard(ctx.guild).message(message_id=message_id)
         if not message:
             await ctx.send("Sorry, I couldn't find that message.")
             return
@@ -128,7 +127,7 @@ class Starboard(StarboardBase):
         """Hide a message from the starboard"""
         star = await self.starboard(ctx.guild).message(message_id=message_id)
         if not star:
-            await ctx.send(error("That message hasn't been starred"))
+            await ctx.send(error("That message either hasn't been starred, or it doesn't exist"))
             return
         if not await star.hide():
             await ctx.send(error("That message is already hidden"))
@@ -140,7 +139,7 @@ class Starboard(StarboardBase):
         """Unhide a previously hidden message"""
         star = await self.starboard(ctx.guild).message(message_id=message_id)
         if not star:
-            await ctx.send(error("That message hasn't been starred"))
+            await ctx.send(error("That message either hasn't been starred, or it doesn't exist"))
             return
         if not await star.unhide():
             await ctx.send(error("That message hasn't been hidden"))
@@ -207,6 +206,7 @@ class Starboard(StarboardBase):
         await ctx.send(tick(f"The starboard message for the message sent by **{star.author!s}** has been updated"))
 
     @commands.group(name="starboard")
+    @commands.guild_only()
     @checks.admin_or_permissions(manage_channels=True)
     async def cmd_starboard(self, ctx: RedContext):
         """Manage the guild's starboard"""
@@ -268,33 +268,10 @@ class Starboard(StarboardBase):
             migrated = await starboard.migrate()
         await tmp.delete()
         if migrated == 0:
-            await ctx.send(content=warning(f"No messages were found that needed migration."))
+            await ctx.send(content=warning("No messages were found that needed migration."))
         else:
             await ctx.send(content=tick(f"Successfully migrated {migrated} starboard "
                                         f"message{'s' if migrated > 1 else ''}."))
-
-    @cmd_starboard.command(name="clearcache", hidden=True)
-    async def starboard_clearcache(self, ctx: RedContext, max_duration: int = 30 * 60):
-        """Prune the internal message cache
-
-        Any items that are in the queue to be updated and also qualify to be pruned are updated before being un-cached.
-
-        Any messages that are cleared from the cache will need to be re-cached
-        if any actions are done on them, such as a member starring or unstarring,
-        or the message being hidden from the starboard.
-
-        `max_duration` may be set to 0 to clear *all* items from the internal cache.
-        """
-        items_to_remove = await self.starboard(ctx.guild).purge_cache(seconds_since_update=max_duration, dry_run=True)
-        if items_to_remove == 0:
-            await ctx.send(warning("Found no items to remove from the cache."))
-            return
-        if await confirm(ctx, "Are you sure you want to remove {} item(s) from the cache?".format(items_to_remove),
-                         colour=discord.Colour.gold()):
-            purged = await self.starboard(ctx.guild).purge_cache(seconds_since_update=max_duration)
-            await ctx.send(tick("Cleared {} item(s) from the cache".format(purged)))
-        else:
-            await ctx.send("Okay then.", delete_after=20)
 
     @cmd_starboard.command(name="requirerole")
     @cogs_loaded("RequireRole")
@@ -361,6 +338,23 @@ class Starboard(StarboardBase):
             await message.remove_star(member)
         except StarboardException:
             pass
+
+    async def on_raw_reaction_clear(self, message_id: int, channel_id: int):
+        channel: discord.TextChannel = self.bot.get_channel(channel_id)
+        if channel is None or isinstance(channel_id, discord.abc.PrivateChannel):
+            return
+        guild = channel.guild
+        starboard: GuildStarboard = self.starboard(guild)
+        message: Star = await starboard.message(message_id=message_id)
+        if message is None:
+            return
+        message.starrers = []
+        if message.starboard_message:
+            try:
+                await message.starboard_message.delete()
+            except (discord.HTTPException, AttributeError):
+                pass
+        await message.save()
 
     def __unload(self):
         for task in self._tasks:
