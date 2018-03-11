@@ -269,7 +269,7 @@ class TimedRole:
         await self._paginate(ctx, *members, show_hidden=True)
 
     @timedrole.command(name="add")
-    async def timedrole_add(self, ctx: RedContext, member: discord.Member, duration: FutureTime(strict=True),
+    async def timedrole_add(self, ctx: RedContext, member: discord.Member, duration: FutureTime.converter(strict=True),
                             *roles: discord.Role):
         """Add one or more roles to a user for a set amount of time.
 

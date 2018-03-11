@@ -69,7 +69,8 @@ class TimedMute:
     @checks.mod_or_permissions(manage_roles=True)
     @commands.bot_has_permissions(manage_roles=True)
     async def timedmute(self, ctx: RedContext, member: discord.Member,
-                        duration: FutureTime(max_duration=max_duration, min_duration=min_duration, strict=True),
+                        duration: FutureTime.converter(max_duration=max_duration, min_duration=min_duration,
+                                                       strict=True),
                         *, reason: str=None):
         """Mute a user for a set amount of time.
 
