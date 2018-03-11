@@ -29,55 +29,46 @@ class ChannelLog(BaseLog):
     }
 
     async def update(self, before: discord.abc.GuildChannel, after: discord.abc.GuildChannel, **kwargs):
-        ret = LogEntry(self, colour=discord.Colour.blurple())
-        ret.set_title(title="Channel Updated")
-        ret.set_footer(timestamp=datetime.utcnow())
-        ret.description = f"Channel: {after.mention}"
+        embed = LogEntry(colour=discord.Colour.blurple(), timestamp=datetime.utcnow(),
+                         description=f"Channel: {after.mention}")
+        embed.set_author(name="Channel Updated", icon_url=self.icon_url)
 
         if hasattr(before, "name") and hasattr(after, "name"):  # you win this time pycharm
             if self.has_changed(before.name, after.name, "name"):
-                ret.add_diff_field(title="Channel Name", before=before.name, after=after.name)
+                embed.add_diff_field(name="Channel Name", before=before.name, after=after.name)
 
         if isinstance(before, discord.TextChannel) and isinstance(after, discord.TextChannel):
             if self.has_changed(before.topic, after.topic, "topic"):
-                ret.add_diff_field(title="Channel Topic", before=before.topic, after=after.topic, box_lang="")
+                embed.add_diff_field(name="Channel Topic", before=before.topic, after=after.topic, description="")
 
         elif isinstance(before, discord.VoiceChannel) and isinstance(after, discord.VoiceChannel):
             if self.has_changed(before.bitrate, after.bitrate, "bitrate"):
                 # noinspection PyUnresolvedReferences
-                ret.add_diff_field("Channel Bitrate", before=f"{str(before.bitrate)[:-3]} kbps",
-                                   after=f"{str(after.bitrate)[:-3]} kbps")
+                embed.add_diff_field(name="Channel Bitrate", before=f"{str(before.bitrate)[:-3]} kbps",
+                                     after=f"{str(after.bitrate)[:-3]} kbps")
 
             if self.has_changed(before.user_limit, after.user_limit, "user_limit"):
-                ret.add_diff_field(title="User Limit",
-                                   before=format_userlimit(before.user_limit),
-                                   after=format_userlimit(after.user_limit))
+                embed.add_diff_field(name="User Limit", before=format_userlimit(before.user_limit),
+                                     after=format_userlimit(after.user_limit))
 
         if self.has_changed(before.category, after.category, "category"):
-            ret.add_diff_field(title="Channel Category",
-                               before=before.category.name if before.category is not None else "Uncategorized",
-                               after=after.category.name if after.category is not None else "Uncategorized")
+            embed.add_diff_field(name="Channel Category", before=getattr(before.category, "name", "Uncategorized"),
+                                 after=getattr(after.category, "name", "Uncategorized"))
 
         if self.has_changed(before.position, after.position, "position"):
-            ret.add_diff_field(title="Channel Position", before=before.position, after=after.position)
-        return ret
+            embed.add_diff_field(name="Channel Position", before=before.position, after=after.position)
+
+        return embed
 
     def create(self, created: discord.abc.GuildChannel, **kwargs):
         if not self.settings.get("create", False):
             return None
-
-        ret = LogEntry(self, colour=discord.Colour.green(), require_fields=False)
-        ret.set_title(title="Channel Created")
-        ret.set_footer(timestamp=datetime.utcnow())
-        ret.description = f"Channel {created.mention} created"
-        return ret
+        return LogEntry(colour=discord.Colour.green(), title="Channel Created", timestamp=datetime.utcnow(),
+                        description=f"Channel {created.mention} created", require_fields=False)
 
     def delete(self, deleted: discord.abc.GuildChannel, **kwargs):
         if not self.settings.get("delete", False):
             return None
 
-        ret = LogEntry(self, colour=discord.Colour.red(), require_fields=False)
-        ret.set_title(title="Channel Deleted")
-        ret.set_footer(timestamp=datetime.utcnow())
-        ret.description = f"Channel {str(deleted)} deleted"
-        return ret
+        return LogEntry(colour=discord.Colour.red(), title="Channel Deleted", timestamp=datetime.utcnow(),
+                        description=f"Channel {deleted!s} deleted", require_fields=False)

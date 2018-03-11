@@ -1,11 +1,13 @@
 from datetime import datetime
+from difflib import Differ
 
 import discord
+from redbot.core.utils.chat_formatting import box
 
 from ._base import BaseLog
 from logs.logentry import LogEntry
 
-from odinair_libs.formatting import td_format, difference
+from odinair_libs.formatting import td_format
 
 
 class MemberLog(BaseLog):
@@ -20,48 +22,51 @@ class MemberLog(BaseLog):
     }
 
     def update(self, before: discord.Member, after: discord.Member, **kwargs):
-        ret = LogEntry(self, colour=discord.Colour.blurple())
-        ret.set_title(title="Member Updated", icon_url=after.avatar_url_as(format="png"))
-        ret.set_footer(footer="User ID: {0.id}".format(after), timestamp=datetime.utcnow())
-        ret.description = "Member: **{0!s}**".format(after)
+        embed = LogEntry(colour=discord.Colour.blurple(), timestamp=datetime.utcnow(),
+                         description=f"Member: {after.mention}")
+        embed.set_author(name="Member Updated", icon_url=after.avatar_url_as(format="png"))
+        embed.set_footer(text=f"User ID: {after.id}")
 
         if self.has_changed(before.name, after.name, "name"):
-            ret.add_diff_field(title="Username", before=before.name, after=after.name)
+            embed.add_diff_field(name="Username", before=before.name, after=after.name)
 
         if self.has_changed(before.nick, after.nick, "nickname"):
-            ret.add_diff_field(title="Nickname", before=before.nick, after=after.nick)
+            embed.add_diff_field(name="Nickname", before=before.nick, after=after.nick)
 
         if self.has_changed(before.discriminator, after.discriminator, "discriminator"):
-            ret.add_diff_field(title="Discriminator", before=before.discriminator, after=after.discriminator)
+            embed.add_diff_field(name="Discriminator", before=before.discriminator, after=after.discriminator)
 
         if self.has_changed(before.roles, after.roles, "roles"):
-            added, removed = difference(before.roles, after.roles, check_val=False)
-            if len(added) > 0:
-                ret.add_field(title="Roles Added", value=", ".join([x.name for x in added]))
-            if len(removed) > 0:
-                ret.add_field(title="Roles Removed", value=", ".join([x.name for x in removed]))
-        return ret
+            before_roles = reversed(before.roles)
+            after_roles = reversed(after.roles)
+            changed = Differ().compare([str(x) for x in before_roles if not x.is_default()],
+                                       [str(x) for x in after_roles if not x.is_default()])
+            if changed:
+                embed.add_field(name="Roles", value=box("\n".join(changed), lang="diff"))
+
+        return embed
 
     def create(self, created: discord.Member, **kwargs):
         if self.settings.get("join", False) is False:
             return None
 
-        account_age = td_format(created.created_at - created.joined_at, append_str=True)
-        ret = LogEntry(self, require_fields=False, colour=discord.Colour.green(),
-                       description=f"Member {created.mention} joined\n\n"
-                                   f"Account is {account_age} old")
-        ret.set_title(title="Member Joined", icon_url=created.avatar_url_as(format="png"))
-        ret.set_footer(footer=f"User ID: {created.id}", timestamp=created.joined_at)
-        return ret
+        account_age = td_format(created.joined_at - created.created_at, append_str=True)
+        embed = LogEntry(colour=discord.Colour.green(),
+                         description=f"Member {created.mention} joined\n\n"
+                                     f"Account was created {account_age}",
+                         require_fields=False, timestamp=created.joined_at)
+        embed.set_author(name="Member Joined", icon_url=created.avatar_url_as(format="png"))
+        embed.set_footer(text=f"User ID: {created.id}")
+        return embed
 
     def delete(self, deleted: discord.Member, **kwargs):
         if self.settings.get("leave", False) is False:
             return None
 
-        ret = LogEntry(self, require_fields=False, colour=discord.Colour.red())
-        ret.set_title(title="Member Left", icon_url=deleted.avatar_url_as(format="png"))
-        ret.set_footer(footer="User ID: {0.id}".format(deleted), timestamp=datetime.utcnow())
-        ret.description = "Member **{0!s}** left".format(deleted)
-        member_for = td_format(datetime.utcnow() - deleted.joined_at)
-        ret.add_field(title="Member For", value=member_for)
-        return ret
+        embed = LogEntry(colour=discord.Colour.red(),
+                         description=f"Member {deleted.mention} left\n\n"
+                                     f"They were a member for {td_format(datetime.utcnow() - deleted.joined_at)}",
+                         require_fields=False, timestamp=datetime.utcnow())
+        embed.set_author(name="Member Left", icon_url=deleted.avatar_url_as(format="png"))
+        embed.set_footer(text=f"User ID: {deleted.id}")
+        return embed

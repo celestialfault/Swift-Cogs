@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-
 from typing import Dict
 
 
@@ -17,14 +16,14 @@ class BaseLog(ABC):
         return self.name
 
     @property
+    def icon_url(self):
+        return self.guild.guild.icon_url
+
+    @property
     def settings(self) -> Dict[str, bool]:
         return self.guild.settings.get(self.name, {})
 
     def has_changed(self, before, after, config_setting: str):
-        try:
-            before, after = (hash(before), hash(after))
-        except TypeError:
-            pass
         return before != after and self.settings.get(config_setting, False) is not False
 
     @abstractmethod

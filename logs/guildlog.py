@@ -4,13 +4,11 @@ from enum import Enum
 from typing import Optional, Dict, Union
 
 import discord
-from redbot.core import Config
-from redbot.core.bot import Red
+
 from redbot.core.config import Group
 
 from logs import types
 from logs.logentry import LogEntry
-
 
 __all__ = ['LogType', 'GuildLog']
 
@@ -25,12 +23,16 @@ class LogType(Enum):
 
 
 class GuildLog:
-    def __init__(self, guild: discord.Guild, bot: Red, config: Config):
+    def __init__(self, guild: discord.Guild, cog):
         self.guild = guild
-        self.bot = bot
-        self.config = config
-        self.settings: Dict[str, Union[str, bool, Dict[str, bool]]] = None
         self._types: Dict[str, types.BaseLog] = {x.name: x(self) for x in types.iterable}
+
+        from logs.logs import Logs
+        self._cog: Logs = cog
+        self.bot = self._cog.bot
+        self.config = self._cog.config
+
+        self.settings: Dict[str, Union[str, bool, Dict[str, bool]]] = None
 
     @property
     def guild_config(self) -> Group:
@@ -50,10 +52,6 @@ class GuildLog:
             The log group. This should match a log type class in `logs.types`
         log_type: LogType
             The log action type
-
-        Returns
-        --------
-        None
         """
         if await self.is_ignored(**kwargs):
             return
@@ -63,24 +61,19 @@ class GuildLog:
         log_func = getattr(group, str(log_type), lambda **k_args: None)
 
         try:
-            if asyncio.iscoroutinefunction(log_func):
-                data: LogEntry = await log_func(**kwargs)
-            else:
-                data: LogEntry = log_func(**kwargs)
+            embed: LogEntry = log_func(**kwargs)
+            if asyncio.iscoroutine(embed):
+                # noinspection PyUnresolvedReferences
+                embed = await embed
         except NotImplementedError:
             return
-
-        if data in (None, NotImplemented):
-            return
-
-        embed = data.format()
-        if embed is None:
-            return
-
-        try:
-            await log_channel.send(embed=embed)
-        except discord.HTTPException:
-            pass
+        else:
+            if embed in (None, NotImplemented) or not embed.is_valid:
+                return
+            try:
+                await log_channel.send(embed=embed)
+            except discord.Forbidden:
+                pass
 
     async def reload_settings(self) -> None:
         """Reloads the settings for this GuildLog instance"""
@@ -94,7 +87,7 @@ class GuildLog:
         created = kwargs.get("created", None)
         before = kwargs.get("before", None)
         after = kwargs.get("after", None)
-        member = kwargs.get("member", None)
+        member = kwargs.get("member", None)  # this is given in voice state events
 
         if deleted and await self._check(deleted):
             return True

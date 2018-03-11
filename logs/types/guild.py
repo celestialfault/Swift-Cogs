@@ -2,8 +2,8 @@ from datetime import timedelta, datetime
 
 import discord
 
-from ._base import BaseLog
 from logs.logentry import LogEntry
+from ._base import BaseLog
 
 from odinair_libs.formatting import td_format, normalize
 
@@ -25,44 +25,42 @@ class GuildLog(BaseLog):
             # Ignore unavailable guilds, as we have no promise of the accuracy of any data
             return None
 
-        ret = LogEntry(self, colour=discord.Colour.blurple())
-        ret.set_title(title="Guild Updated")
-        ret.set_footer(footer="Guild ID: {0.id}".format(after), timestamp=datetime.utcnow())
+        embed = LogEntry(colour=discord.Colour.blurple(), timestamp=datetime.utcnow())
+        embed.set_author(name="Guild Updated", icon_url=self.icon_url)
+        embed.set_footer(text=f"Guild ID: {after.id}")
 
         if self.has_changed(before.name, after.name, "name"):
-            ret.add_diff_field(title="Guild Name", before=before.name, after=after.name)
+            embed.add_diff_field(name="Guild Name", before=before.name, after=after.name)
 
         if self.has_changed(before.verification_level, after.verification_level, "verification"):
-            ret.add_diff_field(title="Verification Level",
-                               before=normalize(str(before.verification_level), title_case=True),
-                               after=normalize(str(after.verification_level), title_case=True))
+            embed.add_diff_field(name="Verification Level", before=normalize(str(before.verification_level)),
+                                 after=normalize(str(after.verification_level)))
 
         if self.has_changed(before.explicit_content_filter, after.explicit_content_filter, "content_filter"):
-            ret.add_diff_field(title="Content Filter",
-                               before=normalize(str(before.explicit_content_filter), title_case=True),
-                               after=normalize(str(after.explicit_content_filter), title_case=True))
+            embed.add_diff_field(name="Content Filter", before=normalize(str(before.explicit_content_filter)),
+                                 after=normalize(str(after.explicit_content_filter)))
 
         if self.has_changed(before.owner, after.owner, "owner"):
-            ret.add_diff_field(title="Guild Owner", before=before.owner.mention, after=after.owner.mention)
+            embed.add_diff_field(name="Guild Owner", before=before.owner.mention, after=after.owner.mention)
 
         if self.has_changed(before.mfa_level, after.mfa_level, "2fa"):
-            ret.add_diff_field(title="2FA Requirement", before="Enabled" if before.mfa_level else "Disabled",
-                               after="Enabled" if after.mfa_level else "Disabled")
+            embed.add_diff_field(name="2FA Requirement", before="Enabled" if before.mfa_level else "Disabled",
+                                 after="Enabled" if after.mfa_level else "Disabled")
 
         if self.has_changed(before.afk_channel, after.afk_channel, "afk"):
-            ret.add_diff_field(title="AFK Channel", before=str(before.afk_channel or "No AFK channel"),
-                               after=str(after.afk_channel or "No AFK channel"))
+            embed.add_diff_field(name="AFK Channel", before=before.afk_channel, after=after.afk_channel)
 
         if self.has_changed(before.afk_timeout, after.afk_timeout, "afk"):
-            ret.add_diff_field(title="AFK Timeout", before=td_format(timedelta(seconds=before.afk_timeout)),
-                               after=td_format(timedelta(seconds=after.afk_timeout)))
+            embed.add_diff_field(name="AFK Timeout", before=td_format(timedelta(seconds=before.afk_timeout)),
+                                 after=td_format(timedelta(seconds=after.afk_timeout)))
 
         if self.has_changed(before.region, after.region, "region"):
-            ret.add_diff_field(title="Voice Region", before=before.region, after=after.region)
-        return ret
+            embed.add_diff_field(name="Voice Region", before=before.region, after=after.region)
 
-    def create(self, created, **kwargs):
+        return embed
+
+    def create(self, **kwargs):
         return NotImplemented
 
-    def delete(self, deleted, **kwargs):
+    def delete(self, **kwargs):
         return NotImplemented

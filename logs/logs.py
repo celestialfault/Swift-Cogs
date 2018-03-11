@@ -15,8 +15,6 @@ from odinair_libs.config import group_toggle
 from odinair_libs.formatting import tick, normalize, chunks, cmd_help
 from odinair_libs.menus import confirm, paginate
 
-_guilds = {}
-
 
 # noinspection PyShadowingNames
 class Logs:
@@ -88,12 +86,13 @@ class Logs:
         self.config.register_guild(**self.defaults_guild)
         self.config.register_member(ignored=False)
         self.config.register_channel(ignored=False)
+        self._guilds = {}
 
     async def get_guild_log(self, guild: discord.Guild) -> GuildLog:
-        if guild.id not in _guilds:
-            _guilds[guild.id] = GuildLog(guild, bot=self.bot, config=self.config)
-            await _guilds[guild.id].init()
-        return _guilds[guild.id]
+        if guild.id not in self._guilds:
+            self._guilds[guild.id] = GuildLog(guild, cog=self)
+            await self._guilds[guild.id].init()
+        return self._guilds[guild.id]
 
     @commands.group(name="logset")
     @commands.guild_only()
@@ -167,10 +166,7 @@ class Logs:
         **owner** — Guild ownership
         **afk** — Guild AFK channel and timeout
         **region** — Guild voice region
-        **content_filter** — Guild NSFW content filter
-
-        Example:
-        **❯** `[p]logset guild name owner`
+        **content_filter** — Explicit content filter
         """
         await handle_group(ctx, types=settings, settings=self.config.guild(ctx.guild).guild, setting_type="guild",
                            slots=self._descriptions["guild"].keys(), descriptions=self._descriptions["guild"])
@@ -190,9 +186,6 @@ class Logs:
         **bitrate** — Voice channel bitrate
         **user_limit** — Voice channel user limit
         **position** — Channel position - this option may result in log spam!
-
-        Example:
-        **❯** `[p]logset channel update name topic bitrate`
         """
         await handle_group(ctx, types=settings, settings=self.config.guild(ctx.guild).channels, setting_type="channel",
                            slots=self._descriptions["channels"].keys(), descriptions=self._descriptions["channels"])
@@ -206,9 +199,6 @@ class Logs:
 
         **edit** — Message edits
         **delete** — Message deletion
-
-        Example:
-        **❯** `[p]logset message edit`
         """
         await handle_group(ctx, types=settings, settings=self.config.guild(ctx.guild).messages, setting_type="message",
                            slots=["edit", "delete"], descriptions=self._descriptions["messages"])
@@ -226,9 +216,6 @@ class Logs:
         **discriminator** — Member discriminator
         **nickname** — Member nickname
         **roles** — Member roles
-
-        Example:
-        **❯** `[p]logset member update discriminator join roles`
         """
         await handle_group(ctx, types=settings, settings=self.config.guild(ctx.guild).members, setting_type="member",
                            slots=self._descriptions["members"].keys(), descriptions=self._descriptions["members"])
@@ -248,9 +235,6 @@ class Logs:
         **permissions** — Role permission updates
         **colour** — Role colour updates
         **position** — Role position updates - this option may result in log spam!
-
-        Example:
-        **❯** `[p]logset role update name permissions`
         """
         await handle_group(ctx, types=settings, settings=self.config.guild(ctx.guild).roles, setting_type="role",
                            slots=self._descriptions["roles"].keys(), descriptions=self._descriptions["roles"])
@@ -267,9 +251,6 @@ class Logs:
         **selfdeaf** — Self deafen
         **servermute** — Server mute
         **serverdeaf** — Server deafen
-
-        Example:
-        **❯** `[p]logset voice servermute serverdeaf`
         """
         await handle_group(ctx, types=settings, settings=self.config.guild(ctx.guild).voice, setting_type="voice",
                            slots=self._descriptions["voice"].keys(), descriptions=self._descriptions["voice"])
@@ -304,20 +285,7 @@ class Logs:
 
         pages = [
             [build("channels"), build("guild"), build("roles")],
-            [build("messages"), build("members"), build("voice")],
-            [
-                {
-                    "title": "Emoji Updates",
-                    "content": "**Log channel:** {channel}\n\n"
-                               "**Enabled:** {enabled}"
-                               "".format(channel=channels.get("emoji", None),
-                                         enabled=str(settings.get("emojis", False)))
-                },
-                {
-                    "title": "Update Check Type",
-                    "content": str(settings.get("check_type", "after")).title()
-                }
-            ]
+            [build("messages"), build("members"), build("voice")]
         ]
 
         def convert_page(page: Sequence[dict]) -> str:
@@ -332,8 +300,7 @@ class Logs:
                               title="Log Settings", colour=ctx.me.colour,
                               post_menu_check=lambda x: x != "close")
         try:
-            if not r.timed_out:
-                await r.message.clear_reactions()
+            await r.message.clear_reactions()
         except (discord.HTTPException, AttributeError):
             pass
 

@@ -1,11 +1,13 @@
 from datetime import datetime
+from difflib import Differ
 
 import discord
+from redbot.core.utils.chat_formatting import box
 
 from logs.logentry import LogEntry
 from ._base import BaseLog
 
-from odinair_libs.formatting import difference, normalize
+from odinair_libs.formatting import normalize
 
 
 class RoleLog(BaseLog):
@@ -25,60 +27,57 @@ class RoleLog(BaseLog):
         if not self.settings.get("create", False):
             return None
 
-        ret = LogEntry(self, colour=discord.Colour.green(), require_fields=False,
-                       description=f"{created.mention} was created")
-
-        ret.set_title(title="Role Created")
-        ret.set_footer(footer=f"Role ID: {created.id}", timestamp=created.created_at)
+        embed = LogEntry(colour=discord.Colour.green(), description=f"{created.mention} was created",
+                         require_fields=False)
+        embed.set_author(name="Role Created", icon_url=self.icon_url)
+        embed.set_footer(text=f"Role ID: {created.id}")
 
         colour = created.colour if created.colour != discord.Colour.default() else None
-        ret.add_field(title="Colour", value=str(colour), inline=False)
-        ret.add_field(title="Hoisted", value=str(created.hoist), inline=False)
-        ret.add_field(title="Mentionable", value=str(created.mentionable), inline=False)
-        ret.add_field(title="Permissions", value="\n".join([normalize(x, guild="server")
+        embed.add_field(name="Colour", value=str(colour), inline=False)
+        embed.add_field(name="Hoisted", value=str(created.hoist), inline=False)
+        embed.add_field(name="Mentionable", value=str(created.mentionable), inline=False)
+        embed.add_field(name="Permissions", value="\n".join([normalize(x, guild="server")
                                                             for x, y in created.permissions if y]))
-        return ret
+        return embed
 
     def update(self, before: discord.Role, after: discord.Role, **kwargs):
-        ret = LogEntry(self, colour=discord.Colour.blurple(), description=f"Role: {after.mention}")
+        embed = LogEntry(colour=discord.Colour.blurple(), description=f"Role: {after.mention}",
+                         timestamp=datetime.utcnow())
 
-        ret.set_title(title="Role Updated")
-        ret.set_footer(footer=f"Role ID: {after.id}", timestamp=datetime.utcnow())
+        embed.set_author(name="Role Updated", icon_url=self.icon_url)
+        embed.set_footer(text=f"Role ID: {after.id}")
 
         if self.has_changed(before.name, after.name, "name"):
-            ret.add_diff_field(title="Role Name", before=before.name, after=after.name)
+            embed.add_diff_field(name="Role Name", before=before.name, after=after.name)
 
         if self.has_changed(before.position, after.position, "position"):
-            ret.add_diff_field(title="Role Position", before=before.position, after=after.position)
+            embed.add_diff_field(name="Role Position", before=before.position, after=after.position)
 
         if self.has_changed(before.colour, after.colour, "colour"):
             before_colour = before.colour if before.colour != discord.Colour.default() else None
             after_colour = after.colour if after.colour != discord.Colour.default() else None
-            ret.add_diff_field(title="Role Colour", before=before_colour, after=after_colour)
+            embed.add_diff_field(name="Role Colour", before=before_colour, after=after_colour)
 
         if self.has_changed(before.hoist, after.hoist, "hoist"):
-            ret.add_diff_field(title="Hoisted", before=before.hoist, after=after.hoist)
+            embed.add_diff_field(name="Hoisted", before=before.hoist, after=after.hoist)
 
         if self.has_changed(before.mentionable, after.mentionable, "mention"):
-            ret.add_diff_field(title="Mentionable", before=before.mentionable, after=after.mentionable)
+            embed.add_diff_field(name="Mentionable", before=before.mentionable, after=after.mentionable)
 
         if self.has_changed(before.permissions, after.permissions, "permissions"):
-            added, removed = difference(before.permissions, after.permissions, check_val=True)
-            if added:
-                ret.add_field(title="Permissions Granted",
-                              value=", ".join([normalize(x, guild="server") for x in added]))
-            if removed:
-                ret.add_field(title="Permissions Revoked",
-                              value=", ".join([normalize(x, guild="server") for x in removed]))
+            changed = Differ().compare([normalize(x[0], guild="server") for x in before.permissions if x[1]],
+                                       [normalize(x[0], guild="server") for x in after.permissions if x[1]])
+            if changed:
+                embed.add_field(name="Permissions", value=box("\n".join(changed), lang="diff"))
 
-        return ret
+        return embed
 
     def delete(self, deleted: discord.Role, **kwargs):
         if not self.settings.get("delete", False):
             return None
 
-        ret = LogEntry(self, colour=discord.Colour.red(), require_fields=False,
-                       description=f"`{deleted!s}` was deleted")
-        ret.set_title(title="Role Deleted")
-        ret.set_footer(footer=f"Role ID: {deleted.id}", timestamp=datetime.utcnow())
+        ret = LogEntry(colour=discord.Colour.red(), description=f"`{deleted!s}` was deleted", require_fields=False,
+                       timestamp=datetime.utcnow())
+        ret.set_author(name="Role Deleted", icon_url=self.icon_url)
+        ret.set_footer(text=f"Role ID: {deleted.id}")
         return ret
