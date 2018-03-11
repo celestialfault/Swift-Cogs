@@ -1,6 +1,5 @@
 {
   "author": ["odinair"],
   "bot_version": [3, 0, 0],
-  "hidden": true,
   "type": "SHARED_LIBRARY"
 }

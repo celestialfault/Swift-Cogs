@@ -10,7 +10,7 @@ from odinair_libs import converters, formatting, menus, checks, config
 
 class OdinairLibs:
     """This cog only contains utilities for other cogs, and as such isn't useful on its own."""
-    VERSION = (0, 6, 0)
+    VERSION = (0, 7, 0)
 
     def __init__(self):
         self.converters = converters

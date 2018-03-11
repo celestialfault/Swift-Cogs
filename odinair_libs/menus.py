@@ -87,8 +87,10 @@ class ReactMenu:
         discord.Forbidden
             Raised if the bot is not allowed to add reactions to messages in the context channel
         """
-        if ctx.guild is not None and not ctx.channel.permissions_for(ctx.guild.me).add_reactions:
-            raise discord.Forbidden
+        if ctx.guild is not None:
+            perms: discord.Permissions = ctx.channel.permissions_for(ctx.guild.me)
+            if not all([perms.add_reactions, perms.send_messages]):
+                raise discord.Forbidden
         if len(actions.keys()) > 15:
             raise ValueError("You can only have at most up to 15 different actions")
 
@@ -156,6 +158,12 @@ class ReactMenu:
                and (str(reaction.emoji) in self.emojis or reaction.emoji in self.emojis))
         return ret
 
+    async def __aenter__(self):
+        return await self.prompt()
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        pass
+
     async def prompt(self):
         """Prompt for a choice
 
@@ -192,6 +200,9 @@ class MenuResult:
 
     def __str__(self):
         return str(self.action)
+
+    def __hash__(self):
+        return hash(self.action)
 
     def __eq__(self, other):
         return self.action == other

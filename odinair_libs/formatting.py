@@ -3,16 +3,15 @@ from datetime import timedelta
 
 from redbot.core import RedContext
 from types import FunctionType
-from typing import Iterable, Tuple, Any, Dict, Union
+from typing import Iterable, Tuple, Dict, Union
 
 import discord
 from redbot.core.bot import Red
 
-import textwrap
-import inspect
+from textwrap import dedent
+from inspect import getsourcelines
 
-__all__ = ["td_format", "difference", "changed", "normalize", "attempt_emoji", "get_source", "tick", "chunks",
-           "cmd_help"]
+__all__ = ["td_format", "difference", "normalize", "attempt_emoji", "get_source", "tick", "chunks", "cmd_help"]
 
 
 def tick(text: str):
@@ -25,7 +24,7 @@ def get_source(fn: FunctionType) -> str:
     Parameters
     ----------
     fn: FunctionType
-      The function to get the source for
+        The function to get the source for
 
     Returns
     --------
@@ -37,10 +36,9 @@ def get_source(fn: FunctionType) -> str:
     OSError
         If the source code cannot be retrieved, such as if the function is defined in a repl
     """
-    lines, firstln = inspect.getsourcelines(fn.__code__)
-    lastln = firstln + len(lines) - 1
-    lines = textwrap.dedent("".join(lines))
-    return f"# lines {firstln}-{lastln}\n\n{lines}"
+    lines, firstln = getsourcelines(fn.__code__)
+    lines = dedent("".join(lines))
+    return lines
 
 
 def attempt_emoji(bot: Red, fallback: str, *, emoji_id: int = None, emoji_name: str = None,
@@ -131,6 +129,8 @@ def td_format(td_object: timedelta, short_format: bool = False, milliseconds: bo
     if seconds < 0:
         past = True
         seconds = int(re.sub(r"^-+", "", str(seconds)))
+    elif seconds == 0 and not milliseconds:
+        return "0 seconds" if not short_format else "0s"
 
     strings = []
     for period_name, period_seconds in periods_:
@@ -154,11 +154,9 @@ def td_format(td_object: timedelta, short_format: bool = False, milliseconds: bo
     return fmt.format(built)
 
 
-def difference(list1: Iterable, list2: Iterable, *, check_val: bool = False, dict_values: bool = False)\
+def difference(list1: Iterable, list2: Iterable, *, check_val: bool = False, return_dict: bool = False)\
         -> Tuple[Union[Iterable, Dict], Union[Iterable, Dict]]:
     """Returns a tuple of added or removed items based on the Iterable items passed in
-
-    If check_val is True, this assumes the lists contain tuple-like items, and checks for True-ish items
 
     Parameters
     -----------
@@ -168,15 +166,15 @@ def difference(list1: Iterable, list2: Iterable, *, check_val: bool = False, dic
         The second list to check
     check_val: bool
         Whether or not to check values. If this is True, this assumes the lists contain tuple-like or are dicts
-    dict_values: bool
+    return_dict: bool
         If this is True, this returns a dict of both item keys and values instead of lists of added and removed keys
 
     Returns
     --------
     dict
-        Returned if ``dict_values`` is True
+        Returned if ``return_dict`` is True
     list
-        Returned if ``dict_values`` is False
+        Returned if ``return_dict`` is False
     """
     if check_val:
         # Only include items that evaluate to True
@@ -186,36 +184,10 @@ def difference(list1: Iterable, list2: Iterable, *, check_val: bool = False, dic
     added = [x for x in list2 if x not in list1]
     removed = [x for x in list1 if x not in list2]
 
-    if dict_values:
+    if return_dict:
         added = {x: list2[x] for x in added}
         removed = {x: list1[x] for x in removed}
     return added, removed
-
-
-def changed(before: Dict[Any, Any], after: Dict[Any, Any]) \
-        -> Tuple[Dict[Any, Any], Dict[Any, Tuple[Any, Any]], Dict[Any, Any]]:
-    """Returns a list of added, removed, and changed items from two dict-like objects
-
-    This assumes that the first key of an object is a unique key, and the second key is an item that can be changed
-
-    Parameters
-    -----------
-    before: Dict[Any, Any]
-        The list before any possible changes
-    after: Dict[Any, Any]
-        The list after any possible changes
-
-    Returns
-    --------
-    Tuple[Dict[Any, Any], Dict[Any, Tuple[Any, Any]], Dict[Any, Any]]
-        Returns a tuple of dicts in the following order:
-
-        - Added items
-        - Changed items with tuples of before and after values
-        - Removed items
-    """
-    added, removed = difference(before, after, dict_values=True)
-    return added, {x: (before[x], after[x]) for x in after if x in before and before[x] != after[x]}, removed
 
 
 def normalize(text, *, title_case: bool = True, underscores: bool = True, **kwargs):
