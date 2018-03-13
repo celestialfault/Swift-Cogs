@@ -1,33 +1,51 @@
+from typing import Tuple
+
 import discord
 from discord.ext import commands
+from discord.ext.commands.converter import RoleConverter
 
 from redbot.core.bot import Red, RedContext
 from redbot.core import checks, Config
-from redbot.core.utils.chat_formatting import warning, info, escape
+from redbot.core.utils.chat_formatting import warning, escape
+
+from odinair_libs.formatting import tick
+
+
+class RoleTuple(commands.Converter):
+    async def convert(self, ctx: RedContext, argument: str):
+        second_arg = True
+        if argument.startswith('~'):
+            argument = argument[1:]
+            second_arg = False
+        elif argument.startswith('\\'):
+            argument = argument[1:]
+        return await RoleConverter().convert(ctx, argument), second_arg
 
 
 class RequireRole:
+    """Allow and disallow users to use a bot's commands based on per-guild configurable roles"""
     def __init__(self, bot: Red):
         self.bot = bot
         self.config = Config.get_conf(self, identifier=90834678413, force_registration=True)
-        self.config.register_guild(**{"roles": [], "mode": "whitelist"})
+        self.config.register_guild(**{
+            "roles": {
+                "whitelist": [],
+                "blacklist": []
+            }
+        })
 
     async def check(self, member: discord.Member = None) -> bool:
         """Check if a member or context is allowed to continue
 
         Parameters
         -----------
-
-            member: discord.Member
-
-                The member to check
+        member: discord.Member
+            The member to check
 
         Returns
         --------
-
-            bool
-
-                A boolean value of if the member given is allowed to use the bot in the members guild or not
+        bool
+            A boolean value of if the member given is allowed to use the bot in the members guild or not
         """
         if getattr(member, "guild", None) is None:
             # Always assume a positive result in non-guild contexts
@@ -40,86 +58,88 @@ class RequireRole:
             # skip all role checks and assume they're allowed to use the bot
             return True
 
-        guild_opts = await self.config.guild(guild)()
-        guild_roles = guild_opts.get("roles", [])
-        if not guild_roles:
-            # If there's no roles setup, skip checking and return a positive result
+        guild_opts = await self.config.guild(guild).all()
+        guild_roles = guild_opts.get("roles", {})
+        if isinstance(guild_roles, list):
+            guild_mode = guild_opts.get("mode", "whitelist")
+            guild_roles = {guild_mode: guild_roles,
+                           # backwards compatibility sucks
+                           "blacklist" if guild_mode == "whitelist" else "whitelist": []}
+
+        whitelist = tuple(guild_roles.get('whitelist', []))
+        blacklist = tuple(guild_roles.get('blacklist', []))
+
+        if not any([whitelist, blacklist]):
             return True
 
-        mode = guild_opts.get("mode", "whitelist")
-        member_roles = [x.id for x in member.roles if x.id in guild_roles]
+        member_roles = tuple(x.id for x in member.roles)
+        if blacklist and any(tuple(x for x in member_roles if x in blacklist)):
+            return False
+        if whitelist and not any(tuple(x for x in member_roles if x in whitelist)):
+            return False
+        return True
 
-        if mode == "whitelist":
-            return any(member_roles)
-        elif mode == "blacklist":
-            return not any(member_roles)
-        else:  # Assume a positive result if the mode isn't recognized
-            return True
-
-    async def __global_check(self, ctx: RedContext):
+    async def __global_check_once(self, ctx: RedContext):
         return await self.check(member=ctx.author)
 
-    @commands.group(invoke_without_command=True)
+    @commands.command()
     @commands.guild_only()
     @checks.guildowner_or_permissions(administrator=True)
-    async def requirerole(self, ctx: RedContext, *roles: discord.Role):
+    async def requirerole(self, ctx: RedContext, *roles: RoleTuple):
         """Require specific roles to use the bot in the current guild
 
-        If more than one role name is passed, this acts as an any check
-        This means that a member only needs one of the given roles to pass the command permission check
+        To require a member to __not__ have one or more roles, you can use
+        `~` before the role name to treat it as a blacklisted role.
 
-        Role names are case sensitive. If a role has spaces in it's name, wrap it in quotes
-        Passing no roles removes the currently set role requirement
+        If a role has a `~` character at the beginning of its name,
+        the character can be escaped by prepending a backslash (`\`)
+        to the role name. The same also applies if a role has a backslash
+        at the beginning of its name.
 
-        The guild owner and members with the Administrator permission always bypass this requirement
+        Blacklisted roles will override any whitelisted roles
+        a member may have, and as such can be a powerful moderation tool.
+
+        More than one whitelisted role given makes this act as an OR check,
+        not an AND check. This means a member only needs one of the
+        whitelisted roles to use the bot. The same applies to blacklisted roles,
+        as a member needs to not have any roles specified as blacklisted
+        to use the bot.
+
+        Role names are case sensitive. If a role has spaces in it's name, wrap it in quotes.
+        Passing no roles removes the currently set role requirement.
+
+        The guild owner and members with the Administrator permission
+        always bypass these requirements, regardless of roles.
         """
+        roles: Tuple[Tuple[discord.Role, bool]] = roles
+        modes: Tuple[bool] = tuple(x[1] for x in roles)
+        roles: Tuple[discord.Role] = tuple(x[0] for x in roles)
+
+        whitelist: Tuple[discord.Role] = tuple(x for x in roles if modes[roles.index(x)])
+        blacklist: Tuple[discord.Role] = tuple(x for x in roles if not modes[roles.index(x)])
+
         if ctx.guild.default_role in roles:
             await ctx.send(warning("I can't set a role requirement with the default role - you can also pass no roles"
                                    " to clear the currently set requirement"))
             return
-        await self.config.guild(ctx.guild).roles.set([x.id for x in roles])
+
+        await self.config.guild(ctx.guild).roles.set({
+            "whitelist": [x.id for x in whitelist],
+            "blacklist": [x.id for x in blacklist]
+        })
         if not roles:
-            await ctx.send(info("Cleared currently set role requirements"))
+            await ctx.send(tick("Cleared currently set role requirements"))
             return
-        role_names = [escape(x.name, formatting=True, mass_mentions=True) for x in roles]
 
-        mode_verb = "will now require"
-        plural_verb = "one of"
-        if await self.config.guild(ctx.guild).mode() == "blacklist":
-            mode_verb = "is now required to not have"
-            plural_verb = "any of"
+        whitelist = ", ".join(escape(str(x), mass_mentions=True, formatting=True) for x in whitelist)
+        blacklist = ", ".join(escape(str(x), mass_mentions=True, formatting=True) for x in blacklist)
 
-        info_txt = "A member {mode_verb}{plural_verb} the following role{plural} to use my commands in this guild:"\
-            .format(
-                mode_verb=mode_verb,
-                plural_verb=" %s" % plural_verb if len(roles) != 1 else "",
-                plural="s" if len(roles) != 1 else "")
+        msg = "A member will now need to pass the following checks to use my commands:\n\n"
+        if whitelist:
+            msg += f"**Any of the following roles:**\n{whitelist}"
+        if whitelist and blacklist:
+            msg += "\n\n"
+        if blacklist:
+            msg += f"**None of the following roles:**\n{blacklist}"
 
-        info_txt = info(info_txt)
-        await ctx.send("{}\n\n{}".format(info_txt, ", ".join(role_names)))
-
-    @requirerole.group(name="mode")
-    @commands.guild_only()
-    @checks.guildowner_or_permissions(administrator=True)
-    async def requirerole_mode(self, ctx: RedContext):
-        """Change the required role mode"""
-        if not ctx.invoked_subcommand or ctx.invoked_subcommand.name == "mode":
-            await ctx.send_help()
-
-    @requirerole_mode.command(name="whitelist", aliases=["allow"])
-    async def mode_whitelist(self, ctx: RedContext):
-        """Set the required role mode to whitelist
-
-        This means that a user must have any of the set roles to use the bot
-        """
-        await self.config.guild(ctx.guild).mode.set("whitelist")
-        await ctx.tick()
-
-    @requirerole_mode.command(name="blacklist", aliases=["deny"])
-    async def mode_blacklist(self, ctx: RedContext):
-        """Set the required role mode to blacklist
-
-        This means that a user must *not* have any of the set roles to use the bot
-        """
-        await self.config.guild(ctx.guild).mode.set("blacklist")
-        await ctx.tick()
+        await ctx.send(tick(msg))

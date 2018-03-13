@@ -1,6 +1,7 @@
 {
   "author": ["odinair"],
-  "description": "Set a list of roles that's required to have at least one of to use the bot",
-  "short": "Require one role out of a per-guild set list of roles to use the bot",
+  "bot_version": [3, 0, 0],
+  "description": "Allow and disallow users to use a bot's commands based on per-guild roles",
+  "short": "Allow and disallow users to use a bot's commands based on per-guild roles",
   "type": "COG"
 }
