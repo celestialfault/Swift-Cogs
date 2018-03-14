@@ -2,6 +2,7 @@ from typing import Tuple
 
 import discord
 from discord.ext import commands
+from discord.ext.commands import CheckFailure
 from discord.ext.commands.converter import RoleConverter
 
 from redbot.core.bot import Red, RedContext
@@ -34,7 +35,7 @@ class RequireRole:
                     "blacklist": []
                 }
             })
-        except KeyError:
+        except KeyError:  # duct tape to resolve Group / Value conflict
             self.config.register_guild(**{"roles": []})
 
     async def check(self, member: discord.Member = None) -> bool:
@@ -69,21 +70,24 @@ class RequireRole:
                            # backwards compatibility sucks
                            "blacklist" if guild_mode == "whitelist" else "whitelist": []}
 
-        whitelist = tuple(guild_roles.get('whitelist', []))
-        blacklist = tuple(guild_roles.get('blacklist', []))
+        whitelist = guild_roles.get('whitelist', [])
+        blacklist = guild_roles.get('blacklist', [])
 
         if not any([whitelist, blacklist]):
             return True
 
-        member_roles = tuple(x.id for x in member.roles)
-        if blacklist and any(tuple(x for x in member_roles if x in blacklist)):
+        member_roles = [x.id for x in member.roles]
+        if blacklist and any([x for x in member_roles if x in blacklist]):
             return False
-        if whitelist and not any(tuple(x for x in member_roles if x in whitelist)):
+        if whitelist and not any([x for x in member_roles if x in whitelist]):
             return False
+
         return True
 
     async def __global_check_once(self, ctx: RedContext):
-        return await self.check(member=ctx.author)
+        if not await self.check(member=ctx.author):
+            raise CheckFailure
+        return True
 
     @commands.command()
     @commands.guild_only()
@@ -114,7 +118,7 @@ class RequireRole:
         The guild owner and members with the Administrator permission
         always bypass these requirements, regardless of roles.
         """
-        roles: Tuple[Tuple[discord.Role, bool]] = roles
+        roles: Tuple[Tuple[discord.Role, bool]] = roles  # yes, this is fine
         modes: Tuple[bool] = tuple(x[1] for x in roles)
         roles: Tuple[discord.Role] = tuple(x[0] for x in roles)
 
@@ -122,8 +126,9 @@ class RequireRole:
         blacklist: Tuple[discord.Role] = tuple(x for x in roles if not modes[roles.index(x)])
 
         if ctx.guild.default_role in roles:
-            await ctx.send(warning("I can't set a role requirement with the default role - you can also pass no roles"
-                                   " to clear the currently set requirement"))
+            await ctx.send(warning("I can't set a role requirement with the default role - if you'd like to clear "
+                                   "your current role requirements, you can execute this command "
+                                   "with no arguments."))
             return
 
         await self.config.guild(ctx.guild).roles.set({
