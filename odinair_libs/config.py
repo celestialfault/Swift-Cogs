@@ -40,7 +40,7 @@ async def fix_config_fuckup(config: Config, identifier: int, bot: Red):
             continue
         guild = Guild(id=gid)
         await config.guild(guild).set(fuckedup_guilds[gid])
-        for mid in fuckedup_members[gid]:  # fix members
+        for mid in fuckedup_members.get(gid, {}):  # fix members
             if mid in fixed_members.get(gid, {}):
                 continue
             member = Member(id=mid, guild=guild)

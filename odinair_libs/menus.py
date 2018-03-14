@@ -5,8 +5,10 @@ from typing import Union, Any, Dict, Sequence, Callable, Tuple
 
 import discord
 from redbot.core import RedContext
+from redbot.core.bot import Red
+from redbot.core.utils.chat_formatting import question
 
-__all__ = ["PostMenuAction", "ReactMenu", "MenuResult", "paginate", "confirm"]
+__all__ = ["PostMenuAction", "ReactMenu", "MenuResult", "paginate", "confirm", "prompt"]
 
 
 class PostMenuAction(Enum):
@@ -15,6 +17,29 @@ class PostMenuAction(Enum):
     CLEAR_REACTIONS = "clear_react"
     REMOVE_REACTION = "remove_react"
     NONE = "none"
+
+
+async def prompt(ctx: RedContext, *, content: str = None, embed: discord.Embed = None, delete_messages: bool = False,
+                 timeout: float = 30.0):
+    bot: Red = ctx.bot
+    message_sent = await ctx.send(content=question(content), embed=embed)
+    message_recv = None
+    try:
+        message_recv = await bot.wait_for('message',
+                                          check=lambda x: x.author == ctx.author and x.channel == ctx.channel,
+                                          timeout=timeout)
+    except TimeoutError:
+        pass
+    finally:
+        if delete_messages and ctx.guild and ctx.channel.permissions_for(ctx.guild.me).manage_messages:
+            if message_recv is not None:
+                try:
+                    await ctx.channel.delete_messages([message_sent, message_recv])
+                except discord.HTTPException:
+                    pass
+            else:
+                await message_sent.delete()
+        return message_recv
 
 
 class ReactMenu:
