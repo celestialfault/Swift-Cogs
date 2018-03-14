@@ -12,6 +12,16 @@ class UInfo:
     def __init__(self, bot: Red):
         self.bot = bot
 
+    @staticmethod
+    def plural(*items: str):
+        items = list(items)
+        if len(items) >= 3:
+            last = items.pop()
+            joined = ", ".join(items)
+            return f"{joined} and {last}"
+        else:
+            return ", ".join(items)
+
     async def get_bot_role(self, member: discord.Member):
         if member.bot:
             return None
@@ -31,21 +41,27 @@ class UInfo:
 
         return "\n".join(msgs)
 
-    @staticmethod
-    def get_activity(member: discord.Member):
-        game = getattr(member.activity, "name", None)
+    def get_activity(self, member: discord.Member):
+        game = bold(getattr(member.activity, "name", None))
         game_type = None
 
         if member.activity is None:
             pass
-        elif member.activity.type == 0:  # Playing
+
+        elif member.activity.type == discord.ActivityType.playing:
             game_type = "\N{VIDEO GAME} Playing"
-        elif member.activity.type == 1:
+
+        elif member.activity.type == discord.ActivityType.streaming:
             game_type = "\N{VIDEO CAMERA} Streaming"
-            game = f"[{member.activity}]({member.activity.url})"
-        elif member.activity.type == 2:
+            game = bold(f"[{member.activity}]({member.activity.url})")
+
+        elif member.activity.type == discord.ActivityType.listening:
             game_type = "\N{MUSICAL NOTE} Listening to"
-        elif member.activity.type == 3:
+            if isinstance(member.activity, discord.Spotify):
+                game = f"{self.plural(*[bold(x) for x in member.activity.artists])} \N{EM DASH} " \
+                       f"**{member.activity.title}** on **Spotify**"
+
+        elif member.activity.type == discord.ActivityType.watching:
             game_type = "\N{FILM PROJECTOR} Watching"
 
         return game, game_type
@@ -69,7 +85,7 @@ class UInfo:
         description = f"\N{EARTH GLOBE AMERICAS} {status}"
 
         if game:
-            description += f"\n{game_type} {bold(game)}"
+            description += f"\n{game_type} {game}"
         if user.nick:
             description += f"\n\N{LABEL} Nicknamed as {bold(escape(user.nick, formatting=True))}"
 
@@ -83,7 +99,7 @@ class UInfo:
 
         roles = reversed([escape(x.name, formatting=True) for x in user.roles if x.name != "@everyone"])
         if roles:
-            embed.add_field(name="Guild Roles", value=", ".join(roles), inline=False)
+            embed.add_field(name="Guild Roles", value=", ".join(roles or ["None"]), inline=False)
 
         embed.add_field(name="Joined Discord", value=since_created, inline=False)
         embed.add_field(name="Joined Guild", value=since_joined, inline=False)
