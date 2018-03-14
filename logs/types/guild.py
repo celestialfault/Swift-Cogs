@@ -20,13 +20,16 @@ class GuildLog(BaseLog):
         "content_filter": "Explicit content filter"
     }
 
+    def create(self, **kwargs):
+        return NotImplemented
+
     async def update(self, before: discord.Guild, after: discord.Guild, **kwargs):
         if before.unavailable or after.unavailable:
             # Ignore unavailable guilds, as we have no promise of the accuracy of any data
             return None
 
         embed = LogEntry(colour=discord.Colour.blurple(), timestamp=datetime.utcnow())
-        embed.set_author(name="Guild Updated", icon_url=self.icon_url)
+        embed.set_author(name="Guild Updated", icon_url=self.guild_icon_url)
         embed.set_footer(text=f"Guild ID: {after.id}")
 
         if self.has_changed(before.name, after.name, "name"):
@@ -58,9 +61,6 @@ class GuildLog(BaseLog):
             embed.add_diff_field(name="Voice Region", before=before.region, after=after.region)
 
         return embed
-
-    def create(self, **kwargs):
-        return NotImplemented
 
     def delete(self, **kwargs):
         return NotImplemented

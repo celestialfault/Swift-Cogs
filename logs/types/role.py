@@ -1,8 +1,6 @@
 from datetime import datetime
-from difflib import Differ
 
 import discord
-from redbot.core.utils.chat_formatting import box
 
 from logs.logentry import LogEntry
 from ._base import BaseLog
@@ -24,12 +22,12 @@ class RoleLog(BaseLog):
     }
 
     def create(self, created: discord.Role, **kwargs):
-        if not self.settings.get("create", False):
+        if not self.is_enabled("create"):
             return None
 
         embed = LogEntry(colour=discord.Colour.green(), description=f"{created.mention} was created",
                          require_fields=False)
-        embed.set_author(name="Role Created", icon_url=self.icon_url)
+        embed.set_author(name="Role Created", icon_url=self.guild_icon_url)
         embed.set_footer(text=f"Role ID: {created.id}")
 
         colour = created.colour if created.colour != discord.Colour.default() else None
@@ -44,7 +42,7 @@ class RoleLog(BaseLog):
         embed = LogEntry(colour=discord.Colour.blurple(), description=f"Role: {after.mention}",
                          timestamp=datetime.utcnow())
 
-        embed.set_author(name="Role Updated", icon_url=self.icon_url)
+        embed.set_author(name="Role Updated", icon_url=self.guild_icon_url)
         embed.set_footer(text=f"Role ID: {after.id}")
 
         if self.has_changed(before.name, after.name, "name"):
@@ -65,10 +63,9 @@ class RoleLog(BaseLog):
             embed.add_diff_field(name="Mentionable", before=before.mentionable, after=after.mentionable)
 
         if self.has_changed(before.permissions, after.permissions, "permissions"):
-            changed = Differ().compare([normalize(x[0], guild="server") for x in before.permissions if x[1]],
-                                       [normalize(x[0], guild="server") for x in after.permissions if x[1]])
-            if changed:
-                embed.add_field(name="Permissions", value=box("\n".join(changed), lang="diff"))
+            embed.add_differ_field(name="Permissions",
+                                   before=[normalize(x[0], guild="server") for x in before.permissions if x[1]],
+                                   after=[normalize(x[0], guild="server") for x in after.permissions if x[1]])
 
         return embed
 
@@ -76,8 +73,8 @@ class RoleLog(BaseLog):
         if not self.settings.get("delete", False):
             return None
 
-        ret = LogEntry(colour=discord.Colour.red(), description=f"`{deleted!s}` was deleted", require_fields=False,
-                       timestamp=datetime.utcnow())
-        ret.set_author(name="Role Deleted", icon_url=self.icon_url)
-        ret.set_footer(text=f"Role ID: {deleted.id}")
-        return ret
+        embed = LogEntry(colour=discord.Colour.red(), description=f"`{deleted!s}` was deleted", require_fields=False,
+                         timestamp=datetime.utcnow())
+        embed.set_author(name="Role Deleted", icon_url=self.guild_icon_url)
+        embed.set_footer(text=f"Role ID: {deleted.id}")
+        return embed

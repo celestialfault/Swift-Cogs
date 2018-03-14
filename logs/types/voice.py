@@ -16,6 +16,9 @@ class VoiceLog(BaseLog):
         "serverdeaf": "Member server deafen"
     }
 
+    def create(self, **kwargs):
+        return NotImplemented
+
     def update(self, before: discord.VoiceState, after: discord.VoiceState, **kwargs):
         try:
             member: discord.Member = kwargs["member"]
@@ -47,9 +50,6 @@ class VoiceLog(BaseLog):
             embed.add_field(name="Server Mute", value=f"{status} server muted")
 
         return embed
-
-    def create(self, **kwargs):
-        return NotImplemented
 
     def delete(self, **kwargs):
         return NotImplemented

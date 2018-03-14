@@ -86,6 +86,7 @@ class Logs:
         self.config.register_guild(**self.defaults_guild)
         self.config.register_member(ignored=False)
         self.config.register_channel(ignored=False)
+        self.config.register_role(ignored=False)
         self._guilds = {}
 
     async def get_guild_log(self, guild: discord.Guild) -> GuildLog:
@@ -352,6 +353,17 @@ class Logs:
         await (await self.get_guild_log(ctx.guild)).reload_settings()
         await ctx.send(tick(f"Now ignoring member **{member!s}**"))
 
+    @logset_ignore.command(name="role")
+    async def logset_ignore_role(self, ctx: RedContext, *, role: discord.Role):
+        """Ignore a role from logging
+
+        This only ignores the role from role-based logging; any members with the role
+        will have to be ignored individually with `[p]logset ignore member`
+        """
+        await self.config.role(role).ignored.set(True)
+        await (await self.get_guild_log(ctx.guild)).reload_settings()
+        await ctx.send(tick(f"Now ignoring role **{escape(str(role), mass_mentions=True, formatting=True)}**"))
+
     @logset_ignore.command(name="channel")
     async def logset_ignore_channel(self, ctx: RedContext,
                                     channel: discord.TextChannel or discord.VoiceChannel = None):
@@ -400,6 +412,13 @@ class Logs:
         await (await self.get_guild_log(ctx.guild)).reload_settings()
         await ctx.send(tick(f"No longer ignoring member **{member!s}**"))
 
+    @logset_unignore.command(name="role")
+    async def logset_unignore_role(self, ctx: RedContext, *, role: discord.Role):
+        """Unignore a role from logging"""
+        await self.config.role(role).ignored.set(False)
+        await (await self.get_guild_log(ctx.guild)).reload_settings()
+        await ctx.send(tick(f"No longer ignoring role **{escape(str(role), mass_mentions=True, formatting=True)}**"))
+
     @logset_unignore.command(name="channel")
     async def logset_unignore_channel(self, ctx: RedContext,
                                       channel: discord.TextChannel or discord.VoiceChannel = None):
@@ -442,20 +461,20 @@ class Logs:
     ###################
 
     async def on_message_delete(self, message: discord.Message):
-        if isinstance(message.channel, discord.abc.PrivateChannel):
+        if getattr(message, "guild", None) is None:
             return
         guild = await self.get_guild_log(message.guild)
         await guild.log("messages", LogType.DELETE, deleted=message)
 
     async def on_message_edit(self, before: discord.Message, after: discord.Message):
-        if isinstance(after.channel, discord.abc.PrivateChannel):
+        if getattr(after, "guild", None) is None:
             return
         guild = await self.get_guild_log(after.guild)
         await guild.log("messages", LogType.UPDATE, before=before, after=after)
 
     async def on_member_join(self, member: discord.Member):
         guild = await self.get_guild_log(member.guild)
-        await guild.log("member", LogType.CREATE, created=member)
+        await guild.log("members", LogType.CREATE, created=member)
 
     async def on_member_leave(self, member: discord.Member):
         guild = await self.get_guild_log(member.guild)

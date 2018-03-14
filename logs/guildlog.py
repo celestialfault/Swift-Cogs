@@ -24,6 +24,8 @@ class LogType(Enum):
 
 class GuildLog:
     def __init__(self, guild: discord.Guild, cog):
+        if not isinstance(guild, discord.Guild):
+            raise TypeError(f'expected guild to be of type discord.Guild, received {guild.__class__.__name__}')
         self.guild = guild
         self._types: Dict[str, types.BaseLog] = {x.name: x(self) for x in types.iterable}
 
@@ -57,14 +59,17 @@ class GuildLog:
             return
 
         group = self._types.get(group)
-        log_channel = self.log_channel(group.name)
         log_func = getattr(group, str(log_type), lambda **k_args: None)
 
+        log_channel = self.log_channel(group.name)
+        if log_channel is None:
+            return
+
         try:
-            embed: LogEntry = log_func(**kwargs)
-            if asyncio.iscoroutine(embed):
-                # noinspection PyUnresolvedReferences
-                embed = await embed
+            if asyncio.iscoroutinefunction(log_func):
+                embed: LogEntry = await log_func(**kwargs)
+            else:
+                embed: LogEntry = log_func(**kwargs)
         except NotImplementedError:
             return
         else:
@@ -80,48 +85,25 @@ class GuildLog:
         self.settings = await self.guild_config.all()
 
     async def is_ignored(self, **kwargs):
-        if self.settings.get("ignored", False):
-            return True
-
-        deleted = kwargs.get("deleted", None)
-        created = kwargs.get("created", None)
-        before = kwargs.get("before", None)
-        after = kwargs.get("after", None)
-        member = kwargs.get("member", None)  # this is given in voice state events
-
-        if deleted and await self._check(deleted):
-            return True
-        elif created and await self._check(created):
-            return True
-        elif before and await self._check(before):
-            return True
-        elif after and await self._check(after):
-            return True
-        elif member and await self._check(member):
-            return True
-        else:
-            return False
+        return any([self.settings.get("ignored", False), *[await self._check(kwargs[x]) for x in kwargs]])
 
     def log_channel(self, group: str) -> Optional[discord.TextChannel]:
         return self.bot.get_channel(self.settings["log_channels"].get(group))
 
-    async def _check(self, obj: Union[discord.Member, discord.TextChannel, discord.VoiceChannel,
-                                      discord.VoiceState, discord.Message, None]) -> bool:
-        if obj is None:
+    async def _check(self, check: Union[discord.Member, discord.TextChannel, discord.VoiceChannel,
+                                        discord.VoiceState, discord.Message, discord.Role, None]) -> bool:
+        if check is None:
             return False
-        if isinstance(obj, discord.Member):
-            if obj.bot:
-                return True
-            if await self.config.member(obj).ignored():
-                return True
-        elif isinstance(obj, discord.TextChannel) or isinstance(obj, discord.VoiceChannel):
+
+        if isinstance(check, discord.Member):
+            return any([check.bot, await self.config.member(check).ignored()])
+        elif isinstance(check, discord.Message):
+            return any([await self._check(check.author), await self._check(check.channel)])
+        elif isinstance(check, discord.TextChannel) or isinstance(check, discord.VoiceChannel):
             # noinspection PyTypeChecker
-            if await self.config.channel(obj).ignored():
-                return True
-        elif isinstance(obj, discord.Message):
-            if await self.config.channel(obj.channel).ignored() or await self.config.member(obj.author).ignored():
-                return True
-        elif isinstance(obj, discord.VoiceState) and obj.channel:
-            if await self.config.channel(obj.channel).ignored():
-                return True
+            return await self.config.channel(check).ignored()
+        elif isinstance(check, discord.VoiceState) and check.channel:
+            return await self.config.channel(check.channel).ignored()
+        elif isinstance(check, discord.Role):
+            return await self.config.role(check).ignored()
         return False

@@ -28,10 +28,21 @@ class ChannelLog(BaseLog):
         "position": "Channel position changes (this option can be spammy!)"
     }
 
+    def create(self, created: discord.abc.GuildChannel, **kwargs):
+        if self.is_disabled('create'):
+            return None
+
+        # noinspection PyUnresolvedReferences
+        return LogEntry(colour=discord.Colour.green(), title="Channel Created", timestamp=datetime.utcnow(),
+                        description=f"Channel {created.mention} created", require_fields=False)\
+            .set_footer(text=f"Channel ID: {created.id}")
+
     async def update(self, before: discord.abc.GuildChannel, after: discord.abc.GuildChannel, **kwargs):
         embed = LogEntry(colour=discord.Colour.blurple(), timestamp=datetime.utcnow(),
                          description=f"Channel: {after.mention}")
-        embed.set_author(name="Channel Updated", icon_url=self.icon_url)
+        embed.set_author(name="Channel Updated", icon_url=self.guild_icon_url)
+        # noinspection PyUnresolvedReferences
+        embed.set_footer(text=f"Channel ID: {after.id}")
 
         if hasattr(before, "name") and hasattr(after, "name"):  # you win this time pycharm
             if self.has_changed(before.name, after.name, "name"):
@@ -39,7 +50,7 @@ class ChannelLog(BaseLog):
 
         if isinstance(before, discord.TextChannel) and isinstance(after, discord.TextChannel):
             if self.has_changed(before.topic, after.topic, "topic"):
-                embed.add_diff_field(name="Channel Topic", before=before.topic, after=after.topic, description="")
+                embed.add_diff_field(name="Channel Topic", before=before.topic, after=after.topic)
 
         elif isinstance(before, discord.VoiceChannel) and isinstance(after, discord.VoiceChannel):
             if self.has_changed(before.bitrate, after.bitrate, "bitrate"):
@@ -60,15 +71,11 @@ class ChannelLog(BaseLog):
 
         return embed
 
-    def create(self, created: discord.abc.GuildChannel, **kwargs):
-        if not self.settings.get("create", False):
-            return None
-        return LogEntry(colour=discord.Colour.green(), title="Channel Created", timestamp=datetime.utcnow(),
-                        description=f"Channel {created.mention} created", require_fields=False)
-
     def delete(self, deleted: discord.abc.GuildChannel, **kwargs):
         if not self.settings.get("delete", False):
             return None
 
+        # noinspection PyUnresolvedReferences
         return LogEntry(colour=discord.Colour.red(), title="Channel Deleted", timestamp=datetime.utcnow(),
-                        description=f"Channel {deleted!s} deleted", require_fields=False)
+                        description=f"Channel `{deleted!s}` deleted", require_fields=False)\
+            .set_footer(text=f"Channel ID: {deleted.id}")
