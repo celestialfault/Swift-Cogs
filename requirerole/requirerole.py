@@ -27,12 +27,15 @@ class RequireRole:
     def __init__(self, bot: Red):
         self.bot = bot
         self.config = Config.get_conf(self, identifier=90834678413, force_registration=True)
-        self.config.register_guild(**{
-            "roles": {
-                "whitelist": [],
-                "blacklist": []
-            }
-        })
+        try:
+            self.config.register_guild(**{
+                "roles": {
+                    "whitelist": [],
+                    "blacklist": []
+                }
+            })
+        except KeyError:
+            self.config.register_guild(**{"roles": []})
 
     async def check(self, member: discord.Member = None) -> bool:
         """Check if a member or context is allowed to continue
