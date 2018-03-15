@@ -13,7 +13,7 @@ from odinair_libs.formatting import tick, cmd_help
 
 
 class RoleMention:
-    MENTION_REGEX = re.compile(r"<{mention role: ?@?(?P<NAME>[\W\w]+)}>", re.IGNORECASE)
+    MENTION_REGEX = re.compile(r"{{mention role: ?@?(?P<NAME>[\W\w]+)}}", re.IGNORECASE)
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -65,7 +65,7 @@ class RoleMention:
     async def rolemention(self, ctx: RedContext):
         """Manage role mention settings
 
-        Role mentions can be sent by using `<{mention role: Role Name}>`
+        Role mentions can be sent by using `{{mention role: Role Name}}`
 
         Only users with the bot's Administrator role or with the Manage Roles permission
         may use this feature.
@@ -76,7 +76,7 @@ class RoleMention:
     async def rolemention_add(self, ctx: RedContext, *, role: discord.Role):
         """Allow a role to be mentioned"""
         if role.is_default():
-            await ctx.send(warning("Cannot make a guild's default role mentionable"))
+            await ctx.send(warning("I cannot make a guild's default role mentionable"))
             return
         async with self.config.guild(ctx.guild).roles() as roles:
             if role.id in roles:
@@ -90,7 +90,7 @@ class RoleMention:
     async def rolemention_remove(self, ctx: RedContext, *, role: discord.Role):
         """Disallow a role from being mentioned"""
         if role.is_default():
-            await ctx.send(warning("Cannot make a guild's default role mentionable"))
+            await ctx.send(warning("I cannot make a guild's default role mentionable"))
             return
         async with self.config.guild(ctx.guild).roles() as roles:
             if role.id not in roles:
@@ -109,10 +109,9 @@ class RoleMention:
             if role is None:
                 continue
             roles.append(role)
-        await ctx.send(embed=discord.Embed(colour=discord.Colour.blurple(),
-                                           title="Mentionable roles",
-                                           description=", ".join([f"{x.name}" for x in roles]
-                                                                 or ["No mentionable roles"])))
+        await ctx.send(embed=discord.Embed(title="Mentionable roles", colour=discord.Colour.blurple(),
+                                           description=" ".join([x.mention for x in roles]
+                                                                or ["No mentionable roles"])))
 
     @rolemention.command(name="mention")
     async def rolemention_mention(self, ctx: RedContext, role: discord.Role, *, text: str):
@@ -151,10 +150,10 @@ class RoleMention:
         allowed_roles = await self.config.guild(guild).roles()
         for match in self.MENTION_REGEX.finditer(message.content):
             name = match.group("NAME")
-            full = match.group(0)
+            full_match = match.group(0)
             role: discord.Role = discord.utils.get(guild.roles, name=name)
 
-            message_content = message_content.replace(full, getattr(role, "mention", full))
+            message_content = message_content.replace(full_match, getattr(role, "mention", full_match))
 
             if role is None or role.id not in allowed_roles:
                 continue

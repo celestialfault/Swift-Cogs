@@ -1,8 +1,9 @@
 <h1 align="center">odinair's cogs</h1>
 <p align="center">Some home-grown cogs, which may or may not be useful.</p>
 <p align="center">
-  <a href="https://python.org/"><img src="https://img.shields.io/badge/Python-3.6-red.svg"></a>
-  <a href="https://github.com/Cog-Creators/Red-DiscordBot"><img src="https://img.shields.io/badge/Red--DiscordBot-3.0.0-brightgreen.svg"></a>
+  <a href="https://python.org/"><img src="https://img.shields.io/badge/Python-3.6-red.svg?style=flat-square"></a>
+  <a href="https://github.com/Cog-Creators/Red-DiscordBot"><img src="https://img.shields.io/badge/Red--DiscordBot-3.0.0-blue.svg?style=flat-square"></a>
+  <a href="http://makeapullrequest.com"><img src="https://img.shields.io/badge/PRs-welcome-green.svg?style=flat-square"></a>
 </p>
 
 # Installation
@@ -155,10 +156,10 @@ Currently added placeholders:
 - `{COGS}` - the amount of cogs currently loaded
 
 Commands:
-- `[p]rndactivity add with {GUILDS} guilds` -> adds the activity status `with {GUILDS} guilds`
-- `[p]rndactivity (watching|listening) <status>` -> adds a watching or listening activity status
-- `[p]rndactivity list` -> lists added statuses
-- `[p]rndactivity list true` -> lists added statuses, but also parses placeholders and displays their current return value
+- `[p]rndactivity add with {GUILDS} guilds` - adds the activity status `with {GUILDS} guilds`
+- `[p]rndactivity (watching|listening) <status>` - adds a watching or listening activity status
+- `[p]rndactivity list` - lists added statuses
+- `[p]rndactivity list true` - lists added statuses, but also parses placeholders and displays their current return value
 </details>
 
 <details>
@@ -176,7 +177,7 @@ but still need to mention from time to time.
 **Basic usage:**
 
 - `[p]rolemention add <role>` - allows mentioning of a role
-- `<{mention role: @role}>` - mention a role in a message
+- `{{mention role: @role}}` - mention a role in a message
 - `[p]rolemention mention <role> <text>` - mention a role via commands
 </details>
 
