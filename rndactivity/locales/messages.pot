@@ -1,0 +1,78 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR ORGANIZATION
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2018-03-16 06:59-0600\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: pygettext.py 1.5\n"
+
+
+#: ../rndactivity.py:57
+msgid ""
+"Set time between status changes to {}.\n"
+"This will take effect after the next status change."
+msgstr ""
+
+#: ../rndactivity.py:64
+msgid "Parsing that status failed - {} is not a valid placeholder"
+msgstr ""
+
+#: ../rndactivity.py:69
+msgid "Status **#{}** added."
+msgstr ""
+
+#: ../rndactivity.py:121
+msgid ""
+"Placeholder {} does not exist\n"
+"\n"
+"See `{}help rndactivity add` for the list of placeholder strings"
+msgstr ""
+
+#: ../rndactivity.py:128
+msgid ""
+"📥 **Input:**\n"
+"{status}\n"
+"\n"
+"📤 **Result:**\n"
+"{result}"
+msgstr ""
+
+#: ../rndactivity.py:145
+msgid "The status {} doesn't exist"
+msgstr ""
+
+#: ../rndactivity.py:153
+msgid "Removed {amnt} status{plural}."
+msgstr ""
+
+#: ../rndactivity.py:165
+msgid "I have no random statuses setup! Use `{}rndactivity add` to add some!"
+msgstr ""
+
+#: ../rndactivity.py:180
+msgid "Placeholder {} doesn't exist"
+msgstr ""
+
+#: ../rndactivity.py:189
+msgid ""
+"Are you sure you want to clear {amnt} statuses?\n"
+"\n"
+"This action is irreversible!"
+msgstr ""
+
+#: ../rndactivity.py:194
+msgid "Successfully cleared {amnt} status strings."
+msgstr ""
+
+#: ../rndactivity.py:196
+msgid "Okay then."
+msgstr ""
+

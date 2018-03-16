@@ -1,11 +1,12 @@
 from asyncio import sleep
-from typing import List
+from typing import List, Union
 
 import discord
 from discord.ext import commands
 
 from redbot.core.bot import Red, RedContext
 from redbot.core import Config, checks
+from redbot.core.i18n import CogI18n
 from redbot.core.utils.chat_formatting import pagify, info, warning, escape
 
 from random import choice
@@ -14,9 +15,14 @@ from odinair_libs.menus import confirm
 from odinair_libs.converters import FutureTime
 from odinair_libs.formatting import tick
 
+_ = CogI18n("RNDActivity", __file__)
+
 
 class RNDActivity:
     """Random bot playing statuses"""
+
+    __author__ = "odinair <odinair@odinair.xyz>"
+    __version__ = "0.1.0"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -42,24 +48,25 @@ class RNDActivity:
                                                                max_duration=None)):
         """Set the amount of time required to pass in seconds to change the bot's playing status
 
-        Duration can be formatted like `7.5m`, `1h7.5m`, `7.5 minutes`, or `1 hour 7.5 minutes`
+        Duration can be formatted like `5m`, `1h3.5m`, `5 minutes`, or `1 hour 3.5 minutes`
 
         Minimum duration between changes is 5 minutes.
         Default delay is 10 minutes, or every 600 seconds
         """
         await self.config.delay.set(duration.total_seconds())
-        await ctx.send(tick(f"Set time between status changes to {duration.format()}.\n"
-                            f"This will take effect after the next status change."))
+        await ctx.send(tick(_("Set time between status changes to {}.\n"
+                              f"This will take effect after the next status change.").format(duration.format())))
 
     async def _add_status(self, ctx: RedContext, game: str, *, game_type: int = 0):
         try:
             self.format_status({"type": game_type, "game": game})
         except KeyError as e:
-            await ctx.send(warning("Parsing that status failed - {0!s} is not a valid placeholder".format(e)))
+            await ctx.send(warning(_("Parsing that status failed - {} is not a valid placeholder").format(str(e))))
+            return
 
         async with self.config.statuses() as statuses:
             statuses.append({"type": game_type, "game": game})
-            await ctx.send(tick("Status **#{}** added.".format(len(statuses))))
+            await ctx.send(tick(_("Status **#{}** added.").format(len(statuses))))
 
     @rndactivity.command(name="add", aliases=["playing"])
     async def rndactivity_add(self, ctx: RedContext, *, status: str):
@@ -68,7 +75,9 @@ class RNDActivity:
         Available placeholders:
 
         **{GUILDS}**  Replaced with the amount of guilds the bot is in
-        **{MEMBERS}**  Replaced with the amount of members that the bot can see in every guild
+        **{MEMBERS}**  Replaced with the amount of members in all guilds the bot is in
+        **{UNIQUE_MEMBERS}**  Replaced with the amount of unique users the bot can see
+        **{CHANNELS}**  Replaced with the amount of channels that are in all the guilds the bot is in
         **{SHARD}**  Replaced with the bot's shard ID
         **{SHARDS}**  Replaced with the total amount of shards the bot has loaded
         **{COMMANDS}**  Replaced with the amount of commands loaded
@@ -107,16 +116,17 @@ class RNDActivity:
         shard = getattr(ctx.guild, "shard_id", 0)
 
         try:
-            result, result_type, _ = self.format_status(status, shard=shard)
+            result, result_type = self.format_status(status, shard=shard)
         except KeyError as e:
-            await ctx.send(warning(f"Placeholder {escape(str(e), mass_mentions=True)} does not exist\n\n"
-                                   f"See `{ctx.prefix}help rndactivity add` for the list of placeholder strings"))
+            await ctx.send(warning(_("Placeholder {} does not exist\n\n"
+                                     "See `{}help rndactivity add` for the list of placeholder strings")
+                                   .format(escape(str(e), mass_mentions=True), ctx.prefix)))
             return
 
         status = escape(status, mass_mentions=True)
-        result = escape(result.format(SHARD=shard + 1), mass_mentions=True)
-        await ctx.send(content=f"\N{INBOX TRAY} **Input:**\n{status}\n\n"
-                               f"\N{OUTBOX TRAY} **Result:**\n{result}")
+        result = escape(result, mass_mentions=True)
+        await ctx.send(content=_("\N{INBOX TRAY} **Input:**\n{status}\n\n"
+                                 "\N{OUTBOX TRAY} **Result:**\n{result}").format(status=status, result=result))
 
     @rndactivity.command(name="remove", aliases=["delete"])
     async def rndactivity_remove(self, ctx: RedContext, *statuses: int):
@@ -132,15 +142,16 @@ class RNDActivity:
         bot_statuses = list(await self.config.statuses())
         for status in statuses:
             if len(bot_statuses) < status:
-                await ctx.send(warning(f"The status {status} doesn't exist"))
+                await ctx.send(warning(_("The status {} doesn't exist").format(status)))
                 return
             bot_statuses[status - 1] = None
 
         bot_statuses = [x for x in bot_statuses if x is not None]  # Clear out None entries
         await self.config.statuses.set(bot_statuses)
         if len(bot_statuses) == 0:
-            await self.bot.change_presence(game=None, status=self.bot.guilds[0].me.status)
-        await ctx.send(info(f"Removed {len(statuses)} status{'es' if len(statuses) != 1 else ''}."))
+            await self.bot.change_presence(activity=None, status=self.bot.guilds[0].me.status)
+        await ctx.send(info(_("Removed {amnt} status{plural}.").format(amnt=len(statuses),
+                                                                       plural='es' if len(statuses) != 1 else '')))
 
     @rndactivity.command(name="list")
     async def rndactivity_list(self, ctx: RedContext, parse: bool=False):
@@ -151,54 +162,55 @@ class RNDActivity:
         """
         orig_statuses = list(await self.config.statuses())
         if not len(orig_statuses):
-            await ctx.send(warning(f"I have no random statuses setup! Use `{ctx.prefix}rndactivity add` to add some!"))
+            await ctx.send(warning(_("I have no random statuses setup! Use `{}rndactivity add` to add some!")
+                                   .format(ctx.prefix)))
             return
         statuses = []
         shard = getattr(ctx.guild, "shard_id", 0)
         for item in orig_statuses:
             try:
-                parsed, game_type, _ = self.format_status(item, shard=shard, return_formatted=parse)
-                statuses.append(parsed if not parse else parsed.format(SHARD=shard + 1))
+                parsed, game_type = self.format_status(item, shard=shard, return_formatted=parse)
+                statuses.append(f"{orig_statuses.index(item) + 1} \N{EM DASH} {parsed!r}")
             except KeyError as e:
-                statuses.append("{0} [placeholder {1!s} does not exist]".format(item, e))
+                if isinstance(item, str):
+                    status = item
+                else:
+                    status = item["game"]
+                statuses.append(f"{orig_statuses.index(item) + 1} \N{EM DASH} {status!r}  # " +
+                                _("Placeholder {} doesn't exist").format(str(e)))
 
-        await ctx.send_interactive(
-            messages=pagify("\n".join([f"{statuses.index(x) + 1} \N{EM DASH} {x!r}" for x in statuses]),
-                            escape_mass_mentions=True, shorten_by=10),
-            box_lang="py")
+        await ctx.send_interactive(messages=pagify("\n".join(statuses), escape_mass_mentions=True, shorten_by=10),
+                                   box_lang="py")
 
     @rndactivity.command(name="clear")
     async def rndactivity_clear(self, ctx: RedContext):
         """Clears all set statuses"""
         amnt = len(await self.config.statuses())
-        if await confirm(ctx, f"Are you sure you want to clear {amnt} statuses?\n\nThis action is irreversible!",
+        if await confirm(ctx, _("Are you sure you want to clear {amnt} statuses?\n\n"
+                                "This action is irreversible!").format(amnt=amnt),
                          colour=discord.Colour.red()):
             await self.config.statuses.set([])
-            await self.bot.change_presence(game=None, status=self.bot.guilds[0].me.status)
-            await ctx.send(tick(f"Successfully cleared {amnt} status strings."), delete_after=15.0)
+            await self.bot.change_presence(activity=None, status=self.bot.guilds[0].me.status)
+            await ctx.send(tick(_("Successfully cleared {amnt} status strings.").format(amnt=amnt)), delete_after=15.0)
         else:
-            await ctx.send("Okay then.", delete_after=15.0)
+            await ctx.send(_("Okay then."), delete_after=15.0)
 
-    def format_status(self, status: str or dict, shard: int = None, return_formatted=True):
+    def format_status(self, status: Union[str, dict], shard: int = None, return_formatted=True):
         game_type = 0
         if isinstance(status, dict):
             game_type = status.get("type", 0)
-            status = status.get("game")
-        guilds = self.bot.guilds
-        if shard is not None:
-            guilds = [x for x in guilds if x.shard_id == shard]
-        if return_formatted:
-            status = status.format(
-                GUILDS=len(guilds),
-                SHARDS=self.bot.shard_count,
-                COGS=len(self.bot.cogs),
-                COMMANDS=len(self.bot.all_commands),
-                MEMBERS=sum([x.member_count for x in guilds]),
-                # the following placeholder is a no-op for update_status / [p]rndactivity list|parse
-                # if this isn't present, any status strings with it will throw a KeyError despite it being valid
-                SHARD="{SHARD}" if shard is None else shard + 1
-            )
-        return status, game_type, guilds
+            status: str = status.get("game")
+        formatted = status.format(
+            GUILDS=len(self.bot.guilds),
+            SHARDS=self.bot.shard_count,
+            SHARD="{SHARD}" if shard is None else shard + 1,
+            COGS=len(self.bot.cogs),
+            COMMANDS=len(self.bot.all_commands),
+            MEMBERS=sum([x.member_count for x in self.bot.guilds]),
+            UNIQUE_MEMBERS=len(self.bot.users),
+            CHANNELS=sum([len(x.channels) for x in self.bot.guilds])
+        )
+        return status if not return_formatted else formatted, game_type
 
     async def update_status(self, statuses: List[str]):
         if not statuses:
@@ -206,11 +218,11 @@ class RNDActivity:
         status = choice(statuses)
         for shard in self.bot.shards.keys():
             try:
-                game, game_type, guilds = self.format_status(status, shard=shard)
+                game, game_type = self.format_status(status, shard=shard)
             except KeyError:
                 return
-            game = discord.Activity(name=game.format(SHARD=shard + 1), type=discord.ActivityType(game_type))
-            await self.bot.change_presence(activity=game, status=guilds[0].me.status, shard_id=shard)
+            game = discord.Activity(name=game, type=discord.ActivityType(game_type))
+            await self.bot.change_presence(activity=game, status=self.bot.guilds[0].me.status, shard_id=shard)
 
     async def timer(self):
         while self == self.bot.get_cog(self.__class__.__name__):
