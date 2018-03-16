@@ -24,7 +24,7 @@ Otherwise, you can contact me on Discord (`odinair#0001`) or Twitter (`@odinair_
 # Cogs
 
 **A lot of these cogs reference servers as guilds in their command output and help docs,
-and as such this readme also references them as such as well.**
+and as such this readme also references them as such.**
 
 Any references to `[p]` should be replaced with your bots command prefix.
 
@@ -33,15 +33,12 @@ Any references to `[p]` should be replaced with your bots command prefix.
 
 Monitors specified bots and sends a message in the specified channel when they go offline or when they come back up.
 
-**To install:**
+#### To install
 
-- `[p]cog install odinair botmonitor`
-- `[p]load botmonitor`
-
-**Basic usage:**
-
-- `[p]botmonitor channel <channel>` - sets the bot monitor channel - this option is global, and can only be set to one channel
-- `[p]botmonitor monitor <bot>` - monitors `bot`, posting in the set channel when it goes offline or comes online again
+```
+[p]cog install odinair botmonitor
+[p]load botmonitor
+```
 </details>
 
 <details>
@@ -51,17 +48,12 @@ Restricts specific cogs to guilds that have been whitelisted by the bot owner.
 
 Note that bot owners or co-owners *always bypass this cog's checks*, regardless of a guilds whitelist status.
 
-**To install:**
+#### To install
 
-- `[p]cog install odinair cogwhitelist`
-- `[p]load cogwhitelist`
-
-**Basic usage:**
-
-- Enable Developer Mode in your Appearance settings so you can copy guild IDs
-- Copy a guild ID by right clicking on a server in your list, and selecting `Copy ID`
-- `[p]cogwhitelist add <cog> [guild id]` - adds `cog` to the list of whitelist-required cogs, optionally also allowing the guild with the specified id to use it
-- `[p]cogwhitelist remove <cog> [guild id]` - does the reverse of `[p]cogwhitelist add`
+```
+[p]cog install odinair cogwhitelist
+[p]load cogwhitelist
+```
 </details>
 
 <details>
@@ -69,15 +61,12 @@ Note that bot owners or co-owners *always bypass this cog's checks*, regardless 
 
 Log anything and everything that may happen in your guild.
 
-**To install:**
+#### To install
 
-- `[p]cog install odinair logs`
-- `[p]load logs`
-
-**Basic usage:**
-
-- `[p]logset logchannel <channel> all` - set all log channels to `channel`
-- `[p]help logset`
+```
+[p]cog install odinair logs
+[p]load logs
+```
 </details>
 
 <details>
@@ -88,51 +77,38 @@ Quick and dirty utilities.
 This is mostly useful if you're either making a cog, or for advanced server moderation/administration.
 Otherwise, this cog may be entirely useless to you.
 
-**To install:**
+#### To install
 
-- `[p]cog install odinair misctools`
-- `[p]load misctools`
-
-**Basic usage:**
-
-- `[p]charinfo <characters...>` - returns the unicode name for some characters
-- `[p]pingtime` - retrieve the time it took for the bot to respond to a message
-- `[p]rtfs <command>` - retrieve the source code for a command or sub-command
-- `[p]snowflake <snowflakes...>` - retrieve the creation time for one or more snowflake ids
+```
+[p]cog install odinair misctools
+[p]load misctools
+```
 </details>
 
 <details>
 <summary>Quotes</summary>
 
-Save and retrieve quotes. Quotes also support author attribution, and editing the content post-creation!
+Save and retrieve quotes. Quotes also support author attribution, and editing the content post-creation.
 
-**To install:**
+#### To install
 
-- `[p]cog install odinair quotes`
-- `[p]load quotes`
-
-**Basic usage:**
-
-- `[p]quote add This is a quote!` - add a quote with the text `This is a quote!`
-- `[p]quote message <message id>` - add a quote by retrieving the message from the id given; this automatically attributes the quote to the message author
-- `[p]quote attribute <quote> <member>` - attributes `quote` to the member specified
-- `[p]quote 1` - retrieve the added quote
-- `[p]quote remove 1` - removes the added quote; this requires you to be the quote creator, attributed author, and/or a moderator/administrator
+```
+[p]cog install odinair quotes
+[p]load quotes
+```
 </details>
 
 <details>
 <summary>Require Role</summary>
 
-Require one (or lack of any) out of a set list of roles to use the bot's commands in a guild. 
+Require members to have one of (or the lack of) any roles out of a set list to use the bot's commands in a guild.
 
-**To install:**
+#### To install
 
-- `[p]cog install odinair requirerole`
-- `[p]load requirerole`
-
-**Basic usage:**
-
-- `[p]requirerole "Bot Allowed" "~Bot Denied"` - allows members with `Bot Allowed` to use the bot, except if they have `Bot Denied`
+```
+[p]cog install odinair requirerole
+[p]load requirerole
+```
 </details>
 
 <details>
@@ -140,26 +116,12 @@ Require one (or lack of any) out of a set list of roles to use the bot's command
 
 Randomly change your bots activity status on a set delay to one in a set list of statuses, which support placeholders. 
 
-**To install:**
+#### To install
 
-- `[p]cog install odinair rndactivity`
-- `[p]load rndactivity`
-
-**Basic usage:**
-
-Currently added placeholders:
-- `{GUILDS}` - the amount of guilds on the current shard
-- `{MEMBERS}` - the amount of members in each guild on the current shard
-- `{SHARD}` - the current shard id
-- `{SHARDS}` - the amount of shards the bot currently has
-- `{COMMANDS}` - the amount of commands currently loaded
-- `{COGS}` - the amount of cogs currently loaded
-
-Commands:
-- `[p]rndactivity add with {GUILDS} guilds` - adds the activity status `with {GUILDS} guilds`
-- `[p]rndactivity (watching|listening) <status>` - adds a watching or listening activity status
-- `[p]rndactivity list` - lists added statuses
-- `[p]rndactivity list true` - lists added statuses, but also parses placeholders and displays their current return value
+```
+[p]cog install odinair rndactivity
+[p]load rndactivity
+```
 </details>
 
 <details>
@@ -169,16 +131,12 @@ Mention configurable roles on demand.
 This can be helpful if you have roles which you don't want everyone to be able to mention,
 but still need to mention from time to time.
 
-**To install:**
+#### To install
 
-- `[p]cog install odinair rolemention`
-- `[p]load rolemention`
-
-**Basic usage:**
-
-- `[p]rolemention add <role>` - allows mentioning of a role
-- `{{mention role: @role}}` - mention a role in a message
-- `[p]rolemention mention <role> <text>` - mention a role via commands
+```
+[p]cog install odinair rolemention
+[p]load rolemention
+```
 </details>
 
 <details>
@@ -186,21 +144,12 @@ but still need to mention from time to time.
 
 Send messages to a per-guild starboard channel, all from star reactions.
 
-**To install:**
+#### To install
 
-- `[p]cog install odinair starboard`
-- `[p]load starboard`
-
-**Basic usage:**
-
-- `[p]star <message id>` - stars a message by id; this is an alternative to adding a star reaction to a message
-- `[p]unstar <message id>` - does the reverse of `[p]star`
-- `[p]starboard channel <channel>` - set the guilds starboard channel
-- `[p]starboard requirerole` - toggles integration with the `requirerole` cog; defaults to enabled
-- `[p]starboard minstars <amount>` - set the minimum amount of stars a message must receive to be sent to the starboard
-- `[p]starboard (unignore|ignore) <channel>` - ignore or unignore a channel from the guilds starboard
-- `[p]stars (block|unblock) <member>` - blocks or unblocks a member from the guilds starboard
-- `[p]stars (hide|unhide) <message id>` - hides or unhides a message from the guilds starboard
+```
+[p]cog install odinair starboard
+[p]load starboard
+```
 </details>
 
 <details>
@@ -208,15 +157,12 @@ Send messages to a per-guild starboard channel, all from star reactions.
 
 Adds one or more roles to a member for a set amount of time
 
-**To install:**
+#### To install
 
-- `[p]cog install odinair timedrole`
-- `[p]load timedrole`
-
-**Basic usage:**
-
-- `[p]timedrole add <member> <duration> <roles...>` - adds one or more roles to `member` for `duration`
-- `[p]timedrole list` - lists the timed roles currently active
+```
+[p]cog install odinair timedrole
+[p]load timedrole
+```
 </details>
 
 <details>
@@ -226,14 +172,12 @@ Mute a member for a set amount of time, with integration for the core Red modlog
 
 *This cog requires my `timedrole` cog to function.*
 
-**To install:**
+#### To install
 
-- `[p]cog install odinair timedmute`
-- `[p]load timedmute`
-
-**Basic usage:**
-
-- `[p]timedmute <member> <duration> [reason]` - mutes `member` for `duration`, with an optional reason
+```
+[p]cog install odinair timedmute
+[p]load timedmute
+```
 </details>
 
 <details>
@@ -241,12 +185,10 @@ Mute a member for a set amount of time, with integration for the core Red modlog
 
 Yet another variation on `[p]userinfo`
 
-**To install:**
+#### To install
 
-- `[p]cog install odinair uinfo`
-- `[p]load uinfo`
-
-**Basic usage:**
-
-- `[p]uinfo [member]`
+```
+[p]cog install odinair uinfo
+[p]load uinfo
+```
 </details>
