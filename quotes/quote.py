@@ -1,12 +1,17 @@
 from datetime import datetime
 
 import discord
+
 from redbot.core import Config
 from redbot.core.bot import Red
-
+from redbot.core.i18n import CogI18n
 
 conf = Config.get_conf(None, identifier=441356724, force_registration=True, cog_name="Quotes")
 conf.register_guild(quotes=[])
+
+
+i18n = CogI18n("Quotes", __file__)
+_ = i18n
 
 
 class Quote:
@@ -62,11 +67,11 @@ class Quote:
         elif self.author:  # Attempt to fall back to the quote creator
             embed.set_author(name=self.author.display_name, icon_url=self.author.avatar_url)
         else:
-            embed.set_author(name="Unknown quote author", icon_url=self.guild.icon_url)
+            embed.set_author(name=_("Unknown quote author"), icon_url=self.guild.icon_url)
 
-        footer_str = f"Quote #{self.id}"
+        footer_str = _("Quote #{}").format(self.id)
         if self.author != self.message_author:
-            footer_str += f" | Quoted by {self.author!s}"
+            footer_str = _("Quote #{} | Quoted by {}").format(self.id, str(self.author))
         embed.set_footer(text=footer_str)
 
         return embed
