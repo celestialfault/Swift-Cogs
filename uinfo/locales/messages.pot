@@ -1,0 +1,107 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR ORGANIZATION
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2018-03-16 05:08-0600\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: pygettext.py 1.5\n"
+
+
+#: ../uinfo.py:29
+msgid "{} and {}"
+msgstr ""
+
+#: ../uinfo.py:39
+msgid "🛠 **Bot Owner**"
+msgstr ""
+
+#: ../uinfo.py:42
+msgid "🔑 Guild Owner"
+msgstr ""
+
+#: ../uinfo.py:44
+msgid "🔨 Server Administrator"
+msgstr ""
+
+#: ../uinfo.py:46
+msgid "🛡 Server Moderator"
+msgstr ""
+
+#: ../uinfo.py:48
+msgid "👥 Server Member"
+msgstr ""
+
+#: ../uinfo.py:60
+msgid "🎮 Playing"
+msgstr ""
+
+#: ../uinfo.py:63
+msgid "📹 Streaming"
+msgstr ""
+
+#: ../uinfo.py:67
+msgid "🎵 Listening to"
+msgstr ""
+
+#: ../uinfo.py:69
+msgid "{} — **{}** on **Spotify**"
+msgstr ""
+
+#: ../uinfo.py:73
+msgid "📽 Watching"
+msgstr ""
+
+#: ../uinfo.py:80
+msgid "Online"
+msgstr ""
+
+#: ../uinfo.py:82
+msgid "Idle"
+msgstr ""
+
+#: ../uinfo.py:84
+msgid "Do Not Disturb"
+msgstr ""
+
+#: ../uinfo.py:86
+msgid "Offline"
+msgstr ""
+
+#: ../uinfo.py:109
+msgid ""
+"\n"
+"🏷 Nicknamed as {}"
+msgstr ""
+
+#: ../uinfo.py:113
+msgid "Member #{} | User ID: {}"
+msgstr ""
+
+#: ../uinfo.py:117
+msgid "Bot Roles"
+msgstr ""
+
+#: ../uinfo.py:121
+msgid "Guild Roles"
+msgstr ""
+
+#: ../uinfo.py:123
+msgid "Joined Discord"
+msgstr ""
+
+#: ../uinfo.py:124
+msgid "Joined Guild"
+msgstr ""
+
+#: ../uinfo.py:132
+msgid "{}'s avatar"
+msgstr ""
+
