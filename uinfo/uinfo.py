@@ -9,6 +9,11 @@ from odinair_libs.formatting import td_format, normalize
 
 
 class UInfo:
+    """Yet another [p]userinfo variation"""
+
+    __author__ = "odinair <odinair@odinair.xyz>"
+    __version__ = "0.1.0"
+
     def __init__(self, bot: Red):
         self.bot = bot
 
@@ -80,12 +85,12 @@ class UInfo:
         if colour == discord.Colour.default():
             colour = discord.Embed.Empty
 
-        game, game_type = self.get_activity(user)
+        activity, activity_type = self.get_activity(user)
         status = normalize(str(user.status), dnd="do not disturb")
         description = f"\N{EARTH GLOBE AMERICAS} {status}"
 
-        if game:
-            description += f"\n{game_type} {game}"
+        if activity_type is not None:
+            description += f"\n{activity_type} {activity}"
         if user.nick:
             description += f"\n\N{LABEL} Nicknamed as {bold(escape(user.nick, formatting=True))}"
 
@@ -97,7 +102,7 @@ class UInfo:
         if bot_roles is not None:
             embed.add_field(name="Bot Roles", value=bot_roles, inline=False)
 
-        roles = reversed([escape(x.name, formatting=True) for x in user.roles if x.name != "@everyone"])
+        roles = reversed([escape(x.name, formatting=True) for x in user.roles if not x.is_default()])
         if roles:
             embed.add_field(name="Guild Roles", value=", ".join(roles or ["None"]), inline=False)
 
