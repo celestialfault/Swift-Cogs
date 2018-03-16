@@ -1,0 +1,614 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR ORGANIZATION
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2018-03-16 06:40-0600\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: pygettext.py 1.5\n"
+
+
+#: ../logentry.py:46
+msgid ""
+"**Before:** {before}\n"
+"**After:** {after}"
+msgstr ""
+
+#: ../logs.py:134
+msgid "Set all log channels to {}"
+msgstr ""
+
+#: ../logs.py:137
+msgid "Set log channels for types {} to {}"
+msgstr ""
+
+#: ../logs.py:151
+msgid "Are you sure you want to clear all log channels?"
+msgstr ""
+
+#: ../logs.py:157
+msgid "Cleared all log channels"
+msgstr ""
+
+#: ../logs.py:161
+msgid "Cleared log channels for log types {}"
+msgstr ""
+
+#: ../logs.py:282
+msgid ""
+"**Log channel:** {channel}\n"
+msgstr ""
+
+#: ../logs.py:285
+msgid "**{name}**: Enabled — {descriptions}"
+msgstr ""
+
+#: ../logs.py:289
+msgid "**{name}**: Disabled — {descriptions}"
+msgstr ""
+
+#: ../logs.py:292
+msgid "{group} Settings"
+msgstr ""
+
+#: ../logs.py:309
+msgid "Log Settings"
+msgstr ""
+
+#: ../logs.py:325
+msgid "There's no ignored channels in this guild"
+msgstr ""
+
+#: ../logs.py:334
+msgid "Ignored Channels"
+msgstr ""
+
+#: ../logs.py:351 ../logs.py:412
+msgid "I couldn't find that guild"
+msgstr ""
+
+#: ../logs.py:355
+msgid "Now ignoring guild **{guild}**"
+msgstr ""
+
+#: ../logs.py:362
+msgid "Now ignoring member **{member}**"
+msgstr ""
+
+#: ../logs.py:373
+msgid "Now ignoring role **{role}**"
+msgstr ""
+
+#: ../logs.py:382
+msgid "Now ignoring channel {channel}"
+msgstr ""
+
+#: ../logs.py:392
+msgid "Failed to ignore any channels in that category"
+msgstr ""
+
+#: ../logs.py:398
+msgid ""
+"Successfully ignored the following channel{plural}:\n"
+"\n"
+"{channels}"
+msgstr ""
+
+#: ../logs.py:416
+msgid "No longer ignoring guild **{guild}**"
+msgstr ""
+
+#: ../logs.py:424
+msgid "No longer ignoring member **{member}**"
+msgstr ""
+
+#: ../logs.py:431
+msgid "No longer ignoring role **{role}**"
+msgstr ""
+
+#: ../logs.py:440
+msgid "No longer ignoring channel {channel}"
+msgstr ""
+
+#: ../logs.py:450
+msgid "Failed to unignore any channels in that category"
+msgstr ""
+
+#: ../logs.py:456
+msgid ""
+"No longer ignoring the following channel{plural}:\n"
+"\n"
+"{channels}"
+msgstr ""
+
+#: ../logs.py:462
+msgid "Are you sure you want to reset this guild's log settings?"
+msgstr ""
+
+#: ../logs.py:466
+msgid "Guild log settings reset."
+msgstr ""
+
+#: ../logs.py:469
+msgid "Okay then."
+msgstr ""
+
+#: ../logs.py:542
+msgid "Current {type} Log Settings"
+msgstr ""
+
+#: ../logs.py:548
+msgid "'{}' is not an available setting"
+msgstr ""
+
+#: ../logs.py:552
+msgid "Updated {type} log settings"
+msgstr ""
+
+#: ../logs.py:571
+msgid "**None** — All of these settings are disabled"
+msgstr ""
+
+#: ../logs.py:576
+msgid "**None** — All of these settings are enabled"
+msgstr ""
+
+#: ../logs.py:580
+msgid ""
+"**{arrow} Enabled Log Settings**\n"
+"{enabled}\n"
+"\n"
+"**{arrow} Disabled Log Settings**\n"
+"{disabled}"
+msgstr ""
+
+#: ../types/channel.py:21
+msgid "Channel creation"
+msgstr ""
+
+#: ../types/channel.py:22
+msgid "Channel deletion"
+msgstr ""
+
+#: ../types/channel.py:23
+msgid "Channel name"
+msgstr ""
+
+#: ../types/channel.py:24
+msgid "Text channel topics"
+msgstr ""
+
+#: ../types/channel.py:25
+msgid "Channel category"
+msgstr ""
+
+#: ../types/channel.py:26
+msgid "Voice channel bitrate"
+msgstr ""
+
+#: ../types/channel.py:27
+msgid "Voice channel user limit"
+msgstr ""
+
+#: ../types/channel.py:28
+msgid "Channel position changes"
+msgstr ""
+
+#: ../types/channel.py:35
+msgid "Channel Created"
+msgstr ""
+
+#: ../types/channel.py:36
+msgid "Channel {} created"
+msgstr ""
+
+#: ../types/channel.py:37 ../types/channel.py:44 ../types/channel.py:80
+msgid "Channel ID: {}"
+msgstr ""
+
+#: ../types/channel.py:41
+msgid "Channel: {}"
+msgstr ""
+
+#: ../types/channel.py:42
+msgid "Channel Updated"
+msgstr ""
+
+#: ../types/channel.py:48
+msgid "Channel Name"
+msgstr ""
+
+#: ../types/channel.py:52
+msgid "Channel Topic"
+msgstr ""
+
+#: ../types/channel.py:57
+msgid "Channel Bitrate"
+msgstr ""
+
+#: ../types/channel.py:61
+msgid "User Limit"
+msgstr ""
+
+#: ../types/channel.py:65
+msgid "Channel Category"
+msgstr ""
+
+#: ../types/channel.py:66 ../types/channel.py:67
+msgid "Uncategorized"
+msgstr ""
+
+#: ../types/channel.py:70
+msgid "Channel Position"
+msgstr ""
+
+#: ../types/channel.py:78
+msgid "Channel Deleted"
+msgstr ""
+
+#: ../types/channel.py:79
+msgid "Channel `{}` deleted"
+msgstr ""
+
+#: ../types/member.py:15
+msgid "Member joining"
+msgstr ""
+
+#: ../types/member.py:16
+msgid "Member leaving"
+msgstr ""
+
+#: ../types/member.py:17
+msgid "Member username changes"
+msgstr ""
+
+#: ../types/member.py:18
+msgid "Member discriminator changes"
+msgstr ""
+
+#: ../types/member.py:19
+msgid "Member nickname changes"
+msgstr ""
+
+#: ../types/member.py:20
+msgid "Member role changes"
+msgstr ""
+
+#: ../types/member.py:29
+msgid ""
+"Member {} joined\n"
+"\n"
+"Account was created {}"
+msgstr ""
+
+#: ../types/member.py:32
+msgid "Member Joined"
+msgstr ""
+
+#: ../types/member.py:33 ../types/member.py:40 ../types/member.py:69
+#: ../types/voice.py:31
+msgid "User ID: {}"
+msgstr ""
+
+#: ../types/member.py:38 ../types/voice.py:28
+msgid "Member: {}"
+msgstr ""
+
+#: ../types/member.py:39
+msgid "Member Updated"
+msgstr ""
+
+#: ../types/member.py:43
+msgid "Username"
+msgstr ""
+
+#: ../types/member.py:46
+msgid "Nickname"
+msgstr ""
+
+#: ../types/member.py:49
+msgid "Discriminator"
+msgstr ""
+
+#: ../types/member.py:54
+msgid "Roles"
+msgstr ""
+
+#: ../types/member.py:63
+msgid ""
+"Member {} left\n"
+"\n"
+"They were a member for {}"
+msgstr ""
+
+#: ../types/member.py:68
+msgid "Member Left"
+msgstr ""
+
+#: ../types/message.py:12
+msgid "Message edits"
+msgstr ""
+
+#: ../types/message.py:13
+msgid "Message deletions"
+msgstr ""
+
+#: ../types/message.py:28
+msgid "Message Edited"
+msgstr ""
+
+#: ../types/message.py:29 ../types/message.py:46
+msgid "Message ID: {}"
+msgstr ""
+
+#: ../types/message.py:31 ../types/message.py:48
+msgid "Message Author"
+msgstr ""
+
+#: ../types/message.py:32 ../types/message.py:49
+msgid "Channel"
+msgstr ""
+
+#: ../types/message.py:33
+msgid "Content"
+msgstr ""
+
+#: ../types/message.py:45
+msgid "Message Deleted"
+msgstr ""
+
+#: ../types/message.py:50
+msgid "Message Content"
+msgstr ""
+
+#: ../types/message.py:50
+msgid "No message content"
+msgstr ""
+
+#: ../types/message.py:52
+msgid "Attachments"
+msgstr ""
+
+#: ../types/role.py:14
+msgid "Role creations"
+msgstr ""
+
+#: ../types/role.py:15
+msgid "Role deletions"
+msgstr ""
+
+#: ../types/role.py:16
+msgid "Role name"
+msgstr ""
+
+#: ../types/role.py:17
+msgid "Role hoist status"
+msgstr ""
+
+#: ../types/role.py:18
+msgid "Role mentionable status"
+msgstr ""
+
+#: ../types/role.py:19
+msgid "Role permissions"
+msgstr ""
+
+#: ../types/role.py:20
+msgid "Role colour"
+msgstr ""
+
+#: ../types/role.py:21
+msgid "Role position changes"
+msgstr ""
+
+#: ../types/role.py:28
+msgid "Role {} was created"
+msgstr ""
+
+#: ../types/role.py:30
+msgid "Role Created"
+msgstr ""
+
+#: ../types/role.py:31 ../types/role.py:46 ../types/role.py:79
+msgid "Role ID: {}"
+msgstr ""
+
+#: ../types/role.py:34 ../types/role.py:57
+msgid "Colour"
+msgstr ""
+
+#: ../types/role.py:35 ../types/role.py:60
+msgid "Hoisted"
+msgstr ""
+
+#: ../types/role.py:36 ../types/role.py:63
+msgid "Mentionable"
+msgstr ""
+
+#: ../types/role.py:37 ../types/role.py:66
+msgid "Permissions"
+msgstr ""
+
+#: ../types/role.py:42
+msgid "Role: {}"
+msgstr ""
+
+#: ../types/role.py:45
+msgid "Role Updated"
+msgstr ""
+
+#: ../types/role.py:49
+msgid "Name"
+msgstr ""
+
+#: ../types/role.py:52
+msgid "Position"
+msgstr ""
+
+#: ../types/role.py:76
+msgid "Role `{}` was deleted"
+msgstr ""
+
+#: ../types/role.py:78
+msgid "Role Deleted"
+msgstr ""
+
+#: ../types/server.py:14
+msgid "Two-factor authentication requirement"
+msgstr ""
+
+#: ../types/server.py:15
+msgid "Member verification level"
+msgstr ""
+
+#: ../types/server.py:16
+msgid "Guild name"
+msgstr ""
+
+#: ../types/server.py:17
+msgid "Ownership changes"
+msgstr ""
+
+#: ../types/server.py:18
+msgid "AFK channel and timeout"
+msgstr ""
+
+#: ../types/server.py:19
+msgid "Voice region"
+msgstr ""
+
+#: ../types/server.py:20
+msgid "Explicit content filter"
+msgstr ""
+
+#: ../types/server.py:32
+msgid "Server Updated"
+msgstr ""
+
+#: ../types/server.py:33
+msgid "Server ID: {}"
+msgstr ""
+
+#: ../types/server.py:36
+msgid "Server Name"
+msgstr ""
+
+#: ../types/server.py:39
+msgid "Verification Level"
+msgstr ""
+
+#: ../types/server.py:43
+msgid "Content Filter"
+msgstr ""
+
+#: ../types/server.py:47
+msgid "Server Owner"
+msgstr ""
+
+#: ../types/server.py:50
+msgid "2FA Requirement"
+msgstr ""
+
+#: ../types/server.py:50 ../types/server.py:51
+msgid "Disabled"
+msgstr ""
+
+#: ../types/server.py:50 ../types/server.py:51
+msgid "Enabled"
+msgstr ""
+
+#: ../types/server.py:54
+msgid "AFK Channel"
+msgstr ""
+
+#: ../types/server.py:57
+msgid "AFK Timeout"
+msgstr ""
+
+#: ../types/server.py:61
+msgid "Voice Region"
+msgstr ""
+
+#: ../types/voice.py:12
+msgid "Member voice channel joining, leaving, or switching"
+msgstr ""
+
+#: ../types/voice.py:13
+msgid "Member self-mute"
+msgstr ""
+
+#: ../types/voice.py:14
+msgid "Member self-deaf"
+msgstr ""
+
+#: ../types/voice.py:15
+msgid "Member server mute"
+msgstr ""
+
+#: ../types/voice.py:16
+msgid "Member server deafen"
+msgstr ""
+
+#: ../types/voice.py:30
+msgid "Member Voice Status"
+msgstr ""
+
+#: ../types/voice.py:34
+msgid "Voice Channel"
+msgstr ""
+
+#: ../types/voice.py:38
+msgid "Now self deafened"
+msgstr ""
+
+#: ../types/voice.py:40
+msgid "No longer self deafened"
+msgstr ""
+
+#: ../types/voice.py:41
+msgid "Self Deaf"
+msgstr ""
+
+#: ../types/voice.py:45
+msgid "Now server deafened"
+msgstr ""
+
+#: ../types/voice.py:47
+msgid "No longer server deafened"
+msgstr ""
+
+#: ../types/voice.py:48
+msgid "Server Deaf"
+msgstr ""
+
+#: ../types/voice.py:52
+msgid "Now self muted"
+msgstr ""
+
+#: ../types/voice.py:54
+msgid "No longer self muted"
+msgstr ""
+
+#: ../types/voice.py:55
+msgid "Self Mute"
+msgstr ""
+
+#: ../types/voice.py:59
+msgid "Now server muted"
+msgstr ""
+
+#: ../types/voice.py:61
+msgid "No longer server muted"
+msgstr ""
+
+#: ../types/voice.py:62
+msgid "Server Mute"
+msgstr ""
+

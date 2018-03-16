@@ -1,19 +1,19 @@
-from .member import MemberLog
-from .voice import VoiceLog
-from .message import MessageLog
-from .guild import GuildLog
-from .role import RoleLog
-from .channel import ChannelLog
-from ._base import BaseLog
+from .member import MemberLogType
+from .voice import VoiceLogType
+from .message import MessageLogType
+from .server import ServerLogType
+from .role import RoleLogType
+from .channel import ChannelLogType
+from ._base import BaseLogType
 
-__all__ = ['MemberLog', 'VoiceLog', 'MessageLog', 'GuildLog',
-           'RoleLog', 'ChannelLog', 'iterable']
+__all__ = ['MemberLogType', 'VoiceLogType', 'MessageLogType', 'ServerLogType',
+           'RoleLogType', 'ChannelLogType', 'iterable']
 
 iterable = [
-    MemberLog,
-    VoiceLog,
-    MessageLog,
-    GuildLog,
-    RoleLog,
-    ChannelLog
+    MemberLogType,
+    VoiceLogType,
+    MessageLogType,
+    ServerLogType,
+    RoleLogType,
+    ChannelLogType
 ]

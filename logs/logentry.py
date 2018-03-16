@@ -1,3 +1,4 @@
+from datetime import datetime
 from difflib import Differ
 from typing import List, Union
 
@@ -5,10 +6,13 @@ import discord
 
 from redbot.core.utils.chat_formatting import box
 
+from logs.i18n import _
+
 
 class LogEntry(discord.Embed):
     def __init__(self, **kwargs):
         self.require_fields = kwargs.pop('require_fields', True)
+        kwargs['timestamp'] = kwargs.pop('timestamp', datetime.utcnow())
         super().__init__(**kwargs)
 
     @property
@@ -32,17 +36,14 @@ class LogEntry(discord.Embed):
             return
         return self.add_field(name=name, value=box("\n".join(changed), lang="diff"))
 
-    def add_diff_field(self, *, name: str, before, after, description: str = None, box_lang: str = None,
-                       inline: bool = False):
+    def add_diff_field(self, *, name: str, before, after, box_lang: str = None, inline: bool = False):
         """Add a diff field"""
         before, after = (str(before), str(after))
         if box_lang is not None:
-            value = f"**Before:**\n{box(before, lang=box_lang)}\n**After:**\n{box(after, lang=box_lang)}"
-        else:
-            value = f"**Before:** {before}\n**After:** {after}"
-        if description is not None:
-            value = f"{description}\n\n{value}"
-        return self.add_field(name=name, value=value, inline=inline)
+            before = box(before, lang=box_lang)
+            after = box(after, lang=box_lang)
+        return self.add_field(name=name, inline=inline,
+                              value=_("**Before:** {before}\n**After:** {after}").format(before=before, after=after))
 
     def add_field(self, *, name, value, inline: bool = False):
         if not all([name, value]):

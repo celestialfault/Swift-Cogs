@@ -3,14 +3,14 @@ from datetime import datetime
 import discord
 
 from logs.logentry import LogEntry
-from ._base import BaseLog
+from ._base import BaseLogType, _
 
 
-class MessageLog(BaseLog):
+class MessageLogType(BaseLogType):
     name = "messages"
     descriptions = {
-        "edit": "Message edits",
-        "delete": "Message deletions"
+        "edit": _("Message edits"),
+        "delete": _("Message deletions")
     }
 
     def create(self, created, **kwargs):
@@ -23,14 +23,14 @@ class MessageLog(BaseLog):
 
         author = after.author
         channel = after.channel
+
         embed = LogEntry(colour=discord.Colour.blurple(), timestamp=datetime.utcnow())
+        embed.set_author(name=_("Message Edited"), icon_url=self.icon_url(author))
+        embed.set_footer(text=_("Message ID: {}").format(after.id))
 
-        embed.set_author(name="Message Edited", icon_url=after.author.avatar_url_as(format="png"))
-        embed.set_footer(text=f"Message ID: {after.id}")
-
-        embed.add_field(name="Message Author", value=f"{author.mention} ({author.id})", inline=True)
-        embed.add_field(name="Channel", value=f"{channel.mention} ({channel.id})", inline=True)
-        embed.add_differ_field(name="Content", before=before.content, after=after.content)
+        embed.add_field(name=_("Message Author"), value=f"{author.mention} ({author.id})", inline=True)
+        embed.add_field(name=_("Channel"), value=f"{channel.mention} ({channel.id})", inline=True)
+        embed.add_differ_field(name=_("Content"), before=before.content, after=after.content)
         return embed
 
     def delete(self, deleted: discord.Message, **kwargs):
@@ -40,14 +40,14 @@ class MessageLog(BaseLog):
 
         author = deleted.author
         channel = deleted.channel
+
         embed = LogEntry(colour=discord.Colour.red(), timestamp=datetime.utcnow())
+        embed.set_author(name=_("Message Deleted"), icon_url=self.icon_url(author))
+        embed.set_footer(text=_("Message ID: {}").format(deleted.id))
 
-        embed.set_author(name="Message Deleted", icon_url=deleted.author.avatar_url_as(format="png"))
-        embed.set_footer(text=f"Message ID: {deleted.id}")
-
-        embed.add_field(name="Message Author", value=f"{author.mention} ({author.id})", inline=True)
-        embed.add_field(name="Channel", value=f"{channel.mention} ({channel.id})", inline=True)
-        embed.add_field(name="Message Content", value=deleted.content or "*No message content*")
+        embed.add_field(name=_("Message Author"), value=f"{author.mention} ({author.id})", inline=True)
+        embed.add_field(name=_("Channel"), value=f"{channel.mention} ({channel.id})", inline=True)
+        embed.add_field(name=_("Message Content"), value=deleted.content or _("No message content"))
         if len(deleted.attachments):
-            embed.add_field(name="Attachments", value="\n".join(f"<{x.url}>" for x in deleted.attachments))
+            embed.add_field(name=_("Attachments"), value="\n".join(f"<{x.url}>" for x in deleted.attachments))
         return embed

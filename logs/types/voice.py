@@ -3,17 +3,17 @@ from datetime import datetime
 import discord
 
 from logs.logentry import LogEntry
-from ._base import BaseLog
+from ._base import BaseLogType, _
 
 
-class VoiceLog(BaseLog):
+class VoiceLogType(BaseLogType):
     name = "voice"
     descriptions = {
-        "channel": "Member voice channel joining, leaving, or switching",
-        "selfmute": "Member self-mute",
-        "selfdeaf": "Member self-deaf",
-        "servermute": "Member server mute",
-        "serverdeaf": "Member server deafen"
+        "channel": _("Member voice channel joining, leaving, or switching"),
+        "selfmute": _("Member self-mute"),
+        "selfdeaf": _("Member self-deaf"),
+        "servermute": _("Member server mute"),
+        "serverdeaf": _("Member server deafen")
     }
 
     def create(self, **kwargs):
@@ -25,29 +25,41 @@ class VoiceLog(BaseLog):
         except KeyError:  # Silently fail if the member in question wasn't given
             return None
 
-        embed = LogEntry(colour=discord.Colour.greyple(), description=f"Member: {member.mention}",
+        embed = LogEntry(colour=discord.Colour.greyple(), description=_("Member: {}").format(member.mention),
                          timestamp=datetime.utcnow())
-        embed.set_author(name="Member Voice Status", icon_url=member.avatar_url_as(format="png"))
-        embed.set_footer(text=f"User ID: {member.id}")
+        embed.set_author(name=_("Member Voice Status"), icon_url=self.icon_url(member))
+        embed.set_footer(text=_("User ID: {}").format(member.id))
 
         if self.has_changed(before.channel, after.channel, "channel"):
-            embed.add_diff_field(name="Voice Channel", before=before.channel, after=after.channel)
+            embed.add_diff_field(name=_("Voice Channel"), before=before.channel, after=after.channel)
 
         if self.has_changed(before.self_deaf, after.self_deaf, "selfdeaf"):
-            status = "Now" if after.self_deaf else "No longer"
-            embed.add_field(name="Self Deaf", value=f"{status} self deafened")
+            if after.self_deaf:
+                status = _("Now self deafened")
+            else:
+                status = _("No longer self deafened")
+            embed.add_field(name=_("Self Deaf"), value=status)
 
         if self.has_changed(before.deaf, after.deaf, "serverdeaf"):
-            status = "Now" if after.deaf else "No longer"
-            embed.add_field(name="Server Deaf", value=f"{status} server deafened")
+            if after.deaf:
+                status = _("Now server deafened")
+            else:
+                status = _("No longer server deafened")
+            embed.add_field(name=_("Server Deaf"), value=status)
 
         if self.has_changed(before.self_mute, after.self_mute, "selfmute"):
-            status = "Now" if after.self_mute else "No longer"
-            embed.add_field(name="Self Mute", value=f"{status} self muted")
+            if after.self_mute:
+                status = _("Now self muted")
+            else:
+                status = _("No longer self muted")
+            embed.add_field(name=_("Self Mute"), value=status)
 
         if self.has_changed(before.mute, after.mute, "servermute"):
-            status = "Now" if after.mute else "No longer"
-            embed.add_field(name="Server Mute", value=f"{status} server muted")
+            if after.mute:
+                status = _("Now server muted")
+            else:
+                status = _("No longer server muted")
+            embed.add_field(name=_("Server Mute"), value=status)
 
         return embed
 

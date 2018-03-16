@@ -7,7 +7,6 @@ import discord
 
 from redbot.core.config import Group
 
-from logs import types
 from logs.logentry import LogEntry
 
 __all__ = ['LogType', 'GuildLog']
@@ -27,9 +26,10 @@ class GuildLog:
         if not isinstance(guild, discord.Guild):
             raise TypeError(f'expected guild to be of type discord.Guild, received {guild.__class__.__name__}')
         self.guild = guild
-        self._types: Dict[str, types.BaseLog] = {x.name: x(self) for x in types.iterable}
 
+        from logs import types
         from logs.logs import Logs
+        self._types: Dict[str, types.BaseLogType] = {x.name: x(self) for x in types.iterable}
         self._cog: Logs = cog
         self.bot = self._cog.bot
         self.config = self._cog.config
@@ -61,7 +61,7 @@ class GuildLog:
         group = self._types.get(group)
         log_func = getattr(group, str(log_type), lambda **k_args: None)
 
-        log_channel = self.log_channel(group.name)
+        log_channel = self.log_channel(group.log_channel_opt)
         if log_channel is None:
             return
 
