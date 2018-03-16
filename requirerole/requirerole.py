@@ -7,9 +7,12 @@ from discord.ext.commands.converter import RoleConverter
 
 from redbot.core.bot import Red, RedContext
 from redbot.core import checks, Config
+from redbot.core.i18n import CogI18n
 from redbot.core.utils.chat_formatting import warning, escape
 
 from odinair_libs.formatting import tick
+
+_ = CogI18n("RequireRole", __file__)
 
 
 class RoleTuple(commands.Converter):
@@ -25,6 +28,10 @@ class RoleTuple(commands.Converter):
 
 class RequireRole:
     """Allow and disallow users to use a bot's commands based on per-guild configurable roles"""
+
+    __author__ = "odinair <odinair@odinair.xyz>"
+    __version__ = "0.1.0"
+
     def __init__(self, bot: Red):
         self.bot = bot
         self.config = Config.get_conf(self, identifier=90834678413, force_registration=True)
@@ -93,24 +100,12 @@ class RequireRole:
     @commands.guild_only()
     @checks.guildowner_or_permissions(administrator=True)
     async def requirerole(self, ctx: RedContext, *roles: RoleTuple):
-        """Require specific roles to use the bot in the current guild
+        """Require one of any specific roles to use the bot in the current guild
 
         To require a member to __not__ have one or more roles, you can use
         `~` before the role name to treat it as a blacklisted role.
-
-        If a role has a `~` character at the beginning of its name,
-        the character can be escaped by prepending a backslash (`\`)
-        to the role name. The same also applies if a role has a backslash
-        at the beginning of its name.
-
-        Blacklisted roles will override any whitelisted roles
-        a member may have, and as such can be a powerful moderation tool.
-
-        More than one whitelisted role given makes this act as an OR check,
-        not an AND check. This means a member only needs one of the
-        whitelisted roles to use the bot. The same applies to blacklisted roles,
-        as a member needs to not have any roles specified as blacklisted
-        to use the bot.
+        If a role name has `~` in it's name, you can escape it with a backslash (`\`) character.
+        Blacklisted roles override any possible whitelisted roles a member may have.
 
         Role names are case sensitive. If a role has spaces in it's name, wrap it in quotes.
         Passing no roles removes the currently set role requirement.
@@ -126,9 +121,9 @@ class RequireRole:
         blacklist: Tuple[discord.Role] = tuple(x for x in roles if not modes[roles.index(x)])
 
         if ctx.guild.default_role in roles:
-            await ctx.send(warning("I can't set a role requirement with the default role - if you'd like to clear "
-                                   "your current role requirements, you can execute this command "
-                                   "with no arguments."))
+            await ctx.send(warning(_("I can't set a role requirement with the default role - if you'd like to clear "
+                                     "your current role requirements, you can execute this command "
+                                     "with no arguments.")))
             return
 
         await self.config.guild(ctx.guild).roles.set({
@@ -136,18 +131,18 @@ class RequireRole:
             "blacklist": [x.id for x in blacklist]
         })
         if not roles:
-            await ctx.send(tick("Cleared currently set role requirements"))
+            await ctx.send(tick(_("Cleared currently set role requirements")))
             return
 
         whitelist = ", ".join(escape(str(x), mass_mentions=True, formatting=True) for x in whitelist)
         blacklist = ", ".join(escape(str(x), mass_mentions=True, formatting=True) for x in blacklist)
 
-        msg = "A member will now need to pass the following checks to use my commands:\n\n"
+        msg = _("A member will now need to pass the following checks to use my commands:\n\n")
         if whitelist:
-            msg += f"**Any of the following roles:**\n{whitelist}"
+            msg += _("**Any of the following roles:**\n{roles}").format(roles=whitelist)
         if whitelist and blacklist:
             msg += "\n\n"
         if blacklist:
-            msg += f"**None of the following roles:**\n{blacklist}"
+            msg += _("**None of the following roles:**\n{roles}").format(roles=blacklist)
 
         await ctx.send(tick(msg))

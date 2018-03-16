@@ -1,0 +1,43 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR ORGANIZATION
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2018-03-16 06:47-0600\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: pygettext.py 1.5\n"
+
+
+#: ../requirerole.py:124
+msgid "I can't set a role requirement with the default role - if you'd like to clear your current role requirements, you can execute this command with no arguments."
+msgstr ""
+
+#: ../requirerole.py:134
+msgid "Cleared currently set role requirements"
+msgstr ""
+
+#: ../requirerole.py:140
+msgid ""
+"A member will now need to pass the following checks to use my commands:\n"
+"\n"
+msgstr ""
+
+#: ../requirerole.py:142
+msgid ""
+"**Any of the following roles:**\n"
+"{roles}"
+msgstr ""
+
+#: ../requirerole.py:146
+msgid ""
+"**None of the following roles:**\n"
+"{roles}"
+msgstr ""
+
