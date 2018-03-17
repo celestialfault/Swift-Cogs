@@ -1,0 +1,45 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR ORGANIZATION
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2018-03-17 03:10-0600\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: pygettext.py 1.5\n"
+
+
+#: ../rolemention.py:67
+msgid "Role mention by {}"
+msgstr ""
+
+#: ../rolemention.py:99
+msgid "That role is already mentionable"
+msgstr ""
+
+#: ../rolemention.py:102
+msgid "`{}` is now allowed to be mentioned"
+msgstr ""
+
+#: ../rolemention.py:116
+msgid "`{}` is no longer allowed to be mentioned"
+msgstr ""
+
+#: ../rolemention.py:128
+msgid "Mentionable roles"
+msgstr ""
+
+#: ../rolemention.py:130
+msgid "No mentionable roles"
+msgstr ""
+
+#: ../rolemention.py:140
+msgid "That role is not allowed to be mentioned"
+msgstr ""
+

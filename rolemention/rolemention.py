@@ -7,13 +7,19 @@ from discord.ext import commands
 
 from redbot.core import checks, RedContext, Config
 from redbot.core.bot import Red
+from redbot.core.i18n import CogI18n
 from redbot.core.utils.chat_formatting import warning, escape
 
 from odinair_libs.formatting import tick, cmd_help
 
+_ = CogI18n("RoleMention", __file__)
+
 
 class RoleMention:
     MENTION_REGEX = re.compile(r"{{mention role: ?@?(?P<NAME>[\W\w]+)}}", re.IGNORECASE)
+
+    __author__ = "odinair <odinair@odinair.xyz>"
+    __version__ = "0.1.0"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -28,17 +34,27 @@ class RoleMention:
         except AttributeError:
             return False
 
-        return all([
-            not message.author.bot,                                   # ensure the author is not a bot account
-            guild.me.guild_permissions.manage_roles,                  # make sure we have manage role permissions
-            message.channel.permissions_for(guild.me).send_messages,  # and send message permissions
-            any([                                                     # ensure that the author can perform this action,
-                guild.me.guild_permissions.manage_roles,              # by means of having manage role permissions,
-                await self.bot.is_admin(message.author),              # or by having the guild admin role
+        try:
+            me = guild.me
+            my_cperms = message.channel.permissions_for(me)
+            my_gperms = me.guild_permissions
+            return all([
+                not message.author.bot,                       # ensure the author is not a bot account
+                my_gperms.manage_roles,                       # make sure we have manage role permissions
+                my_cperms.send_messages,                      # and send message permissions
+                any([                                         # ensure that the author can perform this action,
+                    guild.me.guild_permissions.manage_roles,  # by means of having manage role permissions,
+                    await self.bot.is_admin(message.author),  # or by having the guild admin role
+                ])
             ])
-        ])
+        except AttributeError:
+            # This can happen as a result of Red.is_admin() being passed a User.
+            # I'm not sure how or why, but it somehow can happen. I guess.
+            # Of course, this is purely going off of my system logs. So I don't know how it happened,
+            # and by extension I don't know how to reproduce the bug. But it happened *somehow*.
+            return False
 
-    async def _make_mentionable(self, *roles: discord.Role, by: discord.Member, mentionable: bool = True,
+    async def _make_mentionable(self, *roles: discord.Role, mod: discord.Member, mentionable: bool = True,
                                 check_if_allowed: bool = True):
         if not roles:
             raise ValueError("no roles were given to make mentionable")
@@ -48,7 +64,7 @@ class RoleMention:
                 continue
             if check_if_allowed and role.id not in allowed_roles:
                 continue
-            await role.edit(mentionable=mentionable, reason=f"Role mention by {by!s} ({by.id})")
+            await role.edit(mentionable=mentionable, reason=_("Role mention by {}").format(mod))
 
     @staticmethod
     async def _send_message(content: str, author: discord.Member, channel: discord.TextChannel, *roles: discord.Role):
@@ -80,10 +96,10 @@ class RoleMention:
             return
         async with self.config.guild(ctx.guild).roles() as roles:
             if role.id in roles:
-                await ctx.send(warning("That role is already mentionable"))
+                await ctx.send(warning(_("That role is already mentionable")))
                 return
             roles.append(role.id)
-            await ctx.send(escape(tick(f"I will now allow `{role.name}` to be mentioned"),
+            await ctx.send(escape(tick(_("`{}` is now allowed to be mentioned").format(role.name)),
                                   mass_mentions=True))
 
     @rolemention.command(name="remove")
@@ -97,7 +113,7 @@ class RoleMention:
                 await ctx.send(warning("That role is not already mentionable"))
                 return
             roles.remove(role.id)
-            await ctx.send(escape(tick(f"I will no longer allow `{role.name}` to be mentioned"),
+            await ctx.send(escape(tick(_("`{}` is no longer allowed to be mentioned").format(role.name)),
                                   mass_mentions=True))
 
     @rolemention.command(name="list")
@@ -109,9 +125,9 @@ class RoleMention:
             if role is None:
                 continue
             roles.append(role)
-        await ctx.send(embed=discord.Embed(title="Mentionable roles", colour=discord.Colour.blurple(),
+        await ctx.send(embed=discord.Embed(title=_("Mentionable roles"), colour=discord.Colour.blurple(),
                                            description=" ".join([x.mention for x in roles]
-                                                                or ["No mentionable roles"])))
+                                                                or [_("No mentionable roles")])))
 
     @rolemention.command(name="mention")
     async def rolemention_mention(self, ctx: RedContext, role: discord.Role, *, text: str):
@@ -121,7 +137,7 @@ class RoleMention:
         The role mention will be appended to the beginning of `text`
         """
         if role.id not in await self.config.guild(ctx.guild).roles():
-            await ctx.send(warning("That role is not allowed to be mentioned"))
+            await ctx.send(warning(_("That role is not allowed to be mentioned")))
             return
         try:
             await ctx.message.delete()
@@ -129,10 +145,10 @@ class RoleMention:
             pass
 
         text = f"{role.mention} {text}"
-        await self._make_mentionable(role, mentionable=True, by=ctx.author)
+        await self._make_mentionable(role, mentionable=True, mod=ctx.author)
         await self._send_message(text, ctx.author, ctx.channel, role)
         await asyncio.sleep(5)
-        await self._make_mentionable(role, mentionable=False, by=ctx.author)
+        await self._make_mentionable(role, mentionable=False, mod=ctx.author)
 
     async def on_message(self, message: discord.Message):
         try:
@@ -162,7 +178,7 @@ class RoleMention:
         if not roles:
             return
 
-        await self._make_mentionable(*roles, mentionable=True, by=message.author)
+        await self._make_mentionable(*roles, mentionable=True, mod=message.author)
         # send the parsed message with role mentions
         await self._send_message(message_content, message.author, message.channel, *roles)
         try:
@@ -171,4 +187,4 @@ class RoleMention:
         except discord.HTTPException:
             pass
         await asyncio.sleep(5)
-        await self._make_mentionable(*roles, mentionable=False, by=message.author)
+        await self._make_mentionable(*roles, mentionable=False, mod=message.author)
