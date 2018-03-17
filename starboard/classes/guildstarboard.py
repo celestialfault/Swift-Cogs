@@ -1,31 +1,28 @@
+from datetime import datetime, timedelta
+from typing import Optional, Union, Dict, List
+
 import asyncio
 
 import discord
 
-from redbot.core import Config
-from redbot.core.bot import Red
 from redbot.core.config import Group
 
-from datetime import datetime, timedelta
-from typing import Optional, Union, Dict, List
-
-from .star import Star
-from .starboardbase import StarboardBase
+from starboard.classes.star import Star
+from starboard.classes.base import StarboardBase
 
 
 class GuildStarboard(StarboardBase):
     """Starboard for a specific Guild"""
 
-    def __init__(self, guild: discord.Guild, config: Config, bot: Red):
+    def __init__(self, guild: discord.Guild):
         self.guild = guild
-        self.config = config
-        self.bot = bot
         self.queue = asyncio.Queue()
         self.migration_lock = asyncio.Lock()
 
         self._star_cache: Dict[int, Star] = {}
         self._blocked_users: List[int or discord.Member] = None
         self._min_stars: int = None
+        self._selfstar: bool = None
         self._ignored_channels: List[int or discord.TextChannel] = None
         self._channel: discord.TextChannel = False
 
@@ -45,7 +42,7 @@ class GuildStarboard(StarboardBase):
     def __repr__(self):
         return "<GuildStarboard guild={0!r} cache_size={1}>".format(self.guild, len(self._star_cache))
 
-    async def migrate(self) -> int:
+    async def migrate(self, dry_run: bool = False) -> int:
         """Migrates guild-scoped message data to a generic message scope"""
         async with self.migration_lock:
             async with self.guild_config.messages() as old_data:
@@ -54,11 +51,12 @@ class GuildStarboard(StarboardBase):
                 # Yes - a for loop was also attempted here.
                 # It got through one item per migration call.
                 # I don't know why.
-                while len(old_data) > 0:
+                while len(old_data) > 0 and dry_run is False:
                     item = old_data.pop()
                     if not isinstance(item, dict) or 'message_id' not in item:
                         continue
                     await self.messages.set_raw(str(item.get("message_id")), value=item)
+                    await asyncio.sleep(0.3)
             return migrated
 
     def is_cached(self, message: discord.Message) -> bool:
@@ -77,7 +75,7 @@ class GuildStarboard(StarboardBase):
         """
         if not self.is_cached(message):
             return False
-        message_ = await self.message(message=message)
+        message_ = await self.get_message(message=message)
         if message_.in_queue:
             await message_.update_starboard_message()
         self._star_cache.pop(message.id)
@@ -126,8 +124,9 @@ class GuildStarboard(StarboardBase):
             await item.update_starboard_message()
             asyncio.sleep(0.5)
 
-    async def message(self, *, message: discord.Message = None, message_id: int = None,
-                      channel: discord.TextChannel = None, auto_create: bool = False) -> Optional[Star]:
+    async def get_message(self, *, message: discord.Message = None, message_id: int = None,
+                          channel: discord.TextChannel = None, auto_create: bool = False,
+                          cache_only: bool = False) -> Optional[Star]:
         """Returns the Star object for the passed message
 
         Parameters
@@ -140,6 +139,9 @@ class GuildStarboard(StarboardBase):
             A text channel to use to attempt to resolve ``message_id``
         auto_create: bool
             Whether or not to automatically create the message's starboard entry
+        cache_only: bool
+            If this is True and the message that is attempted to be retrieved is not in the starboard local cache,
+            None is returned.
 
         Returns
         --------
@@ -148,10 +150,15 @@ class GuildStarboard(StarboardBase):
         if not any([message, message_id]):
             raise TypeError("neither 'message' nor 'message_id' arguments were given")
 
-        if message_id is not None:
-            if message_id in self._star_cache:
-                return self._star_cache[message_id]
+        if message_id and message_id in self._star_cache:
+            return self._star_cache[message_id]
+        elif message and message.id in self._star_cache:
+            return self._star_cache[message.id]
 
+        if cache_only is True:
+            return None
+
+        if message_id is not None:
             if channel is None:
                 data = await self.messages.get_raw(str(message_id), default=None)
                 if data is None:
@@ -173,7 +180,7 @@ class GuildStarboard(StarboardBase):
             return self._star_cache[message.id]
         return None
 
-    async def channel(self, channel: Optional[discord.TextChannel]=False) -> Optional[discord.TextChannel]:
+    async def starboard_channel(self, channel: Optional[discord.TextChannel]=False) -> Optional[discord.TextChannel]:
         """Set or clear the current guild's starboard
 
         Parameters
@@ -201,7 +208,28 @@ class GuildStarboard(StarboardBase):
             await self.guild_config.channel.set(getattr(channel, "id", None))
         return self._channel
 
-    async def min_stars(self, amount: int=None) -> Optional[int]:
+    async def selfstar(self, toggle: bool = None) -> bool:
+        """Set or get if members can star their own messages
+
+        Parameters
+        -----------
+        toggle: bool
+            If member should be able to star their own messages. If this is `None`,
+            the current setting is returned instead.
+
+        Returns
+        --------
+        bool
+        """
+        if toggle is not None:
+            await self.guild_config.allow_selfstar.set(toggle)
+            self._selfstar = bool(toggle)
+
+        if self._selfstar is None:
+            self._selfstar = await self.guild_config.allow_selfstar()
+        return self._selfstar
+
+    async def min_stars(self, amount: int = None) -> Optional[int]:
         """Set or get the amount of stars required for messages to appear in the guild's starboard channel
 
         Parameters
@@ -214,9 +242,6 @@ class GuildStarboard(StarboardBase):
         Returns
         --------
         int
-            The amount of stars required. Only returned if amount is None
-        None
-            Returned when the minimum star amount is set successfully
 
         Raises
         ------
@@ -227,8 +252,8 @@ class GuildStarboard(StarboardBase):
             if amount < 1:
                 raise ValueError("Amount must be at least one or greater")
             await self.guild_config.min_stars.set(amount)
-            self._min_stars = amount
-            return
+            self._min_stars = int(amount)
+
         if self._min_stars is None:
             self._min_stars = await self.guild_config.min_stars()
         return self._min_stars
@@ -244,17 +269,22 @@ class GuildStarboard(StarboardBase):
         Returns
         --------
         bool
-            A boolean value indicating if the channel or member is ignored or blocked from the guild's starboard
         """
         if isinstance(obj, discord.Member):
             if obj.bot:  # implicitly block bots from using the starboard
                 return True
 
-            # Integration with RequireRole
-            require_role = self.bot.get_cog("RequireRole")
-            if require_role and hasattr(require_role, "check") and await self.guild_config.respect_requirerole()\
-                    and not await require_role.check(obj):
-                return True
+            try:
+                from requirerole.requirerole import RequireRole
+                require_role = self.bot.get_cog("RequireRole")
+                if isinstance(require_role, RequireRole) and await self.guild_config.respect_requirerole() \
+                        and not await require_role.check(obj):
+                    return True
+            except ImportError:
+                pass
+                # pycharm's warnings are very helpful sometimes. [citation needed]
+                # noinspection PyPep8Naming,PyUnusedLocal
+                RequireRole = None
 
             if self._blocked_users is None:
                 self._blocked_users = list(await self.guild_config.blocks())
@@ -262,84 +292,55 @@ class GuildStarboard(StarboardBase):
 
         if self._ignored_channels is None:
             self._ignored_channels = list(await self.guild_config.ignored_channels())
-        return obj.id in self._ignored_channels or obj.id == getattr(await self.channel(), "id", None)
+        return obj.id in self._ignored_channels or obj.id == getattr(await self.starboard_channel(), "id", None)
 
-    async def ignore_channel(self, channel: discord.TextChannel):
+    async def ignore(self, obj: Union[discord.TextChannel, discord.Member]):
         """Ignore a channel, preventing messages from being starred in it
 
         Parameters
         -----------
-        channel: discord.TextChannel
-            The text channel to ignore from the guild's starboard
+        obj: Union[discord.TextChannel, discord.Member]
+            The text channel or member to ignore
 
         Returns
         --------
         bool
-            A boolean value indicating if the channel was successfully ignored
         """
-        if await self.is_ignored(channel):
+        if await self.is_ignored(obj):
             return False
-        async with self.guild_config.ignored_channels() as ignores:
-            ignores.append(channel.id)
-            self._ignored_channels.append(channel.id)
+
+        if isinstance(obj, discord.TextChannel):
+            async with self.guild_config.ignored_channels() as ignores:
+                ignores.append(obj.id)
+                self._ignored_channels.append(obj.id)
+        elif isinstance(obj, discord.Member):
+            async with self.guild_config.blocks() as blocks:
+                blocks.append(obj.id)
+                self._blocked_users.append(obj.id)
         return True
 
-    async def unignore_channel(self, channel: discord.TextChannel):
+    async def unignore(self, obj: Union[discord.TextChannel, discord.Member]):
         """Unignore a channel, allowing messages to be starred in it again
 
         Parameters
         -----------
-        channel: discord.TextChannel
-            The text channel to unignore from the guild's starboard
+        obj: Union[discord.TextChannel, discord.Member]
+            The text channel or member to unignore
 
         Returns
         --------
         bool
-            A boolean value indicating if the channel was successfully unignored
         """
-        if not await self.is_ignored(channel):
+        if not await self.is_ignored(obj):
             return False
-        async with self.guild_config.ignored_channels() as ignores:
-            ignores.remove(channel.id)
-            self._ignored_channels.remove(channel.id)
-        return True
 
-    async def block_member(self, member: discord.Member) -> bool:
-        """Block a member from using the guild's starboard
-
-        Parameters
-        -----------
-        member: discord.discord.Member
-            The member to block from the guild's starboard
-
-        Returns
-        --------
-        bool
-            A boolean value indicating if the member was successfully blocked
-        """
-        if await self.is_ignored(member):
-            return False
-        async with self.guild_config.blocks() as blocks:
-            blocks.append(member.id)
-            self._blocked_users.append(member.id)
-        return True
-
-    async def unblock_member(self, member: discord.Member) -> bool:
-        """Unblock a member and allow them to use the guild's starboard
-
-        Parameters
-        -----------
-        member: discord.discord.Member
-            The member to unblock from the guild's starboard
-
-        Returns
-        --------
-        bool
-            A boolean value indicating if the member was successfully unblocked
-        """
-        if not await self.is_ignored(member):
-            return False
-        async with self.guild_config.blocks() as blocks:
-            blocks.remove(member.id)
-            self._blocked_users.remove(member.id)
+        if isinstance(obj, discord.TextChannel):
+            async with self.guild_config.ignored_channels() as ignores:
+                ignores.remove(obj.id)
+                self._ignored_channels.remove(obj.id)
+        elif isinstance(obj, discord.Member):
+            async with self.guild_config.blocks() as blocks:
+                blocks.remove(obj.id)
+                self._blocked_users.remove(obj.id)
+            return True
         return True

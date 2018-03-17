@@ -2,6 +2,6 @@
   "author": ["odinair"],
   "bot_version": [3, 0, 0],
   "description": "It's almost like channel pins, but with stars",
-  "short": "It's almost like channel pins",
+  "short": "It's almost like channel pins, but with stars",
   "type": "COG"
 }

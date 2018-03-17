@@ -3,8 +3,10 @@ from typing import Optional, Dict, Any, List, Union
 
 import discord
 
-from .exceptions import *
-from .starboardbase import StarboardBase
+from starboard.classes.base import StarboardBase
+from starboard.classes.startype import StarType
+from starboard.exceptions import *
+from starboard.i18n import _
 
 
 class Star(StarboardBase):
@@ -55,27 +57,26 @@ class Star(StarboardBase):
         return [*self.message.attachments, *image_embeds]
 
     @property
-    def attachment_url(self):
+    def attachment_url(self) -> Optional[str]:
         try:
             attach = self.attachments[0]
         except IndexError:
             return discord.Embed.Empty
-        if isinstance(attach, discord.Attachment):
-            return attach.url
-        elif isinstance(attach, discord.Embed):
-            return attach.thumbnail.url
-        return discord.Embed.Empty
+        else:
+            if isinstance(attach, discord.Attachment):
+                return attach.url
+            elif isinstance(attach, discord.Embed):
+                return attach.thumbnail.url
+            else:
+                return discord.Embed.Empty
 
     @property
     def is_message_valid(self) -> bool:
         return self.message.content or self.attachments
 
-    async def queue_for_update(self):
-        if self.in_queue is True:
-            return
-        self.in_queue = True
-        self.last_update = datetime.utcnow()
-        await self.starboard.queue.put(self)
+    @property
+    def starboard_content(self):
+        return self.STARBOARD_FORMAT.format(stars=self.stars, channel=self.channel, message=self.message)
 
     def build_embed(self) -> Optional[discord.Embed]:
         if not self.is_message_valid:
@@ -102,10 +103,10 @@ class Star(StarboardBase):
             self.hidden = self._entry.get("hidden", False)
 
             if self._entry.get("starboard_message", None) is not None:
-                channel = await self.starboard.channel()
+                channel = await self.starboard.starboard_channel()
                 if channel is None:
                     self.starboard_message = None
-                    return await self.save()
+                    return await self._save()
 
                 try:
                     self.starboard_message = await channel.get_message(self._entry.get("starboard_message", None))
@@ -113,8 +114,7 @@ class Star(StarboardBase):
                     self.starboard_message = None
                     await self.queue_for_update()
 
-    async def save(self) -> None:
-        """Updates the star's guild starboard entry"""
+    async def _save(self) -> None:
         if not self._entry:
             return
         self._entry.update({
@@ -123,13 +123,9 @@ class Star(StarboardBase):
             "hidden": self.hidden,
             "author_id": self.author.id
         })
-        await self.starboard.messages.get_attr(str(self.message.id)).set(self._entry)
+        await self.starboard.messages.set_raw(str(self.message.id), value=self._entry)
 
     async def _create(self) -> None:
-        """Creates the message's starboard entry
-
-        This is useful if you didn't pass auto_create when creating the Star object
-        """
         if self._entry is not None:
             raise StarboardException("This message already has an entry")
         self._entry = {
@@ -139,8 +135,18 @@ class Star(StarboardBase):
             "starboard_message": None,
             "hidden": False
         }
-        await self.save()
+        await self._save()
         self.last_update = datetime.utcnow()
+
+    async def update_cached_message(self):
+        self.message = await self.channel.get_message(self.message.id)
+
+    async def queue_for_update(self):
+        if self.in_queue is True:
+            return
+        self.in_queue = True
+        self.last_update = datetime.utcnow()
+        await self.starboard.queue.put(self)
 
     async def add_star(self, member: discord.Member) -> None:
         """Adds a member's star
@@ -164,13 +170,19 @@ class Star(StarboardBase):
         if not self.is_message_valid:
             raise NoMessageContent()
         if member.id in self.starrers:
-            raise StarException("The passed member already starred this message")
+            raise StarException(_("The passed member already starred this message"))
         if await self.starboard.is_ignored(self.author):
-            raise BlockedAuthorException()
+            raise BlockedAuthorException(_("The current message author is blocked from this guild's starboard"))
         if await self.starboard.is_ignored(member):
-            raise BlockedException()
+            raise BlockedException(_("The passed member is blocked from this guild's starboard"))
+
+        if member == self.author and not await self.starboard.selfstar():
+            raise StarboardException(_("Cannot star own message"))
+
         self.starrers.append(member.id)
         await self.queue_for_update()
+        await self.stats(member=member).increment(StarType.GIVEN)
+        await self.stats(member=self.author).increment(StarType.RECEIVED)
 
     async def remove_star(self, member: discord.Member) -> None:
         """Removes a member's star
@@ -188,32 +200,31 @@ class Star(StarboardBase):
             Raised if the passed member is blocked from using this guild's starboard
         """
         if member.id not in self.starrers:
-            raise StarException("The passed member hasn't starred this message")
+            raise StarException(_("The passed member hasn't starred this message"))
         if await self.starboard.is_ignored(self.author):
-            raise BlockedAuthorException()
+            raise BlockedAuthorException(_("The current message author is blocked from this guild's starboard"))
         if await self.starboard.is_ignored(member):
-            raise BlockedException()
+            raise BlockedException(_("The passed member is blocked from this guild's starboard"))
+
         self.starrers.remove(member.id)
         await self.queue_for_update()
+        await self.stats(member=member).decrement(StarType.GIVEN)
+        await self.stats(member=self.author).decrement(StarType.RECEIVED)
 
     def has_starred(self, member: discord.Member) -> bool:
         return member.id in self.starrers
 
     async def hide(self) -> bool:
-        if self.hidden:
+        """Hides this message from the starboard"""
+        if self.hidden is True:
             return False
         self.hidden = True
-        if self.starboard_message:
-            try:
-                await self.starboard_message.delete()
-            except discord.HTTPException:
-                pass
-            self.starboard_message = None
-        await self.save()
+        await self.queue_for_update()
         return True
 
     async def unhide(self) -> bool:
-        if not self.hidden:
+        """Unhides this message, allowing it to appear on the starboard again"""
+        if self.hidden is False:
             return False
         self.hidden = False
         await self.queue_for_update()
@@ -222,29 +233,25 @@ class Star(StarboardBase):
     async def update_starboard_message(self) -> None:
         self.in_queue = False
 
-        if self.hidden:
-            return
-
         min_stars = await self.starboard.min_stars()
-        channel = await self.starboard.channel()
+        channel = await self.starboard.starboard_channel()
         if channel is None:
             return
 
-        embed = self.build_embed()
-        if embed is None:
-            return
+        if self.stars >= min_stars and not self.hidden:
+            embed = self.build_embed()
+            if embed is None:
+                return
 
-        if self.stars >= min_stars:
-            content = self.STARBOARD_FORMAT.format(stars=self.stars, channel=self.channel, message=self.message)
             if self.starboard_message is not None:
                 try:
-                    await self.starboard_message.edit(content=content, embed=embed)
+                    await self.starboard_message.edit(content=self.starboard_content, embed=embed)
                 except discord.NotFound:
                     self.starboard_message = None
                     return await self.update_starboard_message()
             else:
                 try:
-                    self.starboard_message = await channel.send(content=content, embed=embed)
+                    self.starboard_message = await channel.send(content=self.starboard_content, embed=embed)
                 except discord.Forbidden:
                     pass
         else:
@@ -256,4 +263,4 @@ class Star(StarboardBase):
                 finally:
                     self.starboard_message = None
 
-        await self.save()
+        await self._save()
