@@ -1,15 +1,16 @@
+import inspect
+
 import re
 from datetime import timedelta
 
-from redbot.core import RedContext
-from types import FunctionType
 from typing import Iterable, Tuple, Dict, Union
 
 import discord
+
 from redbot.core.bot import Red
+from redbot.core import RedContext
 
 from textwrap import dedent
-from inspect import getsourcelines
 
 __all__ = ["td_format", "difference", "normalize", "attempt_emoji", "get_source", "tick", "chunks", "cmd_help"]
 
@@ -18,11 +19,17 @@ def tick(text: str):
     return f"\N{WHITE HEAVY CHECK MARK} {text}"
 
 
-def get_source(fn: FunctionType) -> str:
-    """Get the source code for a function
+def get_source(fn) -> str:
+    """Get the source code for an object
+
+    This function effectively acts an alias for the following:
+
+    >>> from textwrap import dedent
+    >>> from inspect import getsource
+    >>> source = dedent(getsource(fn))
 
     Parameters
-    ----------
+    -----------
     fn: FunctionType
         The function to get the source for
 
@@ -30,19 +37,11 @@ def get_source(fn: FunctionType) -> str:
     --------
     str
         The source code for ``fn``
-
-    Raises
-    -------
-    OSError
-        If the source code cannot be retrieved, such as if the function is defined in a repl
     """
-    lines, firstln = getsourcelines(fn.__code__)
-    lines = dedent("".join(lines))
-    return lines
+    return dedent(inspect.getsource(fn))
 
 
-def attempt_emoji(bot: Red, fallback: str, *, emoji_id: int = None, emoji_name: str = None,
-                  guild: discord.Guild = None, **kwargs):
+def attempt_emoji(bot: Red, fallback: str, guild: discord.Guild = None, **kwargs):
     """Attempt to get an emoji from all guilds the bot is in or from a specific guild
 
     Parameters
@@ -51,10 +50,6 @@ def attempt_emoji(bot: Red, fallback: str, *, emoji_id: int = None, emoji_name: 
         The Red bot instance
     fallback: str
         A fallback string to return if neither emoji_id nor emoji_id resolves
-    emoji_id: int
-        The emoji ID to attempt to resolve
-    emoji_name: str
-        An emoji name to attempt to resolve. This is ignored if ``emoji_id`` resolves
     guild: discord.Guild
         A guild to search instead of attempting all emojis the bot has access to
     **kwargs
@@ -69,17 +64,9 @@ def attempt_emoji(bot: Red, fallback: str, *, emoji_id: int = None, emoji_name: 
     str
         The fallback string if neither ``emoji_id`` nor ``emoji_name`` resolve
     """
-    if not any([emoji_id, emoji_name, kwargs]):
-        return fallback
-    emojis = bot.emojis if guild is None else guild.emojis
-    emoji = None
-    if emoji_id is not None:
-        emoji = discord.utils.get(emojis, id=emoji_id, **kwargs)
-    if emoji is None and emoji_name is not None:
-        emoji = discord.utils.get(emojis, name=emoji_name, **kwargs)
-    if emoji is None and kwargs:
-        emoji = discord.utils.get(emojis, **kwargs)
-    return emoji or fallback
+    if not kwargs.keys():
+        raise TypeError('expected at least one keyword argument, received none')
+    return discord.utils.get(bot.emojis if guild is None else guild.emojis, **kwargs) or fallback
 
 
 _time_periods = {

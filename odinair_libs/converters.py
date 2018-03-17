@@ -8,9 +8,16 @@ import re
 import discord
 from discord.ext import commands
 
+from redbot.core.bot import Red
+
 from odinair_libs.formatting import td_format
 
-__all__ = ["FutureTime", "get_role_or_member"]
+__all__ = ["FutureTime", "get_role_or_member", "cog_name", "td_seconds"]
+
+
+def cog_name(bot: Red, name: str):
+    """Returns a case-sensitive name from a case-insensitive cog name"""
+    return discord.utils.find(lambda x: x.lower() == name.lower(), bot.cogs.keys())
 
 
 def get_role_or_member(snowflake: int, guild: discord.Guild):
