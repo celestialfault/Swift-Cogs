@@ -61,9 +61,8 @@ class MemberLogType(BaseLogType):
 
         embed = LogEntry(colour=discord.Colour.red(),
                          description=_("Member {} left\n\n"
-                                       "They were a member for {}").format(deleted.mention,
-                                                                           td_format(datetime.utcnow()
-                                                                                     - deleted.joined_at)),
+                                       "They were a member for {}")
+                         .format(deleted.mention, td_format(datetime.utcnow() - deleted.joined_at)),
                          require_fields=False, timestamp=datetime.utcnow())
         embed.set_author(name=_("Member Left"), icon_url=self.icon_url(deleted))
         embed.set_footer(text=_("User ID: {}").format(deleted.id))

@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2018-03-16 06:40-0600\n"
+"POT-Creation-Date: 2018-03-16 20:20-0600\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -292,7 +292,7 @@ msgstr ""
 msgid "Member Joined"
 msgstr ""
 
-#: ../types/member.py:33 ../types/member.py:40 ../types/member.py:69
+#: ../types/member.py:33 ../types/member.py:40 ../types/member.py:68
 #: ../types/voice.py:31
 msgid "User ID: {}"
 msgstr ""
@@ -328,7 +328,7 @@ msgid ""
 "They were a member for {}"
 msgstr ""
 
-#: ../types/member.py:68
+#: ../types/member.py:67
 msgid "Member Left"
 msgstr ""
 

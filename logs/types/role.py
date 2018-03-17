@@ -73,7 +73,7 @@ class RoleLogType(BaseLogType):
         if not self.settings.get("delete", False):
             return None
 
-        embed = LogEntry(colour=discord.Colour.red(), description=_("Role `{}` was deleted").format(str(deleted)),
+        embed = LogEntry(colour=discord.Colour.red(), description=_("Role `{}` was deleted").format(deleted),
                          require_fields=False, timestamp=datetime.utcnow())
         embed.set_author(name=_("Role Deleted"), icon_url=self.guild_icon_url)
         embed.set_footer(text=_("Role ID: {}").format(deleted.id))

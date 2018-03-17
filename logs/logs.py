@@ -545,7 +545,7 @@ async def handle_group(ctx: RedContext, slots: Sequence[str], types: Sequence[st
     try:
         settings = await group_toggle(group=settings, toggle_keys=types, slots=slots, strict_slots=True)
     except KeyError as e:
-        await ctx.send(warning(_("'{}' is not an available setting").format(str(e))))
+        await ctx.send(warning(_("'{}' is not an available setting").format(e)))
         return
     embed = status_embed(settings=settings, title="{} Log Settings".format(setting_type.title()),
                          descriptions=descriptions)

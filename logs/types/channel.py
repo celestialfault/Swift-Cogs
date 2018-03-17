@@ -76,5 +76,5 @@ class ChannelLogType(BaseLogType):
             return None
 
         return LogEntry(colour=discord.Colour.red(), title=_("Channel Deleted"), timestamp=datetime.utcnow(),
-                        description=_("Channel `{}` deleted").format(str(deleted)), require_fields=False)\
+                        description=_("Channel `{}` deleted").format(deleted), require_fields=False)\
             .set_footer(text=_("Channel ID: {}").format(deleted.id))
