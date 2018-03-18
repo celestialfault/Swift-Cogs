@@ -17,7 +17,7 @@
 
 # Contact
 
-If you've either found a bug or would like to make a suggestion, please [open an issue](https://github.com/notodinair/Red-Cogs/issues/new),
+If you've either found a bug or would like to make a suggestion, please [open an issue](https://github.com/notodinair/RedV3-Cogs/issues/new),
 as this is by far the best way to make sure that I notice it.
 
 Otherwise, you can contact me on Discord (`odinair#0001`) or Twitter (`@odinair_`).
