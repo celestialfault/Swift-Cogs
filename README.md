@@ -1,6 +1,7 @@
 <h1 align="center">odinair's cogs</h1>
 <p align="center">Some home-grown cogs, which may or may not be useful.</p>
 <p align="center">
+  <a href="https://circleci.com/gh/notodinair/RedV3-Cogs"><img src="https://circleci.com/gh/notodinair/RedV3-Cogs.svg?style=svg" /></a>
   <a href="https://python.org/"><img src="https://img.shields.io/badge/Python-3.6-red.svg?style=flat-square" /></a>
   <a href="https://github.com/Cog-Creators/Red-DiscordBot"><img src="https://img.shields.io/badge/Red--DiscordBot-3.0.0-blue.svg?style=flat-square" /></a>
   <a href="http://makeapullrequest.com"><img src="https://img.shields.io/badge/PRs-welcome-green.svg?style=flat-square" /></a>
