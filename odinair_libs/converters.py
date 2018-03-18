@@ -10,7 +10,7 @@ from discord.ext import commands
 
 from redbot.core.bot import Red
 
-from odinair_libs.formatting import td_format
+from odinair_libs._i18n import _
 
 __all__ = ["FutureTime", "get_role_or_member", "cog_name", "td_seconds"]
 
@@ -49,8 +49,9 @@ class FutureTime(timedelta, commands.Converter):
     def __str__(self):
         return self.format()
 
-    def format(self, short_format: bool = False, milliseconds: bool = False):
-        return td_format(self, short_format=short_format, milliseconds=milliseconds)
+    def format(self, milliseconds: bool = False):
+        from odinair_libs.formatting import td_format
+        return td_format(self, milliseconds=milliseconds)
 
     @classmethod
     def converter(cls, strict: bool = False, min_duration: Union[str, int, float, None] = None,
@@ -99,15 +100,16 @@ class FutureTime(timedelta, commands.Converter):
 
     @classmethod
     async def convert(cls, ctx, argument: str) -> Union[None, timedelta]:
+        from odinair_libs.formatting import td_format
         seconds = cls.get_seconds(argument)
 
         if seconds and cls.MAX_SECONDS is not None and seconds > cls.MAX_SECONDS:
-            raise commands.BadArgument('Time duration exceeds {}'.format(
+            raise commands.BadArgument(_('Time duration exceeds maximum of {}').format(
                 td_format(timedelta(seconds=cls.MAX_SECONDS))))
         elif seconds and cls.MIN_SECONDS is not None and seconds < cls.MIN_SECONDS:
-            raise commands.BadArgument('Time duration does not exceed minimum of {}'.format(
+            raise commands.BadArgument(_('Time duration does not exceed minimum of {}').format(
                 td_format(timedelta(seconds=cls.MIN_SECONDS))))
 
         if seconds is None and cls.STRICT_MODE:
-            raise commands.BadArgument("Failed to parse duration")
+            raise commands.BadArgument(_("Failed to parse duration"))
         return cls(seconds=seconds) if seconds else None

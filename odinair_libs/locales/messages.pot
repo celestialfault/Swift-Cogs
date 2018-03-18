@@ -1,0 +1,112 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR ORGANIZATION
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2018-03-18 10:33-0600\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: pygettext.py 1.5\n"
+
+
+#: ../converters.py:107
+msgid "Time duration exceeds maximum of {}"
+msgstr ""
+
+#: ../converters.py:110
+msgid "Time duration does not exceed minimum of {}"
+msgstr ""
+
+#: ../converters.py:114
+msgid "Failed to parse duration"
+msgstr ""
+
+#: ../formatting.py:76
+msgid "year"
+msgstr ""
+
+#: ../formatting.py:76
+msgid "years"
+msgstr ""
+
+#: ../formatting.py:77
+msgid "month"
+msgstr ""
+
+#: ../formatting.py:77
+msgid "months"
+msgstr ""
+
+#: ../formatting.py:78
+msgid "week"
+msgstr ""
+
+#: ../formatting.py:78
+msgid "weeks"
+msgstr ""
+
+#: ../formatting.py:79
+msgid "day"
+msgstr ""
+
+#: ../formatting.py:79
+msgid "days"
+msgstr ""
+
+#: ../formatting.py:80
+msgid "hour"
+msgstr ""
+
+#: ../formatting.py:80
+msgid "hours"
+msgstr ""
+
+#: ../formatting.py:81
+msgid "minute"
+msgstr ""
+
+#: ../formatting.py:81
+msgid "minutes"
+msgstr ""
+
+#: ../formatting.py:82
+msgid "second"
+msgstr ""
+
+#: ../formatting.py:82
+msgid "seconds"
+msgstr ""
+
+#: ../formatting.py:110
+msgid "0 seconds"
+msgstr ""
+
+#: ../formatting.py:122
+msgid "{ms} millisecond"
+msgstr ""
+
+#: ../formatting.py:122
+msgid "{ms} milliseconds"
+msgstr ""
+
+#: ../formatting.py:127
+msgid "in {}"
+msgstr ""
+
+#: ../formatting.py:127
+msgid "{} ago"
+msgstr ""
+
+#: ../menus.py:364
+msgid ""
+"{}\n"
+"\n"
+"**Click ✅ to confirm or 🇽 to cancel**"
+msgstr ""
+

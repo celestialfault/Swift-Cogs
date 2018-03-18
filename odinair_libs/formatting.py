@@ -12,6 +12,9 @@ from redbot.core import RedContext
 
 from textwrap import dedent
 
+from odinair_libs.converters import td_seconds
+from odinair_libs._i18n import _
+
 __all__ = ["td_format", "difference", "normalize", "attempt_emoji", "get_source", "tick", "chunks", "cmd_help"]
 
 
@@ -69,36 +72,24 @@ def attempt_emoji(bot: Red, fallback: str, guild: discord.Guild = None, **kwargs
     return discord.utils.get(bot.emojis if guild is None else guild.emojis, **kwargs) or fallback
 
 
-_time_periods = {
-    "long": {
-        "year": 60 * 60 * 24 * 365,
-        "month": 60 * 60 * 24 * 30,
-        "day": 60 * 60 * 24,
-        "hour": 60 * 60,
-        "minute": 60,
-        "second": 1
-    },
-    "short": {
-        "y": 60 * 60 * 24 * 365,
-        "mo": 60 * 60 * 24 * 30,
-        "d": 60 * 60 * 24,
-        "h": 60 * 60,
-        "m": 60,
-        "s": 1
-    }
-}
+time_periods = [
+    (td_seconds(days=365), _("year"), _("years")),
+    (td_seconds(days=30), _("month"), _("months")),
+    (td_seconds(days=7), _("week"), _("weeks")),
+    (td_seconds(days=1), _("day"), _("days")),
+    (td_seconds(hours=1), _("hour"), _("hours")),
+    (td_seconds(minutes=1), _("minute"), _("minutes")),
+    (td_seconds(seconds=1), _("second"), _("seconds"))
+]
 
 
-def td_format(td_object: timedelta, short_format: bool = False, milliseconds: bool = False,
-              append_str: bool = False) -> str:
+def td_format(td_object: timedelta, milliseconds: bool = False, append_str: bool = False) -> str:
     """Format a timedelta into a human readable output
 
     Parameters
     -----------
     td_object: timedelta
         A timedelta object to format
-    short_format: bool
-        Returns in short format, such as '10d2h' instead of '10 days 2 hours'
     milliseconds: bool
         If this is True, milliseconds are also appended.
 
@@ -106,39 +97,34 @@ def td_format(td_object: timedelta, short_format: bool = False, milliseconds: bo
     append_str: bool
         Whether or not to append or prepend `in` or `ago` depending on if `td_object` is in the future or past
     """
-    # this function is originally from StackOverflow with modifications made
+    # this function is originally from StackOverflow
+    # however it's been mostly rewritten to properly handle i18n & milliseconds
     # https://stackoverflow.com/a/13756038
-    seconds = int(td_object.total_seconds())
-    iter_ = "long" if not short_format else "short"
-    periods_ = [(x, _time_periods[iter_][x]) for x in _time_periods[iter_]]
-    past = False
 
+    seconds = td_object.total_seconds()
+    past = False
     if seconds < 0:
         past = True
-        seconds = int(re.sub(r"^-+", "", str(seconds)))
-    elif seconds == 0 and not milliseconds:
-        return "0 seconds" if not short_format else "0s"
+        seconds = float(re.sub(r"^-+", "", str(seconds)))
+    elif seconds == 0:
+        return _("0 seconds")
 
-    strings = []
-    for period_name, period_seconds in periods_:
+    strs = []
+
+    for period_seconds, period_name, period_plural in time_periods:
         if seconds >= period_seconds:
             period_value, seconds = divmod(seconds, period_seconds)
-            plural = "s" if period_value != 1 and short_format is False else ""
-            strings.append("{value}{space}{name}{plural}".format(
-                value=period_value, name=period_name, plural=plural, space=" " if not short_format else ""))
+            strs.append(" ".join([str(round(period_value)), period_plural if period_value != 1 else period_name]))
 
-    if milliseconds is True and (td_object.microseconds / 1000) > 0:
+    if milliseconds is True:
         ms = round(td_object.microseconds / 1000)
-        if ms:
-            space = " " if not short_format else ""
-            period_name = "ms" if short_format else "millisecond" + "s" if ms != 1 else ""
-            strings.append(f"{ms!s}{space}{period_name}")
+        if ms > 0:
+            strs.append((_("{ms} milliseconds") if ms != 1 else _("{ms} millisecond")).format(ms=ms))
 
-    built = (", " if not short_format else "").join(strings)
+    built = ", ".join(strs)
     if not append_str:
         return built
-    fmt = "in {}" if not past else "{} ago"
-    return fmt.format(built)
+    return (_("in {}") if not past else _("{} ago")).format(built)
 
 
 def difference(list1: Iterable, list2: Iterable, *, check_val: bool = False, return_dict: bool = False)\
@@ -208,7 +194,7 @@ def chunks(l, n):  # https://stackoverflow.com/a/312464
         yield l[i:i + n]
 
 
-async def cmd_help(ctx: RedContext, cmd: str) -> None:
+async def cmd_help(ctx: RedContext, cmd: str = "") -> None:
     """Sends sub-command help"""
     # This probably isn't the cleanest solution, but it works well enough,
     # so this is mostly what I'd consider "good enough"

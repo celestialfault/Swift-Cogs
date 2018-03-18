@@ -14,7 +14,7 @@ __all__ = ['setup', 'converters', 'formatting', 'menus', 'checks', 'config']
 
 class OdinairLibs:
     """This cog mostly contains utilities for other cogs, and as such isn't very useful on its own."""
-    VERSION = (0, 7, 1)
+    VERSION = (0, 7, 2)
     __author__ = "odinair <odinair@odinair.xyz>"
     __version__ = ".".join([str(x) for x in VERSION])
 

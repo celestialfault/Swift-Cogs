@@ -58,11 +58,11 @@ class MiscTools:
         Time to command execution means how long it took for the bot to receive the command message
         and execute the command
         """
-        time_to_execution = td_format(datetime.utcnow() - ctx.message.created_at, milliseconds=True, short_format=True)
+        time_to_execution = td_format(datetime.utcnow() - ctx.message.created_at, milliseconds=True)
         now = datetime.utcnow()
         await ctx.trigger_typing()
-        time_to_typing = td_format(datetime.utcnow() - now, milliseconds=True, short_format=True)
-        full_round_trip = td_format(datetime.utcnow() - ctx.message.created_at, milliseconds=True, short_format=True)
+        time_to_typing = td_format(datetime.utcnow() - now, milliseconds=True)
+        full_round_trip = td_format(datetime.utcnow() - ctx.message.created_at, milliseconds=True)
         await ctx.send(_("\N{TABLE TENNIS PADDLE AND BALL} Pong!\n"
                          "Time to command execution: {}\n"
                          "Typing indicator: {}\n\n"

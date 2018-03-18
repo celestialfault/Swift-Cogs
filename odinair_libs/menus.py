@@ -4,9 +4,12 @@ from enum import Enum
 from typing import Union, Any, Dict, Sequence, Callable, Tuple
 
 import discord
+
 from redbot.core import RedContext
 from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import question
+
+from odinair_libs._i18n import _
 
 __all__ = ["PostMenuAction", "ReactMenu", "MenuResult", "paginate", "confirm", "prompt"]
 
@@ -358,18 +361,9 @@ async def confirm(ctx: RedContext, message: str, timeout: float = 30.0,
         A boolean value indicating if the user confirmed or declined the action, or the value of `default`
         if the timeout was reached
     """
-    message = (
-        f"{message}\n\n"
-        f"**Click \N{WHITE HEAVY CHECK MARK} to confirm or \N{REGIONAL INDICATOR SYMBOL LETTER X} to cancel**"
-    )
+    message = _("{}\n\n**Click \N{WHITE HEAVY CHECK MARK} to confirm or "
+                "\N{REGIONAL INDICATOR SYMBOL LETTER X} to cancel**").format(message)
     actions = {True: "\N{WHITE HEAVY CHECK MARK}", False: "\N{REGIONAL INDICATOR SYMBOL LETTER X}"}
     return (await ReactMenu(ctx, actions, embed=discord.Embed(description=message, colour=colour),
                             default=default, timeout=timeout, post_action=PostMenuAction.DELETE,
                             post_action_check=None, **kwargs).prompt()).action
-
-
-@discord.utils.deprecated(instead="ReactMenu")
-async def react_menu(ctx: RedContext, actions: Dict[Any, Union[discord.Emoji, discord.Reaction, str]],
-                     **kwargs) -> MenuResult:
-    """This function is deprecated and will be removed in the future; please use the ReactMenu class instead"""
-    return await ReactMenu(ctx, actions, **kwargs).prompt()
