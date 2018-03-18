@@ -1,0 +1,32 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/python:3.6.1
+
+    working_directory: ~/repo
+
+    steps:
+      - checkout
+
+      - restore_cache:
+          keys:
+          - venv-dependencies
+
+      - run:
+          name: install dependencies
+          command: |
+            python3 -m venv venv
+            . venv/bin/activate
+            pip install git+https://github.com/Cog-Creators/Red-DiscordBot@V3/develop
+
+      - save_cache:
+          paths:
+            - ./venv
+          key: venv-dependencies
+
+      - run:
+          name: run tests
+          command: |
+            . venv/bin/activate
+            python -m compileall ./
