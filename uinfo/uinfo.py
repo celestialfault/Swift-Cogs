@@ -20,16 +20,6 @@ class UInfo:
     def __init__(self, bot: Red):
         self.bot = bot
 
-    @staticmethod
-    def plural(*items: str):
-        items = list(items)
-        if len(items) >= 3:
-            last = items.pop()
-            joined = ", ".join(items)
-            return _("{} and {}").format(joined, last)
-        else:
-            return ", ".join(items)
-
     async def get_bot_role(self, member: discord.Member):
         if member.bot:
             return None
@@ -49,30 +39,25 @@ class UInfo:
 
         return "\n".join(msgs)
 
-    def get_activity(self, member: discord.Member):
-        game = bold(getattr(member.activity, "name", None))
-        game_type = None
-
+    @staticmethod
+    def get_activity(member: discord.Member):
         if member.activity is None:
-            pass
+            return None
 
-        elif member.activity.type == discord.ActivityType.playing:
-            game_type = _("\N{VIDEO GAME} Playing")
-
+        game = None
+        if member.activity.type == discord.ActivityType.playing:
+            game = _("\N{VIDEO GAME} Playing **{}**").format(member.activity.name)
         elif member.activity.type == discord.ActivityType.streaming:
-            game_type = _("\N{VIDEO CAMERA} Streaming")
-            game = bold(f"[{member.activity}]({member.activity.url})")
-
+            game = _("\N{VIDEO CAMERA} Streaming **{}**").format(f"[{member.activity}]({member.activity.url})")
         elif member.activity.type == discord.ActivityType.listening:
-            game_type = _("\N{MUSICAL NOTE} Listening to")
+            game = _("\N{MUSICAL NOTE} Listening to **{}**").format(member.activity.name)
             if isinstance(member.activity, discord.Spotify):
-                game = _("{} \N{EM DASH} **{}** on **Spotify**").format(
-                    self.plural(*[bold(x) for x in member.activity.artists]), member.activity.title)
-
+                game = _("\N{MUSICAL NOTE} Listening to **{}** \N{EM DASH} **{}** on **Spotify**").format(
+                    ", ".join(member.activity.artists), member.activity.title)
         elif member.activity.type == discord.ActivityType.watching:
-            game_type = _("\N{FILM PROJECTOR} Watching")
+            game = _("\N{FILM PROJECTOR} Watching **{}**").format(member.activity.name)
 
-        return game, game_type
+        return game
 
     @staticmethod
     def get_status(member: discord.Member):
@@ -100,12 +85,11 @@ class UInfo:
         if colour == discord.Colour.default():
             colour = discord.Embed.Empty
 
-        activity, activity_type = self.get_activity(user)
-        status = self.get_status(user)
-        description = f"\N{EARTH GLOBE AMERICAS} {status}"
+        description = f"\N{EARTH GLOBE AMERICAS} {self.get_status(user)}"
 
-        if activity_type is not None:
-            description += f"\n{activity_type} {activity}"
+        activity = self.get_activity(user)
+        if activity is not None:
+            description += f"\n{activity}"
         if user.nick:
             description += _("\n\N{LABEL} Nicknamed as {}").format(bold(escape(user.nick, formatting=True)))
 
@@ -118,8 +102,7 @@ class UInfo:
             embed.add_field(name=_("Bot Roles"), value=bot_roles, inline=False)
 
         roles = reversed([escape(x.name, formatting=True) for x in user.roles if not x.is_default()])
-        if roles:
-            embed.add_field(name=_("Guild Roles"), value=", ".join(roles or ["None"]), inline=False)
+        embed.add_field(name=_("Guild Roles"), value=", ".join(roles or [_("None")]), inline=False)
 
         embed.add_field(name=_("Joined Discord"), value=since_created, inline=False)
         embed.add_field(name=_("Joined Guild"), value=since_joined, inline=False)

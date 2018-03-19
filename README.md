@@ -9,6 +9,9 @@
 
 # Installation
 
+**Until Red V3 is considered stable, these cogs should be considered prone to breaking changes being made
+at any time with no warning, nor with any form of backward compatibility.**
+
 ```
 [p]repo add odinair https://github.com/notodinair/RedV3-Cogs.git
 [p]cog install odinair <cog>
@@ -143,7 +146,7 @@ but still need to mention from time to time.
 <details>
 <summary>Starboard</summary>
 
-Send messages to a per-guild starboard channel, all from star reactions.
+Send messages to a per-guild starboard channel, via means of reacting with :star:
 
 #### To install
 
@@ -171,7 +174,7 @@ Adds one or more roles to a member for a set amount of time
 
 Mute a member for a set amount of time, with integration for the core Red modlog.
 
-*This cog requires my `timedrole` cog to function.*
+*This cog requires Timed Role to function.*
 
 #### To install
 

@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2018-03-16 05:08-0600\n"
+"POT-Creation-Date: 2018-03-19 06:29-0600\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -16,92 +16,92 @@ msgstr ""
 
 
 #: ../uinfo.py:29
-msgid "{} and {}"
-msgstr ""
-
-#: ../uinfo.py:39
 msgid "🛠 **Bot Owner**"
 msgstr ""
 
-#: ../uinfo.py:42
+#: ../uinfo.py:32
 msgid "🔑 Guild Owner"
 msgstr ""
 
-#: ../uinfo.py:44
+#: ../uinfo.py:34
 msgid "🔨 Server Administrator"
 msgstr ""
 
-#: ../uinfo.py:46
+#: ../uinfo.py:36
 msgid "🛡 Server Moderator"
 msgstr ""
 
-#: ../uinfo.py:48
+#: ../uinfo.py:38
 msgid "👥 Server Member"
 msgstr ""
 
-#: ../uinfo.py:60
-msgid "🎮 Playing"
+#: ../uinfo.py:50
+msgid "🎮 Playing **{}**"
 msgstr ""
 
-#: ../uinfo.py:63
-msgid "📹 Streaming"
+#: ../uinfo.py:53
+msgid "📹 Streaming **{}**"
 msgstr ""
 
-#: ../uinfo.py:67
-msgid "🎵 Listening to"
+#: ../uinfo.py:56
+msgid "🎵 Listening to **{}**"
 msgstr ""
 
-#: ../uinfo.py:69
-msgid "{} — **{}** on **Spotify**"
+#: ../uinfo.py:58
+msgid "🎵 Listening to **{}** — **{}** on **Spotify**"
 msgstr ""
 
-#: ../uinfo.py:73
-msgid "📽 Watching"
+#: ../uinfo.py:62
+msgid "📽 Watching **{}**"
 msgstr ""
 
-#: ../uinfo.py:80
+#: ../uinfo.py:70
 msgid "Online"
 msgstr ""
 
-#: ../uinfo.py:82
+#: ../uinfo.py:72
 msgid "Idle"
 msgstr ""
 
-#: ../uinfo.py:84
+#: ../uinfo.py:74
 msgid "Do Not Disturb"
 msgstr ""
 
-#: ../uinfo.py:86
+#: ../uinfo.py:76
 msgid "Offline"
 msgstr ""
 
-#: ../uinfo.py:109
+#: ../uinfo.py:99
 msgid ""
 "\n"
 "🏷 Nicknamed as {}"
 msgstr ""
 
-#: ../uinfo.py:113
+#: ../uinfo.py:103
 msgid "Member #{} | User ID: {}"
 msgstr ""
 
-#: ../uinfo.py:117
+#: ../uinfo.py:107
 msgid "Bot Roles"
 msgstr ""
 
-#: ../uinfo.py:121
+#: ../uinfo.py:111
 msgid "Guild Roles"
 msgstr ""
 
-#: ../uinfo.py:123
+#: ../uinfo.py:111
+msgid "None"
+msgstr ""
+
+#: ../uinfo.py:113
 msgid "Joined Discord"
 msgstr ""
 
-#: ../uinfo.py:124
+#: ../uinfo.py:114
 msgid "Joined Guild"
 msgstr ""
 
-#: ../uinfo.py:132
+#: ../uinfo.py:122
 msgid "{}'s avatar"
 msgstr ""
 
