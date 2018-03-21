@@ -1,5 +1,3 @@
-### Issue type
-
 - [ ] Bug
 - [ ] Suggestion
 
