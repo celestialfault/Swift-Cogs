@@ -1,4 +1,5 @@
 import inspect
+import collections
 
 import re
 from datetime import timedelta
@@ -15,7 +16,19 @@ from textwrap import dedent
 from odinair_libs.converters import td_seconds
 from odinair_libs._i18n import _
 
-__all__ = ["td_format", "difference", "normalize", "attempt_emoji", "get_source", "tick", "chunks", "cmd_help"]
+__all__ = ("td_format", "difference", "normalize", "attempt_emoji", "get_source",
+           "tick", "chunks", "cmd_help", "flatten")
+
+
+def flatten(d, parent_key='', sep='_'):  # https://stackoverflow.com/a/6027615
+    items = []
+    for k, v in d.items():
+        new_key = parent_key + sep + k if parent_key else k
+        if isinstance(v, collections.MutableMapping):
+            items.extend(flatten(v, new_key, sep=sep).items())
+        else:
+            items.append((new_key, v))
+    return dict(items)
 
 
 def tick(text: str):
