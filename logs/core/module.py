@@ -24,7 +24,7 @@ class Module(metaclass=ABCMeta):
         await self.reload_settings()
 
     async def reload_settings(self):
-        self.settings = await self.config.guild(self.guild).get_raw(self.name)
+        self.settings = await self.config.guild(self.guild).get_attr(self.name).all()
 
     @classmethod
     async def get_module(cls, module_id: str, *args, **kwargs):
