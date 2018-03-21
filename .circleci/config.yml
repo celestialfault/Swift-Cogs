@@ -9,25 +9,11 @@ jobs:
     steps:
       - checkout
 
-      - restore_cache:
-          keys:
-          - venv-dependencies
-
       - run:
-          name: Install dependencies
+          name: Run tests
           command: |
             python3 -m venv venv
             . venv/bin/activate
             pip install pycodestyle
-
-      - save_cache:
-          paths:
-            - ./venv
-          key: venv-dependencies
-
-      - run:
-          name: Run tests
-          command: |
-            . venv/bin/activate
             python attempt_compile.py
             pycodestyle --show-source --statistics --max-line-length=120 --exclude venv */

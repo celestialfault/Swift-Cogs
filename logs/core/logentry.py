@@ -6,7 +6,7 @@ import discord
 
 from redbot.core.utils.chat_formatting import box
 
-from logs.i18n import _
+from logs.core.i18n import _
 
 
 class LogEntry(discord.Embed):
@@ -14,6 +14,7 @@ class LogEntry(discord.Embed):
         self.require_fields = kwargs.pop('require_fields', True)
         kwargs['timestamp'] = kwargs.pop('timestamp', datetime.utcnow())
         super().__init__(**kwargs)
+        self._differ = Differ()
 
     @property
     def is_valid(self):
@@ -31,7 +32,7 @@ class LogEntry(discord.Embed):
         if isinstance(after, str):
             after = after.splitlines()
 
-        changed = Differ().compare(before, after)
+        changed = self._differ.compare(before, after)
         if not changed:
             return
         return self.add_field(name=name, value=box("\n".join(changed), lang="diff"))
