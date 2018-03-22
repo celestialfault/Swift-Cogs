@@ -6,10 +6,9 @@ from discord.ext import commands
 
 from redbot.core import checks, Config
 from redbot.core.bot import Red, RedContext
-from redbot.core.utils.chat_formatting import warning, info, error
+from redbot.core.utils.chat_formatting import warning, info, error, escape
 
-from logs.core import Module, _
-from logs.core.module import get_module_cache
+from logs.core import Module, get_module, reload_guild_modules, _
 from logs.modules import all_modules
 
 from odinair_libs.formatting import tick, cmd_help, flatten
@@ -21,14 +20,23 @@ class Logs:
     """Log anything and everything that happens in your server"""
 
     __author__ = "odinair <odinair@odinair.xyz>"
-    __version__ = "0.1.0"
+    __version__ = "1.0.0"
 
     defaults_guild = {
-        all_modules[x].name: {
-            "_log_channel": None,
-            "_webhook": None,
-            **all_modules[x].defaults
-        } for x in all_modules
+        **{
+            all_modules[x].name: {
+                "_log_channel": None,
+                "_webhook": None,
+                **all_modules[x].defaults
+            } for x in all_modules
+        },
+        "ignore": {
+            "channels": [],
+            "members": [],
+            "roles": [],
+            "member_roles": [],
+            "guild": False
+        }
     }
 
     def __init__(self, bot: Red):
@@ -47,7 +55,7 @@ class Logs:
     @checks.guildowner_or_permissions(administrator=True)
     async def logset(self, ctx: RedContext):
         """Manage log settings"""
-        await cmd_help(ctx, "")
+        await cmd_help(ctx)
 
     @logset.command(name="webhook")
     @commands.bot_has_permissions(manage_webhooks=True)
@@ -59,7 +67,7 @@ class Logs:
         Previously created webhooks that are then unregistered are not cleaned up
         by this command, and have to be removed manually.
         """
-        module = await Module.get_module(module, guild=ctx.guild)
+        module = await get_module(module, guild=ctx.guild)
         if module is None:
             await ctx.send(warning(_("That module could not be found")))
             return
@@ -100,7 +108,7 @@ class Logs:
 
         Passing no log channel effectively acts as disabling the module
         """
-        module = await Module.get_module(module, guild=ctx.guild)
+        module = await get_module(module, guild=ctx.guild)
         if module is None:
             await ctx.send(warning(_("That module could not be found")))
             return
@@ -120,7 +128,7 @@ class Logs:
     @logset.command(name="module")
     async def logset_module(self, ctx: RedContext, module: str, *settings: str):
         """Get or set a module's settings"""
-        module = await Module.get_module(module, guild=ctx.guild)
+        module = await get_module(module, guild=ctx.guild)
         if module is None:
             await ctx.send(warning(_("That module could not be found")))
             return
@@ -141,11 +149,167 @@ class Logs:
             await ctx.send(embed=discord.Embed(
                 description=_("Guild log settings have been reset."),
                 colour=discord.Colour.green()))
-
-            for module in get_module_cache(ctx.guild):
-                await module.reload_settings()
+            await reload_guild_modules(ctx.guild)
         else:
             await ctx.send(embed=discord.Embed(description=_("Okay then."), colour=discord.Colour.gold()))
+
+    ###################
+    #   Ignore Cmd    #
+    ###################
+
+    @logset.group(name="ignore")
+    async def logset_ignore(self, ctx: RedContext):
+        """Add items to the guild logging ignore list"""
+        await cmd_help(ctx, "ignore")
+
+    @logset_ignore.command(name="channel")
+    async def ignore_channel(self, ctx: RedContext, *,
+                             channel: discord.TextChannel or discord.VoiceChannel or discord.CategoryChannel = None):
+        """Ignore a channel or category from logging
+
+        Any channels in a category that is ignored are also implicitly ignored
+
+        `channel` defaults to the current channel
+        """
+        if channel is None:
+            channel = ctx.channel
+        async with self.config.guild(ctx.guild).ignore.channels() as ignored:
+            if channel.id in ignored:
+                await ctx.send(warning(_("That channel is already being ignored")))
+                return
+            ignored.append(channel.id)
+            if not isinstance(channel, discord.CategoryChannel):
+                await ctx.send(tick(_("The channel {} is now ignored from logging").format(channel.mention)))
+            else:
+                await ctx.send(tick(_("The category {} and it's subchannels are now ignored from logging")
+                                    .format(channel.mention)))
+        await reload_guild_modules(ctx.guild)
+
+    @logset_ignore.command(name="member")
+    async def ignore_member(self, ctx: RedContext, *, member: discord.Member):
+        """Ignore a member from logging"""
+        async with self.config.guild(ctx.guild).ignore.members() as ignored:
+            if member.id in ignored:
+                await ctx.send(warning(_("That member is already being ignored")))
+                return
+            ignored.append(member.id)
+            await ctx.send(tick(_("Member **{}** is now ignored from logging").format(member)))
+        await reload_guild_modules(ctx.guild)
+
+    @logset_ignore.command(name="role")
+    async def ignore_role(self, ctx: RedContext, *, role: discord.Role):
+        """Ignore a role from logging
+
+        This only ignores roles themselves from being logged with the Role module,
+        and not members with the role. To ignore members with a given role,
+        please see `[p]help logset ignore memberrole`
+        """
+        async with self.config.guild(ctx.guild).ignore.roles() as ignored:
+            if role.id in ignored:
+                await ctx.send(warning(_("That role is already being ignored")))
+                return
+            ignored.append(role.id)
+            await ctx.send(tick(_("Members with the role **{}** are now ignored from logging")
+                                .format(escape(str(role), mass_mentions=True, formatting=True))))
+        await reload_guild_modules(ctx.guild)
+
+    @logset_ignore.command(name="memberrole")
+    async def ignore_memberrole(self, ctx: RedContext, *, role: discord.Role):
+        """Ignore a member role from logging
+
+        This is not the same as regular role ignoring, as this ignores members
+        who have the given role, instead of ignoring the role from logging via
+        the role module.
+        """
+        async with self.config.guild(ctx.guild).ignore.member_roles() as ignored:
+            if role.id in ignored:
+                await ctx.send(warning(_("That role is already being ignored")))
+                return
+            ignored.remove(role.id)
+            await ctx.send(tick(_("Members with the role **{}** are no longer ignored from logging")
+                                .format(escape(str(role), mass_mentions=True, formatting=True))))
+        await reload_guild_modules(ctx.guild)
+
+    @logset_ignore.command(name="guild")
+    async def ignore_guild(self, ctx: RedContext):
+        """Ignore the current guild from logging"""
+        await self.config.guild(ctx.guild).ignore.guild.set(True)
+        await ctx.send(tick(_("Now ignoring the current guild")))
+        await reload_guild_modules(ctx.guild)
+
+    ###################
+    #  Unignore Cmd   #
+    ###################
+
+    @logset.group(name="unignore")
+    async def logset_unignore(self, ctx: RedContext):
+        """Remove items from the guild logging ignore list"""
+        await cmd_help(ctx, "unignore")
+
+    @logset_unignore.command(name="channel")
+    async def unignore_channel(self, ctx: RedContext, *,
+                               channel: discord.TextChannel or discord.VoiceChannel or discord.CategoryChannel = None):
+        """Unignore a channel or category from logging"""
+        if channel is None:
+            channel = ctx.channel
+        async with self.config.guild(ctx.guild).ignore.channels() as ignored:
+            if channel.id not in ignored:
+                await ctx.send(warning(_("That channel isn't currently being ignored")))
+                return
+            ignored.remove(channel.id)
+            if not isinstance(channel, discord.CategoryChannel):
+                await ctx.send(tick(_("The channel {} is no longer ignored from logging").format(channel.mention)))
+            else:
+                await ctx.send(tick(_("The category {} and it's subchannels are no longer ignored from logging")
+                                    .format(channel.mention)))
+        await reload_guild_modules(ctx.guild)
+
+    @logset_unignore.command(name="member")
+    async def unignore_member(self, ctx: RedContext, *, member: discord.Member):
+        """Unignore a member from logging"""
+        async with self.config.guild(ctx.guild).ignore.members() as ignored:
+            if member.id not in ignored:
+                await ctx.send(warning(_("That member isn't currently being ignored")))
+                return
+            ignored.remove(member.id)
+            await ctx.send(tick(_("Member **{}** is no longer ignored from logging").format(member)))
+        await reload_guild_modules(ctx.guild)
+
+    @logset_unignore.command(name="role")
+    async def unignore_role(self, ctx: RedContext, *, role: discord.Role):
+        """Unignore a role from logging"""
+        async with self.config.guild(ctx.guild).ignore.roles() as ignored:
+            if role.id not in ignored:
+                await ctx.send(warning(_("That role isn't currently being ignored")))
+                return
+            ignored.remove(role.id)
+            await ctx.send(tick(_("The role **{}** is no longer ignored from logging")
+                                .format(escape(str(role), mass_mentions=True, formatting=True))))
+        await reload_guild_modules(ctx.guild)
+
+    @logset_unignore.command(name="memberrole")
+    async def unignore_memberrole(self, ctx: RedContext, *, role: discord.Role):
+        """Unignore a a member role from logging
+
+        This is not the same as regular role ignoring, as this ignores members
+        who have the given role, instead of ignoring the role from logging via
+        the role module.
+        """
+        async with self.config.guild(ctx.guild).ignore.member_roles() as ignored:
+            if role.id not in ignored:
+                await ctx.send(warning(_("That role isn't currently being ignored")))
+                return
+            ignored.remove(role.id)
+            await ctx.send(tick(_("Members with the role **{}** are no longer ignored from logging")
+                                .format(escape(str(role), mass_mentions=True, formatting=True))))
+        await reload_guild_modules(ctx.guild)
+
+    @logset_unignore.command(name="guild")
+    async def unignore_guild(self, ctx: RedContext):
+        """Unignore the current guild from logging"""
+        await self.config.guild(ctx.guild).ignore.guild.set(False)
+        await ctx.send(tick(_("No longer ignoring the current guild")))
+        await reload_guild_modules(ctx.guild)
 
     ###################
     #    Listeners    #
@@ -154,63 +318,63 @@ class Logs:
     async def on_message_delete(self, message: discord.Message):
         if not getattr(message, "guild", None):
             return
-        module = await Module.get_module("message", message.guild)
+        module = await get_module("message", message.guild)
         await module.log("delete", message)
 
     async def on_message_edit(self, before: discord.Message, after: discord.Message):
         if not getattr(after, "guild", None):
             return
-        module = await Module.get_module("message", after.guild)
+        module = await get_module("message", after.guild)
         await module.log("edit", before, after)
 
     async def on_member_join(self, member: discord.Member):
-        module = await Module.get_module("member", member.guild)
+        module = await get_module("member", member.guild)
         await module.log("join", member)
 
     async def on_member_leave(self, member: discord.Member):
-        module = await Module.get_module("member", member.guild)
+        module = await get_module("member", member.guild)
         await module.log("leave", member)
 
     async def on_member_update(self, before: discord.Member, after: discord.Member):
-        module = await Module.get_module("member", after.guild)
+        module = await get_module("member", after.guild)
         await module.log("update", before, after)
 
     async def on_guild_channel_create(self, channel: discord.abc.GuildChannel):
         # noinspection PyUnresolvedReferences
-        module = await Module.get_module("channel", channel.guild)
+        module = await get_module("channel", channel.guild)
         await module.log("create", channel)
 
     async def on_guild_channel_delete(self, channel: discord.abc.GuildChannel):
         # noinspection PyUnresolvedReferences
-        module = await Module.get_module("channel", channel.guild)
+        module = await get_module("channel", channel.guild)
         await module.log("delete", channel)
 
     async def on_guild_channel_update(self, before: discord.abc.GuildChannel, after: discord.abc.GuildChannel):
         # noinspection PyUnresolvedReferences
-        module = await Module.get_module("channel", after.guild)
+        module = await get_module("channel", after.guild)
         await module.log("update", before, after)
 
     async def on_voice_state_update(self, member: discord.Member, before: discord.VoiceState,
                                     after: discord.VoiceState):
         if not hasattr(member, "guild"):
             return
-        module = await Module.get_module("voice", member.guild)
+        module = await get_module("voice", member.guild)
         await module.log("update", before, after, member)
 
     async def on_guild_role_create(self, role: discord.Role):
-        module = await Module.get_module("role", role.guild)
+        module = await get_module("role", role.guild)
         await module.log("create", role)
 
     async def on_guild_role_delete(self, role: discord.Role):
-        module = await Module.get_module("role", role.guild)
+        module = await get_module("role", role.guild)
         await module.log("delete", role)
 
     async def on_guild_role_update(self, before: discord.Role, after: discord.Role):
-        module = await Module.get_module("role", after.guild)
+        module = await get_module("role", after.guild)
         await module.log("update", before, after)
 
     async def on_guild_update(self, before: discord.Guild, after: discord.Guild):
-        module = await Module.get_module("guild", after)
+        module = await get_module("guild", after)
         await module.log("update", before, after)
 
 

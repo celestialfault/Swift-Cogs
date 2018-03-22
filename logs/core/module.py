@@ -1,9 +1,8 @@
 from abc import ABCMeta, abstractmethod
-from typing import Iterable, Optional, Dict, Any, Union
+from typing import Iterable, Optional, Dict, Any, Union, List
 
 import aiohttp
 import discord
-import discord.state
 
 from redbot.core import Config
 from redbot.core.bot import Red
@@ -22,6 +21,28 @@ def get_module_cache(guild: discord.Guild = None):
     return _module_cache
 
 
+async def reload_guild_modules(guild: discord.Guild):
+    for module in get_module_cache(guild):
+        if isinstance(module, str):  # :thinking:
+            module = get_module_cache(guild)[module]
+        await module.reload_settings()
+
+
+async def get_module(module_id: str, guild: discord.Guild, *args, **kwargs):
+    from logs.modules import all_modules
+    module_id = module_id.lower()
+    if guild.id not in _module_cache:
+        _module_cache[guild.id] = {}
+    if module_id in _module_cache[guild.id]:
+        return _module_cache[guild.id][module_id]
+    if module_id in all_modules:
+        module = all_modules[module_id](guild, *args, **kwargs)
+        _module_cache[guild.id][module_id] = module
+        await module.init_module()
+        return module
+    raise RuntimeError(f"a module with the id {module_id} was not found")
+
+
 class Module(metaclass=ABCMeta):
     # the following attributes are populated upon cog initialization
     config: Config = None
@@ -31,29 +52,16 @@ class Module(metaclass=ABCMeta):
     def __init__(self, guild: discord.Guild):
         self.guild = guild
         self.settings: Dict[str, ...] = {}
+        self.ignore: Dict[str, List[int]] = {}
 
     async def init_module(self):
         await self.reload_settings()
 
     async def reload_settings(self):
         self.settings = await self.config.guild(self.guild).get_attr(self.name).all()
+        self.ignore = await self.config.guild(self.guild).ignore.all()
 
-    @classmethod
-    async def get_module(cls, module_id: str, guild: discord.Guild, *args, **kwargs):
-        from logs.modules import all_modules
-        module_id = module_id.lower()
-        if guild.id not in _module_cache:
-            _module_cache[guild.id] = {}
-        if module_id in _module_cache[guild.id]:
-            return _module_cache[guild.id][module_id]
-        if module_id in all_modules:
-            module = all_modules[module_id](guild, *args, **kwargs)
-            _module_cache[guild.id][module_id] = module
-            await module.init_module()
-            return module
-        return None
-
-    # Abstract methods
+    # Begin abstract methods
 
     @property
     @abstractmethod
@@ -80,23 +88,18 @@ class Module(metaclass=ABCMeta):
     def defaults(self) -> Dict[str, Any]:
         raise NotImplementedError
 
-    # Helper methods
+    # End abstract methods
+    # Begin helper methods
 
     @property
     def opt_keys(self) -> Iterable[str]:
         return list(flatten(self.defaults, sep=":"))
 
-    @property
-    def module_config(self) -> Group:
-        return self.config.guild(self.guild).get_attr(self.name)
+    def is_opt_enabled(self, *opts: str):
+        return self.get_config_value(*opts)
 
-    @property
-    def log_to(self) -> Optional[Union[discord.TextChannel, discord.Webhook]]:
-        webhook = self.settings.get("_webhook", None)
-        channel_id = self.settings.get("_log_channel", None)
-        if webhook:
-            return discord.Webhook.from_url(webhook, adapter=discord.AsyncWebhookAdapter(self.session))
-        return self.bot.get_channel(channel_id)
+    def is_opt_disabled(self, *opts: str):
+        return not self.is_opt_enabled(*opts)
 
     def get_config_value(self, *opts: str, config_value: bool = False) -> Value:
         if config_value is False:
@@ -109,6 +112,20 @@ class Module(metaclass=ABCMeta):
             else:
                 _opt = _opt.get_attr(opt)
         return _opt
+
+    # The following methods are used by external code, and as such they shouldn't be modified by subclasses
+
+    @property
+    def module_config(self) -> Group:
+        return self.config.guild(self.guild).get_attr(self.name)
+
+    @property
+    def log_to(self) -> Optional[Union[discord.TextChannel, discord.Webhook]]:
+        webhook = self.settings.get("_webhook", None)
+        channel_id = self.settings.get("_log_channel", None)
+        if webhook:
+            return discord.Webhook.from_url(webhook, adapter=discord.AsyncWebhookAdapter(self.session))
+        return self.bot.get_channel(channel_id)
 
     def icon_uri(self, member: discord.Member = None):
         if member is None:
@@ -138,17 +155,37 @@ class Module(metaclass=ABCMeta):
                 continue
             await log_to.send(embed=embed, **kwargs)
 
-    async def log(self, func_name: str, *args, **kwargs):
-        if self.log_to is None:
+    async def log(self, fn_name: str, *args, **kwargs):
+        if self.log_to is None or self.is_ignored(*args, **kwargs):
             return
-        func = getattr(self, func_name)
-        data = await discord.utils.maybe_coroutine(func, *args, **kwargs)
+        fn = getattr(self, fn_name)
+        data = await discord.utils.maybe_coroutine(fn, *args, **kwargs)
         if not isinstance(data, Iterable):
             data = [data]
         await self._send(*data)
 
-    def is_opt_enabled(self, *opts: str):
-        return self.get_config_value(*opts)
+    def is_ignored(self, *args, **kwargs) -> bool:
+        kwargs = tuple(y for x, y in tuple(kwargs))
+        args = args + kwargs
+        return self.ignore.get("guild", False) or any([self._check(x) for x in args])
 
-    def is_opt_disabled(self, *opts: str):
-        return not self.is_opt_enabled(*opts)
+    def _check(self, item) -> bool:
+        channels = self.ignore.get("channels", {})
+        roles = self.ignore.get("roles", {})
+        members = self.ignore.get("members", {})
+        member_roles = self.ignore.get("member_roles", {})
+
+        if isinstance(item, discord.Member):
+            return any([item.bot, item.id in members, *[x.id in member_roles for x in item.roles]])
+        elif isinstance(item, discord.abc.GuildChannel):
+            return any([item.id in channels, getattr(item.category, "id", None) in channels])
+        elif isinstance(item, discord.Role):
+            return item.id in roles
+        elif isinstance(item, discord.VoiceState):
+            return getattr(item.channel, "id", None) in channels
+        elif isinstance(item, discord.Message):
+            return any([self._check(item.author), self._check(item.channel)])
+
+        return False
+
+    # End helper methods
