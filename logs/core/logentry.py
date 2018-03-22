@@ -18,15 +18,9 @@ class LogEntry(discord.Embed):
 
     @property
     def is_valid(self):
-        """Returns if this LogEntry can be logged"""
         return self.fields or (self.description and not self.require_fields)
 
     def add_differ_field(self, *, name: str, before: Union[List[str], str], after: Union[List[str], str]):
-        """Add a field with a before and after value that's compared using `difflib.Differ`
-
-        This is different from `add_diff_field`, as this automatically compares the two items given,
-        instead of the calling code comparing it
-        """
         if isinstance(before, str):
             before = before.splitlines()
         if isinstance(after, str):
@@ -38,7 +32,6 @@ class LogEntry(discord.Embed):
         return self.add_field(name=name, value=box("\n".join(changed), lang="diff"))
 
     def add_diff_field(self, *, name: str, before, after, box_lang: str = None, inline: bool = False):
-        """Add a diff field"""
         before, after = (str(before), str(after))
         if box_lang is not None:
             before = box(before, lang=box_lang)
