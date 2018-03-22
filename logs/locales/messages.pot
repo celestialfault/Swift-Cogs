@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2018-03-22 05:31-0600\n"
+"POT-Creation-Date: 2018-03-22 12:21-0600\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -21,79 +21,147 @@ msgid ""
 "**After:** {after}"
 msgstr ""
 
-#: ../logs.py:64 ../logs.py:106 ../logs.py:126
+#: ../logs.py:72 ../logs.py:113 ../logs.py:133
 msgid "That module could not be found"
 msgstr ""
 
-#: ../logs.py:68
+#: ../logs.py:78
 msgid "Any previously set webhook has been cleared."
 msgstr ""
 
-#: ../logs.py:74
+#: ../logs.py:84
 msgid "I'm not authorized to manage webhooks in that channel"
 msgstr ""
 
-#: ../logs.py:93
+#: ../logs.py:102
 msgid "Module **{}** will now log to {} via webhook."
 msgstr ""
 
-#: ../logs.py:112
+#: ../logs.py:119
 msgid "Module **{}** will now log to {}"
 msgstr ""
 
-#: ../logs.py:114
+#: ../logs.py:121
 msgid "The log channel for module **{}** has been cleared"
 msgstr ""
 
-#: ../logs.py:119
+#: ../logs.py:126
 msgid "Available modules: {}"
 msgstr ""
 
-#: ../logs.py:133
+#: ../logs.py:140
 msgid "Updated settings for module {}"
 msgstr ""
 
-#: ../logs.py:139
+#: ../logs.py:146
 msgid "Are you sure you want to reset this guild's log settings?"
 msgstr ""
 
-#: ../logs.py:143
+#: ../logs.py:150
 msgid "Guild log settings have been reset."
 msgstr ""
 
-#: ../logs.py:149
+#: ../logs.py:154
 msgid "Okay then."
 msgstr ""
 
-#: ../logs.py:237 ../logs.py:249 ../modules/guild.py:44 ../modules/guild.py:45
+#: ../logs.py:178
+msgid "That channel is already being ignored"
+msgstr ""
+
+#: ../logs.py:182
+msgid "The channel {} is now ignored from logging"
+msgstr ""
+
+#: ../logs.py:184
+msgid "The category {} and it's subchannels are now ignored from logging"
+msgstr ""
+
+#: ../logs.py:193
+msgid "That member is already being ignored"
+msgstr ""
+
+#: ../logs.py:196
+msgid "Member **{}** is now ignored from logging"
+msgstr ""
+
+#: ../logs.py:209 ../logs.py:226
+msgid "That role is already being ignored"
+msgstr ""
+
+#: ../logs.py:212
+msgid "Members with the role **{}** are now ignored from logging"
+msgstr ""
+
+#: ../logs.py:229 ../logs.py:303
+msgid "Members with the role **{}** are no longer ignored from logging"
+msgstr ""
+
+#: ../logs.py:237
+msgid "Now ignoring the current guild"
+msgstr ""
+
+#: ../logs.py:257
+msgid "That channel isn't currently being ignored"
+msgstr ""
+
+#: ../logs.py:261
+msgid "The channel {} is no longer ignored from logging"
+msgstr ""
+
+#: ../logs.py:263
+msgid "The category {} and it's subchannels are no longer ignored from logging"
+msgstr ""
+
+#: ../logs.py:272
+msgid "That member isn't currently being ignored"
+msgstr ""
+
+#: ../logs.py:275
+msgid "Member **{}** is no longer ignored from logging"
+msgstr ""
+
+#: ../logs.py:283 ../logs.py:300
+msgid "That role isn't currently being ignored"
+msgstr ""
+
+#: ../logs.py:286
+msgid "The role **{}** is no longer ignored from logging"
+msgstr ""
+
+#: ../logs.py:311
+msgid "No longer ignoring the current guild"
+msgstr ""
+
+#: ../logs.py:400 ../logs.py:412 ../modules/guild.py:44 ../modules/guild.py:45
 msgid "Disabled"
 msgstr ""
 
-#: ../logs.py:239
+#: ../logs.py:402
 msgid "Via webhook"
 msgstr ""
 
-#: ../logs.py:241
+#: ../logs.py:404
 msgid "To channel {}"
 msgstr ""
 
-#: ../logs.py:244
+#: ../logs.py:407
 msgid "Logging"
 msgstr ""
 
-#: ../logs.py:245
+#: ../logs.py:408
 msgid "{} module settings"
 msgstr ""
 
-#: ../logs.py:246 ../modules/guild.py:44 ../modules/guild.py:45
+#: ../logs.py:409 ../modules/guild.py:44 ../modules/guild.py:45
 msgid "Enabled"
 msgstr ""
 
-#: ../logs.py:247
+#: ../logs.py:410
 msgid "**None** — All of this module's options are disabled"
 msgstr ""
 
-#: ../logs.py:250
+#: ../logs.py:413
 msgid "**None** — All of this module's options are enabled"
 msgstr ""
 
