@@ -1,8 +1,6 @@
 from redbot.core.bot import Red
+from logs.logs import Logs
 
 
-async def setup(bot: Red):
-    if 'OdinairLibs' not in bot.cogs:
-        await bot.load_extension(await bot.cog_mgr.find_cog('odinair_libs'))
-    from .logs import Logs
+def setup(bot: Red):
     bot.add_cog(Logs(bot))

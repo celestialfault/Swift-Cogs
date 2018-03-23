@@ -10,7 +10,7 @@ from redbot.core.config import Group, Value
 
 from logs.core import LogEntry
 
-from odinair_libs.formatting import flatten
+from cog_shared.odinair_libs.formatting import flatten
 
 _module_cache = {}
 

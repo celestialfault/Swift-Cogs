@@ -3,7 +3,8 @@ from datetime import datetime
 import discord
 
 from logs.core import Module, LogEntry, _
-from odinair_libs.formatting import td_format
+
+from cog_shared.odinair_libs.formatting import td_format
 
 
 class MemberModule(Module):

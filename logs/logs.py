@@ -6,13 +6,13 @@ from discord.ext import commands
 
 from redbot.core import checks, Config
 from redbot.core.bot import Red, RedContext
-from redbot.core.utils.chat_formatting import warning, info, error, escape
+from redbot.core.utils.chat_formatting import warning, info, error, escape, inline, bold
 
 from logs.core import Module, get_module, reload_guild_modules, _
 from logs.modules import all_modules
 
-from odinair_libs.formatting import tick, cmd_help, flatten
-from odinair_libs.menus import confirm
+from cog_shared.odinair_libs.formatting import tick, cmd_help, flatten
+from cog_shared.odinair_libs.menus import confirm
 
 
 # noinspection PyShadowingNames,PyMethodMayBeStatic
@@ -75,7 +75,8 @@ class Logs:
         await module.module_config.set_raw("_log_channel", value=None)
         if channel is None:
             await module.module_config.set_raw("_webhook", value=None)
-            await ctx.send(tick(_("Any previously set webhook has been cleared.")))
+            await ctx.send(tick(_("Any previously set webhook for module **{module}** has been cleared.")
+                                .format(module=module.friendly_name)))
             return
 
         try:
@@ -99,8 +100,8 @@ class Logs:
 
         await module.module_config.set_raw("_webhook", value=webhook.url)
         await module.reload_settings()
-        await ctx.send(tick(_("Module **{}** will now log to {} via webhook.").format(module.friendly_name,
-                                                                                      channel.mention)))
+        await ctx.send(tick(_("Module **{module}** will now log to {channel} via webhook.")
+                            .format(module=module.friendly_name, channel=channel.mention)))
 
     @logset.command(name="channel")
     async def logset_channel(self, ctx: RedContext, module: str, channel: discord.TextChannel = None):
@@ -116,14 +117,21 @@ class Logs:
         await module.module_config.set_raw("_webhook", value=None)
         await module.reload_settings()
         if channel:
-            await ctx.send(tick(_("Module **{}** will now log to {}").format(module.friendly_name, channel.mention)))
+            await ctx.send(tick(_("Module **{module}** will now log to {channel}")
+                                .format(module=module.friendly_name, channel=channel.mention)))
         else:
-            await ctx.send(tick(_("The log channel for module **{}** has been cleared").format(module.friendly_name)))
+            await ctx.send(tick(_("The log channel for module **{module}** has been cleared")
+                                .format(module=module.friendly_name)))
 
     @logset.command(name="modules")
     async def logset_modules(self, ctx: RedContext):
         """List all available modules"""
-        await ctx.send(info(_("Available modules: {}").format(", ".join(list(all_modules)))))
+        modules = []
+        for module in all_modules:
+            module = all_modules[module]
+            modules.append(f"{bold(module.friendly_name)} \N{EM DASH} {inline(str(module.name))}")
+
+        await ctx.send(info(_("Available modules:\n\n{modules}").format(modules="\n".join(modules))))
 
     @logset.command(name="module")
     async def logset_module(self, ctx: RedContext, module: str, *settings: str):
@@ -137,7 +145,7 @@ class Logs:
         else:
             await module.toggle_options(*settings)
             await module.reload_settings()
-            await ctx.send(content=tick(_("Updated settings for module {}").format(module.friendly_name)),
+            await ctx.send(content=tick(_("Updated settings for module **{}**").format(module.friendly_name)),
                            embed=status_embed(module))
 
     @logset.command(name="reset")
@@ -179,10 +187,11 @@ class Logs:
                 return
             ignored.append(channel.id)
             if not isinstance(channel, discord.CategoryChannel):
-                await ctx.send(tick(_("The channel {} is now ignored from logging").format(channel.mention)))
+                await ctx.send(tick(_("The channel {channel} is now ignored from logging")
+                                    .format(channel=channel.mention)))
             else:
-                await ctx.send(tick(_("The category {} and it's subchannels are now ignored from logging")
-                                    .format(channel.mention)))
+                await ctx.send(tick(_("The category {channel} and it's subchannels are now ignored from logging")
+                                    .format(channel=channel.mention)))
         await reload_guild_modules(ctx.guild)
 
     @logset_ignore.command(name="member")
@@ -193,7 +202,7 @@ class Logs:
                 await ctx.send(warning(_("That member is already being ignored")))
                 return
             ignored.append(member.id)
-            await ctx.send(tick(_("Member **{}** is now ignored from logging").format(member)))
+            await ctx.send(tick(_("Member **{member}** is now ignored from logging").format(member=member)))
         await reload_guild_modules(ctx.guild)
 
     @logset_ignore.command(name="role")
@@ -209,8 +218,8 @@ class Logs:
                 await ctx.send(warning(_("That role is already being ignored")))
                 return
             ignored.append(role.id)
-            await ctx.send(tick(_("Members with the role **{}** are now ignored from logging")
-                                .format(escape(str(role), mass_mentions=True, formatting=True))))
+            await ctx.send(tick(_("The role **{role}** is now ignored from logging")
+                                .format(role=escape(str(role), mass_mentions=True, formatting=True))))
         await reload_guild_modules(ctx.guild)
 
     @logset_ignore.command(name="memberrole")
@@ -226,8 +235,8 @@ class Logs:
                 await ctx.send(warning(_("That role is already being ignored")))
                 return
             ignored.remove(role.id)
-            await ctx.send(tick(_("Members with the role **{}** are no longer ignored from logging")
-                                .format(escape(str(role), mass_mentions=True, formatting=True))))
+            await ctx.send(tick(_("Members with the role **{role}** are no longer ignored from logging")
+                                .format(role=escape(str(role), mass_mentions=True, formatting=True))))
         await reload_guild_modules(ctx.guild)
 
     @logset_ignore.command(name="guild")
@@ -258,10 +267,11 @@ class Logs:
                 return
             ignored.remove(channel.id)
             if not isinstance(channel, discord.CategoryChannel):
-                await ctx.send(tick(_("The channel {} is no longer ignored from logging").format(channel.mention)))
+                await ctx.send(tick(_("The channel {channel} is no longer ignored from logging")
+                                    .format(channel=channel.mention)))
             else:
-                await ctx.send(tick(_("The category {} and it's subchannels are no longer ignored from logging")
-                                    .format(channel.mention)))
+                await ctx.send(tick(_("The category {channel} and it's subchannels are no longer ignored from logging")
+                                    .format(channel=channel.mention)))
         await reload_guild_modules(ctx.guild)
 
     @logset_unignore.command(name="member")
@@ -272,7 +282,7 @@ class Logs:
                 await ctx.send(warning(_("That member isn't currently being ignored")))
                 return
             ignored.remove(member.id)
-            await ctx.send(tick(_("Member **{}** is no longer ignored from logging").format(member)))
+            await ctx.send(tick(_("Member **{member}** is no longer ignored from logging").format(member=member)))
         await reload_guild_modules(ctx.guild)
 
     @logset_unignore.command(name="role")
@@ -283,25 +293,20 @@ class Logs:
                 await ctx.send(warning(_("That role isn't currently being ignored")))
                 return
             ignored.remove(role.id)
-            await ctx.send(tick(_("The role **{}** is no longer ignored from logging")
-                                .format(escape(str(role), mass_mentions=True, formatting=True))))
+            await ctx.send(tick(_("The role **{role}** is no longer ignored from logging")
+                                .format(role=escape(str(role), mass_mentions=True, formatting=True))))
         await reload_guild_modules(ctx.guild)
 
     @logset_unignore.command(name="memberrole")
     async def unignore_memberrole(self, ctx: RedContext, *, role: discord.Role):
-        """Unignore a a member role from logging
-
-        This is not the same as regular role ignoring, as this ignores members
-        who have the given role, instead of ignoring the role from logging via
-        the role module.
-        """
+        """Unignore a member role from logging"""
         async with self.config.guild(ctx.guild).ignore.member_roles() as ignored:
             if role.id not in ignored:
                 await ctx.send(warning(_("That role isn't currently being ignored")))
                 return
             ignored.remove(role.id)
-            await ctx.send(tick(_("Members with the role **{}** are no longer ignored from logging")
-                                .format(escape(str(role), mass_mentions=True, formatting=True))))
+            await ctx.send(tick(_("Members with the role **{role}** are no longer ignored from logging")
+                                .format(role=escape(str(role), mass_mentions=True, formatting=True))))
         await reload_guild_modules(ctx.guild)
 
     @logset_unignore.command(name="guild")

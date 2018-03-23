@@ -2,7 +2,7 @@ import discord
 
 from logs.core import Module, LogEntry, _
 
-from odinair_libs.formatting import normalize
+from cog_shared.odinair_libs.formatting import normalize
 
 
 class RoleModule(Module):
