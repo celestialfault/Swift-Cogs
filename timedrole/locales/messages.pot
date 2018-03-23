@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2018-03-17 06:05-0600\n"
+"POT-Creation-Date: 2018-03-23 16:30-0600\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -15,79 +15,71 @@ msgstr ""
 "Generated-By: pygettext.py 1.5\n"
 
 
-#: ../timedrole.py:92
+#: ../role.py:41
 msgid "Queued for removal"
 msgstr ""
 
-#: ../timedrole.py:104 ../timedrole.py:203
-msgid "Timed role expired"
-msgstr ""
-
-#: ../timedrole.py:108 ../timedrole.py:193
-msgid "Timed role granted by {}"
-msgstr ""
-
-#: ../timedrole.py:181
+#: ../timedrole.py:64
 msgid "No roles were given, or the only role given was the guild's default role"
 msgstr ""
 
-#: ../timedrole.py:184
+#: ../timedrole.py:67
 msgid "That member already has the role {}"
 msgstr ""
 
-#: ../timedrole.py:231
-msgid "No timed roles are active on this guild"
+#: ../timedrole.py:111
+msgid "This guild has no currently active timed roles"
 msgstr ""
 
-#: ../timedrole.py:232
+#: ../timedrole.py:112
 msgid "None of those members have any active timed roles"
 msgstr ""
 
-#: ../timedrole.py:240
+#: ../timedrole.py:119
 msgid "**❯** {} — {} — **Hidden role**"
 msgstr ""
 
-#: ../timedrole.py:242
+#: ../timedrole.py:122
 msgid "**Reason** — {}"
 msgstr ""
 
-#: ../timedrole.py:244
+#: ../timedrole.py:126
 msgid "**Given by** — {} — {} ago"
 msgstr ""
 
-#: ../timedrole.py:245
+#: ../timedrole.py:127
 msgid "An unknown member"
 msgstr ""
 
-#: ../timedrole.py:246
+#: ../timedrole.py:128
 msgid "**Expires** — {}"
 msgstr ""
 
-#: ../timedrole.py:303
+#: ../timedrole.py:190
 msgid "Role is equal to or above your highest ranked role"
 msgstr ""
 
-#: ../timedrole.py:305
+#: ../timedrole.py:192
 msgid "Role is equal to or above my highest ranked role"
 msgstr ""
 
-#: ../timedrole.py:317
+#: ../timedrole.py:204
 msgid "I'm not allowed to give one or more of those roles to that user"
 msgstr ""
 
-#: ../timedrole.py:322
+#: ../timedrole.py:209
 msgid "Successfully granted {} to **{}** for {}"
 msgstr ""
 
-#: ../timedrole.py:340
+#: ../timedrole.py:227
 msgid "Forcefully expired all roles from {}"
 msgstr ""
 
-#: ../timedrole.py:342
+#: ../timedrole.py:229
 msgid "Forcefully expired role `{}` from {}"
 msgstr ""
 
-#: ../timedrole.py:359
+#: ../timedrole.py:247
 msgid "Timed role reapplied after member rejoin"
 msgstr ""
 
