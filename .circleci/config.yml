@@ -12,6 +12,8 @@ jobs:
       - run:
           name: Run tests
           command: |
-            pip install pycodestyle --user
+            python3 -m venv venv
+            . venv/bin/activate
+            pip install pycodestyle
             python _tests/compile.py
             pycodestyle --show-source --statistics --max-line-length=120 --exclude venv */
