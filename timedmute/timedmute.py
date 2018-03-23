@@ -1,3 +1,5 @@
+from typing import Optional
+
 import discord
 from discord.ext import commands
 
@@ -7,9 +9,9 @@ from redbot.core.bot import Red, RedContext, Config
 from redbot.core.utils.chat_formatting import warning
 from redbot.core.utils.mod import is_allowed_by_hierarchy
 
-from odinair_libs.converters import FutureTime
-from odinair_libs.checks import cogs_loaded
-from odinair_libs.formatting import td_format, tick
+from cog_shared.odinair_libs.converters import FutureTime
+from cog_shared.odinair_libs.checks import cogs_loaded
+from cog_shared.odinair_libs.formatting import td_format, tick
 
 try:
     from timedrole.timedrole import TimedRole
@@ -21,10 +23,10 @@ _ = CogI18n("TimedMute", __file__)
 
 class TimedMute:
     """Mute users for a set amount of time"""
-    CHANNEL_OVERWRITES = discord.PermissionOverwrite(speak=False, send_messages=False, add_reactions=False)
+    OVERWRITE_PERMISSIONS = discord.PermissionOverwrite(speak=False, send_messages=False, add_reactions=False)
 
     __author__ = "odinair <odinair@odinair.xyz>"
-    __version__ = "0.1.0"
+    __version__ = "1.0.0"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -40,9 +42,8 @@ class TimedMute:
     @staticmethod
     async def _setup_cases():
         try:
-            await modlog.register_casetype(name="timedmute", default_setting=True,
-                                           image="\N{STOPWATCH}\N{SPEAKER WITH CANCELLATION STROKE}",
-                                           case_str="Timed Mute")
+            await modlog.register_casetype(name="timedmute", default_setting=True, case_str="Timed Mute",
+                                           image="\N{STOPWATCH}\N{SPEAKER WITH CANCELLATION STROKE}")
         except RuntimeError:
             pass
 
@@ -50,26 +51,23 @@ class TimedMute:
         # noinspection PyUnresolvedReferences
         if not channel.permissions_for(channel.guild.me).manage_roles:
             return
-        await channel.set_permissions(
-            target=role, overwrite=self.CHANNEL_OVERWRITES, reason=_("Timed mute role permissions"))
+        await channel.set_permissions(target=role, overwrite=self.OVERWRITE_PERMISSIONS,
+                                      reason=_("Timed mute role permissions"))
 
     async def create_role(self, guild: discord.Guild):
-        # Now introducing: A terrible solution to a confusing PyCharm warning.
-        # (hint: `Guild.create_role` is a coroutine. PyCharm disagrees.)
+        # `Guild.create_role` is a coroutine. PyCharm would like to disagree.
+        # Thus, this terrible workaround was created.
         role = await discord.utils.maybe_coroutine(guild.create_role, name="Muted",
                                                    permissions=discord.Permissions.none())
-        # Setup channel overwrites
+
         for channel in guild.channels:
             await self.add_overwrite(role, channel)
-        # Save role ID
+
         await self.config.guild(guild).punished_role.set(role.id)
         return role
 
-    async def get_punished_role(self, guild: discord.Guild, create: bool = True):
-        role = discord.utils.get(guild.roles, id=await self.config.guild(guild).punished_role())
-        if role is None and create is True:
-            role = await self.create_role(guild)
-        return role
+    async def get_punished_role(self, guild: discord.Guild) -> Optional[discord.Role]:
+        return discord.utils.get(guild.roles, id=await self.config.guild(guild).punished_role())
 
     max_duration = FutureTime.get_seconds('2 years')
     min_duration = FutureTime.get_seconds('2 minutes')
@@ -102,22 +100,19 @@ class TimedMute:
                                                          mod=ctx.author, user=member):
             await ctx.send(warning(_("This action is not allowed by your guild's hierarchy settings")))
             return
-        role = await self.get_punished_role(ctx.guild, create=False)
+
+        role = await self.get_punished_role(ctx.guild)
         if role is None:
             tmp_msg = await ctx.send(_("Setting up this guild's muted role...\n"
                                        "(this may take a while, depending on how many channels you have)"))
             async with ctx.typing():
                 role = await self.create_role(ctx.guild)
             await tmp_msg.delete()
-        audit_reason = _("Muted by {}.").format(ctx.author)
-        if reason is not None:
-            audit_reason = _("Muted by {}. Reason: {}").format(ctx.author, reason)
 
         try:
             timed_role: TimedRole = self.bot.get_cog("TimedRole")
-            await timed_role.add_roles(role, member=member, duration=duration, granted_by=ctx.author,
-                                       reason=audit_reason, expired_reason=_("Timed mute expired"),
-                                       hidden=True, modlog_type="timedmute", modlog_reason=reason)
+            await timed_role.add_roles(role, member=member, duration=duration, granted_by=ctx.author, reason=reason,
+                                       modlog_type="timedmute")
         except RuntimeError as e:
             await ctx.send(warning(str(e)))
         else:
@@ -128,7 +123,7 @@ class TimedMute:
         guild = channel.guild
         if not channel.permissions_for(guild.me).manage_roles:
             return
-        role = await self.get_punished_role(guild, create=False)
+        role = await self.get_punished_role(guild)
         if not role:
             return
         await self.add_overwrite(role, channel)
