@@ -6,7 +6,7 @@ from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import escape, bold
 from redbot.core.i18n import CogI18n
 
-from odinair_libs.formatting import td_format
+from cog_shared.odinair_libs.formatting import td_format
 
 _ = CogI18n("UInfo", __file__)
 
@@ -15,7 +15,7 @@ class UInfo:
     """Yet another [p]userinfo variation"""
 
     __author__ = "odinair <odinair@odinair.xyz>"
-    __version__ = "0.1.0"
+    __version__ = "1.0.0"
 
     def __init__(self, bot: Red):
         self.bot = bot
