@@ -34,10 +34,8 @@ class MessageModule(Module):
         return embed
 
     def delete(self, message: discord.Message):
-        if self.is_opt_disabled("delete"):
-            pass
-        if message.author.bot:
-            return
+        if self.is_opt_disabled("delete") or message.author.bot:
+            return None
 
         embed = LogEntry(colour=discord.Colour.blurple())
         embed.set_author(name=_("Message Deleted"), icon_url=self.icon_uri(message.author))
