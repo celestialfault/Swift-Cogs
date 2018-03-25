@@ -3,5 +3,6 @@
   "bot_version": [3, 0, 0],
   "description": "Log anything and everything that happens in your Discord guild. Inspired by Grenzpolizei, created for extreme control of what and how data gets logged.",
   "short": "Log anything and everything that happens in your Discord guild",
-  "type": "COG"
+  "type": "COG",
+  "tags": ["moderation", "utility"]
 }

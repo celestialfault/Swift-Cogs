@@ -20,7 +20,7 @@ class Logs:
     """Log anything and everything that happens in your server"""
 
     __author__ = "odinair <odinair@odinair.xyz>"
-    __version__ = "1.0.0"
+    __version__ = "1.1.0"
 
     defaults_guild = {
         **{
@@ -394,8 +394,7 @@ def add_descriptions(items: List[str], descriptions: Dict[str, str] = None) -> s
 
 def status_embed(module: Module) -> discord.Embed:
     module_opts = flatten(module.settings, sep=":")
-    copied = module_opts.copy()
-    for opt in copied:
+    for opt in module_opts.copy():
         if opt not in module.opt_keys:
             module_opts.pop(opt)
 

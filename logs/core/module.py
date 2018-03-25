@@ -1,7 +1,7 @@
 from abc import ABCMeta, abstractmethod
 from typing import Iterable, Optional, Dict, Any, Union, List
+from aiohttp import ClientSession
 
-import aiohttp
 import discord
 
 from redbot.core import Config
@@ -47,7 +47,7 @@ class Module(metaclass=ABCMeta):
     # the following attributes are populated upon cog initialization
     config: Config = None
     bot: Red = None
-    session: aiohttp.ClientSession = None
+    session: ClientSession = None
 
     def __init__(self, guild: discord.Guild):
         self.guild = guild
@@ -133,12 +133,23 @@ class Module(metaclass=ABCMeta):
         return member.avatar_url_as(format="png")
 
     async def toggle_options(self, *opts: str):
-        opts = [x.split(":") for x in opts if "".join(x.split(":"))]
         for opt in opts:
-            opt = self.get_config_value(*opt, config_value=True)
+            if not "".join(opt.split(":")):
+                continue
+
+            # I'm so sorry for this monstrosity
+            _opts = opt.split("=")
+            opt_split = _opts[0].split(":")
+            opt = self.get_config_value(*opt_split, config_value=True)
             if isinstance(opt, Group):
                 continue
-            await opt.set(not await opt())
+
+            if len(_opts) > 1:
+                new_val = True if _opts[1].lower() in ('yes', 'true', '1', 'on') else False
+            else:
+                new_val = not await opt()
+            await opt.set(new_val)
+
         return await self.module_config.all()
 
     async def _send(self, *embeds: LogEntry):
