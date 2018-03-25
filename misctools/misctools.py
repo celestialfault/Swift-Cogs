@@ -1,15 +1,14 @@
+import unicodedata
 from datetime import datetime
 
 import discord
 from discord.ext import commands
 
 from redbot.core.bot import Red, RedContext
-from redbot.core.utils.chat_formatting import warning, pagify, box
+from redbot.core.utils.chat_formatting import warning, pagify
 from redbot.core.i18n import CogI18n
 
-import unicodedata
-
-from odinair_libs.formatting import td_format, get_source
+from cog_shared.odinair_libs.formatting import td_format, get_source
 
 _ = CogI18n("MiscTools", __file__)
 
@@ -20,7 +19,7 @@ class MiscTools:
     """
 
     __author__ = "odinair <odinair@odinair.xyz>"
-    __version__ = "0.1.0"
+    __version__ = "1.0.0"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -80,37 +79,3 @@ class MiscTools:
             strs.append(f"{snowflake}: `{snowflake_time.strftime('%A %B %d, %Y at %X UTC')}` \N{EM DASH} "
                         f"{td_format(snowflake_time - datetime.utcnow(), append_str=True)}")
         await ctx.send_interactive(pagify("\n".join(strs)))
-
-    @commands.command(hidden=True)
-    async def test_menu(self, ctx: RedContext):
-        """A very simple example command that uses ReactMenu
-
-        This isn't a proper command (unless you like being asked for a number between one and three),
-        and is meant as an example for my library cog's `ReactMenu` class.
-
-        The aforementioned library cog can be found as `odinair_libs`
-        in my cog repository: https://github.com/notodinair/Red-Cogs/tree/v3
-        """
-        from odinair_libs.menus import ReactMenu, PostMenuAction
-        # This command is meant as a fairly basic example usage of ReactMenu,
-        # with comments to explain most features used.
-        # There's a *lot* more functionality that isn't covered here.
-        # If you'd like to use this in an external cog, feel free to adapt this to your own use case.
-        # Implementing i18n support in this example is left as an exercise for the reader.
-
-        # This is a dict of actions in the form of { action: emoji }
-        # Note that the default value (passed as the `default` keyword argument when creating a ReactMenu)
-        # does not need to be in the actions dict
-        # Accepted emoji types are unicode emojis (such as below), or `discord.Emoji` items
-        # The action is returned as an attribute named `action` in a MenuResult class, in the form of either
-        # a key in the actions dict you passed when creating the ReactMenu, or the value of `default`
-        actions = {
-            "One": "\N{DIGIT ONE}\N{COMBINING ENCLOSING KEYCAP}",
-            "Two": "\N{DIGIT TWO}\N{COMBINING ENCLOSING KEYCAP}",
-            "Three": "\N{DIGIT THREE}\N{COMBINING ENCLOSING KEYCAP}"
-        }
-        menu = ReactMenu(ctx=ctx, actions=actions, content="Choose a number", post_action=PostMenuAction.DELETE,
-                         default="Default")
-        async with menu as result:
-            # Send the result in chat
-            await ctx.send(f"Result:\n{box(repr(result), lang='py')}")

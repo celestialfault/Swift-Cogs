@@ -3,5 +3,6 @@
   "bot_version": [3, 0, 0],
   "description": "Various quick & dirty utilities\n\nMostly helpful for cog development or advanced server administration",
   "short": "Various quick & dirty utilities",
-  "type": "COG"
+  "type": "COG",
+  "tags": ["utility"]
 }
