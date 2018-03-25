@@ -9,9 +9,7 @@ from redbot.core.i18n import CogI18n
 conf = Config.get_conf(None, identifier=441356724, force_registration=True, cog_name="Quotes")
 conf.register_guild(quotes=[])
 
-
-i18n = CogI18n("Quotes", __file__)
-_ = i18n
+_ = CogI18n("Quotes", __file__)
 
 
 class Quote:

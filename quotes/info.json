@@ -3,5 +3,6 @@
   "bot_version": [3, 0, 0],
   "description": "Save and retrieve quotes",
   "short": "Save and retrieve quotes",
-  "type": "COG"
+  "type": "COG",
+  "tags": ["fun"]
 }

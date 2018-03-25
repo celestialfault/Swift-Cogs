@@ -5,18 +5,17 @@ from redbot.core import RedContext
 from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import warning
 
-from odinair_libs.formatting import tick
-from odinair_libs.menus import ReactMenu, confirm, PostMenuAction, prompt
+from cog_shared.odinair_libs.formatting import tick
+from cog_shared.odinair_libs.menus import ReactMenu, confirm, PostMenuAction, prompt
 
-from quotes.quote import Quote, conf
-from quotes.quote import i18n as _
+from quotes.quote import Quote, conf, _
 
 
 class Quotes:
     """Save and retrieve quotes"""
 
     __author__ = "odinair <odinair@odinair.xyz>"
-    __version__ = "0.1.0"
+    __version__ = "1.0.0"
 
     def __init__(self, bot: Red):
         self.bot = bot
