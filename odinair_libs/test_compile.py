@@ -1,3 +1,6 @@
+# This isn't a proper library file, but instead a helper script to try and compile this repository's cogs,
+# while also excluding venv items. Basically, this is only useful for CircleCI testing.
+
 from compileall import compile_dir
 from pathlib import Path
 import sys

@@ -4,5 +4,6 @@
   "description": "Save and retrieve quotes",
   "short": "Save and retrieve quotes",
   "type": "COG",
-  "tags": ["fun"]
+  "tags": ["fun"],
+  "install_msg": "Hello!~ Thank you for installing one of my cogs.\nIf you experience any issues, please open an issue on my GitHub repo (<https://github.com/notodinair/Swift-Cogs/issues/new>)\n\n~ odinair 💜"
 }

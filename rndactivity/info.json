@@ -1,7 +1,9 @@
 {
   "author": ["odinair"],
   "bot_version": [3, 0, 0],
-  "description": "Random bot playing statuses.\n\nDue to how the status switching works, this cog doesn't respect manually set playing statuses, nor statuses set by other cogs",
+  "description": "Random bot playing statuses.\n\nDue to how this cog works, manually set activity statuses and statuses set by other cogs are not respected, and will be overwritten",
   "short": "Random bot playing statuses",
-  "type": "COG"
+  "type": "COG",
+  "tags": ["misc"],
+  "install_msg": "Hello!~ Thank you for installing one of my cogs.\nIf you experience any issues, please open an issue on my GitHub repo (<https://github.com/notodinair/Swift-Cogs/issues/new>)\n\n~ odinair 💜"
 }

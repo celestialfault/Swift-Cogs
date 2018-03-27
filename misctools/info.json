@@ -1,8 +1,9 @@
 {
   "author": ["odinair"],
   "bot_version": [3, 0, 0],
-  "description": "Various quick & dirty utilities\n\nMostly helpful for cog development or advanced server administration",
+  "description": "Various quick & dirty utilities. This is really only helpful for cog development or advanced server moderation.",
   "short": "Various quick & dirty utilities",
   "type": "COG",
-  "tags": ["utility"]
+  "tags": ["utility"],
+  "install_msg": "Hello!~ Thank you for installing one of my cogs.\nIf you experience any issues, please open an issue on my GitHub repo (<https://github.com/notodinair/Swift-Cogs/issues/new>)\n\n~ odinair 💜"
 }

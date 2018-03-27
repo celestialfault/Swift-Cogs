@@ -1,6 +1,8 @@
 {
   "author": ["odinair"],
   "bot_version": [3, 0, 0],
-  "description": "Set a list of cogs that requires a per-guild whitelist from the bot owner to use",
-  "short": "Require a per-guild whitelist to use specified cogs"
+  "description": "Require a per-guild whitelist from the bot owner to use specified cogs",
+  "short": "Require a per-guild whitelist to use specified cogs",
+  "tags": ["utility"],
+  "install_msg": "Hello!~ Thank you for installing one of my cogs.\nIf you experience any issues, please open an issue on my GitHub repo (<https://github.com/notodinair/Swift-Cogs/issues/new>)\n\n~ odinair 💜"
 }
