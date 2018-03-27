@@ -1,7 +1,0 @@
-{
-  "author": ["odinair"],
-  "bot_version": [3, 0, 0],
-  "description": "Monitor your bots and log if they go offline, and when they come back online",
-  "short": "Monitor your bots and log if they go offline",
-  "type": "COG"
-}
