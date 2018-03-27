@@ -5,17 +5,15 @@ from redbot.core import RedContext
 from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import warning
 
-from starboard.classes.base import StarboardBase
+from starboard import base
 from starboard.i18n import _
-
-starboard = StarboardBase()
 
 
 def can_migrate():
     async def predicate(ctx):
         if not ctx.guild:
             return False
-        _starboard = starboard.get_starboard(ctx.guild)
+        _starboard = await base.get_starboard(ctx.guild)
         return await _starboard.migrate(dry_run=True) > 0
 
     return check(predicate)
@@ -25,7 +23,7 @@ def can_use_starboard():
     async def predicate(ctx):
         if not ctx.guild:
             return True
-        _starboard = starboard.get_starboard(ctx.guild)
+        _starboard = await base.get_starboard(ctx.guild)
         if await _starboard.is_ignored(ctx.channel):
             return False
         if await _starboard.is_ignored(ctx.author):
@@ -41,7 +39,7 @@ def can_use_starboard():
 
 
 async def guild_has_starboard(ctx: RedContext):
-    _starboard = starboard.get_starboard(ctx.guild)
+    _starboard = await base.get_starboard(ctx.guild)
     if await _starboard.starboard_channel() is None:
         await ctx.send(warning(_("This guild has no starboard channel setup")))
         return False
