@@ -13,7 +13,7 @@ from redbot.core import RedContext
 
 from textwrap import dedent
 
-from odinair_libs.converters import td_seconds
+from .converters import td_seconds
 
 __all__ = ("td_format", "difference", "normalize", "attempt_emoji", "get_source",
            "tick", "chunks", "cmd_help", "flatten", "fmt")
