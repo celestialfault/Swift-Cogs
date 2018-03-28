@@ -3,13 +3,11 @@ from typing import Sequence
 import discord
 
 from redbot.core import Config
-from redbot.core.bot import Red
 
 from timedrole.role import TempRole
 
 
 class GuildRoles:
-    bot: Red = None
     config: Config = None
 
     def __init__(self, guild: discord.Guild):
@@ -23,7 +21,7 @@ class GuildRoles:
         members = [x.id for x in members]
         member_data = await self.config.all_members(self.guild)
         member_data = {uid: member_data[uid] for uid in member_data
-                       if not len(members) or uid in members}
+                       if not members or uid in members}
         roles = []
         for uid in member_data:
             member = self.guild.get_member(uid)

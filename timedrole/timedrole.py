@@ -15,56 +15,35 @@ from timedrole.i18n import _
 
 from cog_shared.odinair_libs.formatting import td_format, chunks
 from cog_shared.odinair_libs.converters import FutureTime
-from cog_shared.odinair_libs.menus import paginate
+from cog_shared.odinair_libs.menus import PaginateMenu
 
 
 class TimedRole:
     """Give users roles for a set amount of time"""
 
     __author__ = "odinair <odinair@odinair.xyz>"
-    __version__ = "1.0.0"
+    __version__ = "1.1.0"
 
     def __init__(self, bot: Red):
         self.bot = bot
         self.config = Config.get_conf(self, identifier=35235234, force_registration=True)
         self.config.register_member(roles=[])
         GuildRoles.config = self.config
-        GuildRoles.bot = self.bot
         self._expiry_task = self.bot.loop.create_task(self.remove_expired_roles())
+        self._reapply_task = self.bot.loop.create_task(self.reapply_missing_roles())
 
     def __unload(self):
         self._expiry_task.cancel()
+        self._reapply_task.cancel()
 
     async def add_roles(self, *roles: discord.Role, member: discord.Member, granted_by: discord.Member,
                         duration: timedelta, reason: str = None, hidden: bool = False, modlog_type: str = None):
-        """Adds roles to a member.
-
-        Parameters
-        -----------
-        *roles: discord.Role
-            A list of roles to give to a member
-        member: discord.Member
-            The member to add the roles to
-        granted_by: discord.Member
-            The member who granted the user the role(s)
-        duration: timedelta
-            How long to give the user the role for
-        reason: str
-            An optional reason that displays in [p]timedrole list.
-            If `modlog_type` is not None, then this also displays as the reason for the created modlog case.
-        hidden: bool
-            If this is True, this role will not be displayed in [p]timedrole list
-        modlog_type: str
-            A modlog action type. If this is a string, a mod log case is attempted to be created.
-        """
         roles = list(roles)
-        if member.guild.default_role in roles:
-            roles.remove(member.guild.default_role)
-        if len(roles) == 0:
-            raise ValueError(_("No roles were given, or the only role given was the guild's default role"))
         for role in roles:
-            if role in member.roles:
-                raise RuntimeError(_("That member already has the role {}").format(role))
+            if role.is_default() or role in member.roles:
+                roles.remove(role)
+        if not roles:
+            raise ValueError(_("No roles were given, or the only roles given were roles the member already has"))
 
         if duration is None:
             duration = timedelta(days=30)
@@ -112,29 +91,35 @@ class TimedRole:
                                    _("None of those members have any active timed roles")))
             return
 
-        def convert(roles_: Sequence[TempRole]):
+        def convert(roles_: Sequence[TempRole], page_id: int):
+            page_id = page_id - 1
             for role in roles_:
-                header = "**❯** {} \N{EM DASH} {}".format(role.member.mention, role.role.mention)
-                if role.hidden:
-                    header = _("**❯** {} \N{EM DASH} {} \N{EM DASH} **Hidden role**").format(
-                        role.member.mention, role.role.mention)
-                if role.reason is not None:
-                    reason = _("**Reason** \N{EM DASH} {}").format(role.reason)
-                else:
-                    reason = ""
-                added_delta = td_format(role.added_at - datetime.utcnow())
-                given_by = _("**Given by** \N{EM DASH} {} \N{EM DASH} {} ago").format(
-                    getattr(role.granted_by, "mention", _("An unknown member")), added_delta)
-                expires = _("**Expires** \N{EM DASH} {}").format(role.until_expires())
+                rid = ((page_id * 3) + roles_.index(role)) + 1
 
-                _strs = [header]
-                if reason:
-                    _strs.append(reason)
-                _strs.append(given_by)
-                _strs.append(expires)
+                _strs = [_("**❯** Timed role #{} \N{EM DASH} **Hidden role**").format(rid) if role.hidden
+                         else _("**❯** Timed role #{}").format(rid),
+                         _("**Member** \N{EM DASH} {}").format(role.member.mention),
+                         _("**Role** \N{EM DASH} {}").format(role.role.mention)]
+
+                if role.reason is not None:
+                    _strs.append(_("**Reason** \N{EM DASH} {}").format(role.reason))
+
+                _strs.append(
+                    _("**Given by** \N{EM DASH} {} \N{EM DASH} {} ago").format(
+                        getattr(role.granted_by, "mention", _("An unknown member")),
+                        td_format(role.added_at - datetime.utcnow())
+                    ))
+                _strs.append(_("**Expires** \N{EM DASH} {}").format(role.until_expires()))
+
                 yield "\n".join(_strs)
 
-        await paginate(ctx, pages=roles, page_converter=lambda r: "\n\n".join(list(convert(r))))
+        def page_convert(x, page, pages):
+            return discord.Embed(description="\n\n".join(list(convert(x, page))), colour=ctx.me.colour)\
+                .set_footer(text=f"Page {page}/{pages}")\
+                .set_author(name="Timed Roles", icon_url=ctx.guild.icon_url)
+
+        async with PaginateMenu(ctx, pages=roles, converter=page_convert, actions={}):
+            pass
 
     @timedrole.group(name="list", invoke_without_command=True)
     async def timedrole_list(self, ctx: RedContext):
@@ -202,31 +187,24 @@ class TimedRole:
             await self.add_roles(*roles, member=member, duration=duration, granted_by=ctx.author)
         except discord.Forbidden:
             await ctx.send(warning(_("I'm not allowed to give one or more of those roles to that user")))
-        except RuntimeError as e:
+        except ValueError as e:
             await ctx.send(warning(str(e)))
         else:
             roles = ", ".join([bold(str(x)) for x in roles])
             await ctx.send(_("Successfully granted {} to **{}** for {}").format(roles, member, td_format(duration)))
 
-    @timedrole.command(name="expire", hidden=True)
-    async def timedrole_expire(self, ctx: RedContext, member: discord.Member, role: discord.Role = None):
-        """Force a role expiry, as if the time on the role had ran out
-
-        __This command is intended to be used for debug purposes, and as such should not be used regularly.__
-
-        You can remove a timed role from a member like any other role, and the role will be
-        treated as if it expired when the bot does the next wave of expiry checks of the
-        guild's timed roles.
-        """
+    @timedrole.command(name="remove")
+    async def timedrole_expire(self, ctx: RedContext, member: discord.Member, *roles: discord.Role):
+        """Remove one or all active timed roles from a member"""
         groles = GuildRoles(ctx.guild)
-        roles = await groles.all_temp_roles(member)
-        for role_ in roles:
-            if role_.role == role or role is None:
-                await role_.remove()
-        if not role:
-            await ctx.send(_("Forcefully expired all roles from {}").format(member))
+        mroles = await groles.all_temp_roles(member)
+        for r in mroles:
+            if not roles or r.role in roles:
+                await r.remove()
+        if not roles:
+            await ctx.send(_("Removed all timed roles from member **{}**").format(member))
         else:
-            await ctx.send(_("Forcefully expired role `{}` from {}").format(role.name, member))
+            await ctx.send(_("Removed roles {} from member **{}**").format(", ".join(bold(str(x)) for x in roles)))
 
     async def remove_expired_roles(self):
         while self == self.bot.get_cog(self.__class__.__name__):
@@ -235,6 +213,17 @@ class TimedRole:
                 expired = await guild.expired_roles(member_has_role=False)
                 for role in expired:
                     await role.remove()
+            await asyncio.sleep(180)
+
+    async def reapply_missing_roles(self):
+        while self == self.bot.get_cog(self.__class__.__name__):
+            for guild in self.bot.guilds:
+                guild = GuildRoles(guild)
+                missing_roles = await guild.active_roles(member_has_role=False)
+                for role in missing_roles:
+                    if role.role in role.member.roles:
+                        continue
+                    await role.member.add_roles(role.role, reason=_("Missing timed role reapplied"))
             await asyncio.sleep(180)
 
     @staticmethod

@@ -80,7 +80,7 @@ class TimedMute:
     async def timedmute(self, ctx: RedContext, member: discord.Member,
                         duration: FutureTime.converter(max_duration=max_duration, min_duration=min_duration,
                                                        strict=True),
-                        *, reason: str=None):
+                        *, reason: str = None):
         """Mute a user for a set amount of time.
 
         Muted users will not be able to send messages, add new reactions to messages, or speak in voice channels.
@@ -113,7 +113,7 @@ class TimedMute:
             timed_role: TimedRole = self.bot.get_cog("TimedRole")
             await timed_role.add_roles(role, member=member, duration=duration, granted_by=ctx.author, reason=reason,
                                        modlog_type="timedmute")
-        except RuntimeError as e:
+        except ValueError as e:
             await ctx.send(warning(str(e)))
         else:
             await ctx.send(tick(_("**{}** is now muted for for {}").format(member, td_format(duration))))

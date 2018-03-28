@@ -10,10 +10,9 @@ from cog_shared.odinair_libs.formatting import td_format
 class TempRole:
     def __init__(self, role: discord.Role, guild, member: discord.Member, added_at: datetime, duration: int,
                  granted_by: int, **kwargs):
-        from timedrole.guild import GuildRoles
         self.member = member
         self.role = role
-        self.guild: GuildRoles = guild
+        self.guild = guild
         self.duration = timedelta(seconds=duration)
         self.added_at = added_at
         self.expiry_time = added_at + self.duration
@@ -46,8 +45,9 @@ class TempRole:
 
     async def remove(self) -> None:
         await self.guild.remove(self.member, self.role)
-        if self.role in self.member.roles:
-            try:
-                await self.member.remove_roles(self.role)
-            except discord.HTTPException:
-                pass
+        if self.role not in self.member.roles:
+            return
+        try:
+            await self.member.remove_roles(self.role)
+        except discord.HTTPException:
+            pass
