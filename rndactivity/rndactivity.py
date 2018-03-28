@@ -1,5 +1,5 @@
 from asyncio import sleep
-from typing import List, Union
+from typing import List, Union, Tuple
 
 import discord
 from discord.ext import commands
@@ -7,13 +7,13 @@ from discord.ext import commands
 from redbot.core.bot import Red, RedContext
 from redbot.core import Config, checks
 from redbot.core.i18n import CogI18n
-from redbot.core.utils.chat_formatting import pagify, info, warning, escape
+from redbot.core.utils.chat_formatting import pagify, warning, escape
 
 from random import choice
 
-from odinair_libs.menus import confirm
-from odinair_libs.converters import FutureTime
-from odinair_libs.formatting import tick
+from cog_shared.odinair_libs.menus import confirm
+from cog_shared.odinair_libs.converters import FutureTime
+from cog_shared.odinair_libs.formatting import tick, fmt
 
 _ = CogI18n("RNDActivity", __file__)
 
@@ -22,7 +22,7 @@ class RNDActivity:
     """Random bot playing statuses"""
 
     __author__ = "odinair <odinair@odinair.xyz>"
-    __version__ = "0.1.0"
+    __version__ = "1.0.0"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -54,19 +54,19 @@ class RNDActivity:
         Default delay is 10 minutes, or every 600 seconds
         """
         await self.config.delay.set(duration.total_seconds())
-        await ctx.send(tick(_("Set time between status changes to {}.\n"
-                              f"This will take effect after the next status change.").format(duration.format())))
+        await fmt(ctx, tick(_("Set time between status changes to {duration}.\nThis change will take effect "
+                              "after the next status change.")), duration=duration.format())
 
     async def _add_status(self, ctx: RedContext, game: str, *, game_type: int = 0):
         try:
             self.format_status({"type": game_type, "game": game})
         except KeyError as e:
-            await ctx.send(warning(_("Parsing that status failed - {} is not a valid placeholder").format(str(e))))
-            return
-
-        async with self.config.statuses() as statuses:
-            statuses.append({"type": game_type, "game": game})
-            await ctx.send(tick(_("Status **#{}** added.").format(len(statuses))))
+            await fmt(ctx, warning(_("Parsing that status failed \N{EM DASH} {placeholder} is not a valid "
+                                     "placeholder")), placeholder=str(e))
+        else:
+            async with self.config.statuses() as statuses:
+                statuses.append({"type": game_type, "game": game})
+                await fmt(ctx, tick(_("Added status **#{id}** successfully.")), id=len(statuses))
 
     @rndactivity.command(name="add", aliases=["playing"])
     async def rndactivity_add(self, ctx: RedContext, *, status: str):
@@ -118,40 +118,27 @@ class RNDActivity:
         try:
             result, result_type = self.format_status(status, shard=shard)
         except KeyError as e:
-            await ctx.send(warning(_("Placeholder {} does not exist\n\n"
-                                     "See `{}help rndactivity add` for the list of placeholder strings")
-                                   .format(escape(str(e), mass_mentions=True), ctx.prefix)))
-            return
-
-        status = escape(status, mass_mentions=True)
-        result = escape(result, mass_mentions=True)
-        await ctx.send(content=_("\N{INBOX TRAY} **Input:**\n{status}\n\n"
-                                 "\N{OUTBOX TRAY} **Result:**\n{result}").format(status=status, result=result))
+            await fmt(ctx, warning(_("Placeholder {placeholder} does not exist\n\n"
+                                     "See `{prefix}help rndactivity add` for the list of placeholder strings")),
+                      placeholder=escape(str(e), mass_mentions=True))
+        else:
+            await fmt(ctx, _("\N{INBOX TRAY} **Input:**\n{input}\n\N{OUTBOX TRAY} **Result:** {result}"),
+                      input=escape(status, mass_mentions=True), result=escape(result, mass_mentions=True))
 
     @rndactivity.command(name="remove", aliases=["delete"])
-    async def rndactivity_remove(self, ctx: RedContext, *statuses: int):
+    async def rndactivity_remove(self, ctx: RedContext, status: int):
         """Remove one or more statuses by their IDs
 
         You can retrieve the ID for a status with [p]rndactivity list
         """
-        statuses = [x for x in statuses if x > 0]
-        if not statuses:
-            await ctx.send_help()
-            return
-
-        bot_statuses = list(await self.config.statuses())
-        for status in statuses:
-            if len(bot_statuses) < status:
-                await ctx.send(warning(_("The status {} doesn't exist").format(status)))
-                return
-            bot_statuses[status - 1] = None
-
-        bot_statuses = [x for x in bot_statuses if x is not None]  # Clear out None entries
-        await self.config.statuses.set(bot_statuses)
-        if len(bot_statuses) == 0:
-            await self.bot.change_presence(activity=None, status=self.bot.guilds[0].me.status)
-        await ctx.send(info(_("Removed {amnt} status{plural}.").format(amnt=len(statuses),
-                                                                       plural='es' if len(statuses) != 1 else '')))
+        async with self.config.statuses() as statuses:
+            if len(statuses) < status:
+                return await fmt(ctx, warning(_("No status with the ID `{id}` exists")), id=status)
+            removed = statuses.pop(status - 1)
+            if not statuses:
+                await self.bot.change_presence(activity=None, status=getattr(ctx.me, "status", None))
+        removed = escape(self.format_status(removed, return_formatted=False)[0], mass_mentions=True)
+        await fmt(ctx, tick(_("Removed status **#{id}** (`{text}`) successfully.")), id=status, text=removed)
 
     @rndactivity.command(name="list")
     async def rndactivity_list(self, ctx: RedContext, parse: bool=False):
@@ -161,10 +148,9 @@ class RNDActivity:
         Invalid placeholders will still be identified and marked without enabling parse mode
         """
         orig_statuses = list(await self.config.statuses())
-        if not len(orig_statuses):
-            await ctx.send(warning(_("I have no random statuses setup! Use `{}rndactivity add` to add some!")
-                                   .format(ctx.prefix)))
-            return
+        if not orig_statuses:
+            return await fmt(ctx, warning(_("I have no statuses setup yet! "
+                                            "Use `{prefix}rndactivity add` to add some!")))
         statuses = []
         shard = getattr(ctx.guild, "shard_id", 0)
         for item in orig_statuses:
@@ -185,17 +171,18 @@ class RNDActivity:
     @rndactivity.command(name="clear")
     async def rndactivity_clear(self, ctx: RedContext):
         """Clears all set statuses"""
-        amnt = len(await self.config.statuses())
-        if await confirm(ctx, _("Are you sure you want to clear {amnt} statuses?\n\n"
-                                "This action is irreversible!").format(amnt=amnt),
+        amount = len(await self.config.statuses())
+        if await confirm(ctx, _("Are you sure you want to clear {amount} statuses?\n\n"
+                                "This action is irreversible!").format(amount=amount),
                          colour=discord.Colour.red()):
             await self.config.statuses.set([])
             await self.bot.change_presence(activity=None, status=self.bot.guilds[0].me.status)
-            await ctx.send(tick(_("Successfully cleared {amnt} status strings.").format(amnt=amnt)), delete_after=15.0)
+            await fmt(ctx, tick(_("Successfully removed {amount} status strings.")), amount=amount)
         else:
-            await ctx.send(_("Okay then."), delete_after=15.0)
+            await fmt(ctx, _("Okay then."))
 
-    def format_status(self, status: Union[str, dict], shard: int = None, return_formatted=True):
+    def format_status(self, status: Union[str, dict], shard: int = None, return_formatted=True)\
+            -> Union[str, Tuple[str, int]]:
         game_type = 0
         if isinstance(status, dict):
             game_type = status.get("type", 0)

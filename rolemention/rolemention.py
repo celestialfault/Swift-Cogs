@@ -10,7 +10,7 @@ from redbot.core.bot import Red
 from redbot.core.i18n import CogI18n
 from redbot.core.utils.chat_formatting import warning, escape
 
-from odinair_libs.formatting import tick, cmd_help
+from cog_shared.odinair_libs.formatting import tick, cmd_help
 
 _ = CogI18n("RoleMention", __file__)
 

@@ -1,12 +1,12 @@
 import inspect
 import collections
 
-import re
 from datetime import timedelta
 
 from typing import Iterable, Tuple, Dict, Union
 
 import discord
+import re
 
 from redbot.core.bot import Red
 from redbot.core import RedContext
@@ -14,10 +14,13 @@ from redbot.core import RedContext
 from textwrap import dedent
 
 from odinair_libs.converters import td_seconds
-from odinair_libs._i18n import _
 
 __all__ = ("td_format", "difference", "normalize", "attempt_emoji", "get_source",
-           "tick", "chunks", "cmd_help", "flatten")
+           "tick", "chunks", "cmd_help", "flatten", "fmt")
+
+
+async def fmt(ctx: RedContext, text: str, *args, **kwargs) -> None:
+    await ctx.send(text.format(*args, **kwargs, prefix=ctx.prefix))
 
 
 def flatten(d, parent_key='', sep='_'):  # https://stackoverflow.com/a/6027615
@@ -86,13 +89,13 @@ def attempt_emoji(bot: Red, fallback: str, guild: discord.Guild = None, **kwargs
 
 
 time_periods = [
-    (td_seconds(days=365), _("year"), _("years")),
-    (td_seconds(days=30), _("month"), _("months")),
-    (td_seconds(days=7), _("week"), _("weeks")),
-    (td_seconds(days=1), _("day"), _("days")),
-    (td_seconds(hours=1), _("hour"), _("hours")),
-    (td_seconds(minutes=1), _("minute"), _("minutes")),
-    (td_seconds(seconds=1), _("second"), _("seconds"))
+    (td_seconds(days=365), "year"),
+    (td_seconds(days=30), "month"),
+    (td_seconds(days=7), "week"),
+    (td_seconds(days=1), "day"),
+    (td_seconds(hours=1), "hour"),
+    (td_seconds(minutes=1), "minute"),
+    (td_seconds(seconds=1), "second")
 ]
 
 
@@ -111,7 +114,6 @@ def td_format(td_object: timedelta, milliseconds: bool = False, append_str: bool
         Whether or not to append or prepend `in` or `ago` depending on if `td_object` is in the future or past
     """
     # this function is originally from StackOverflow
-    # however it's been mostly rewritten to properly handle i18n & milliseconds
     # https://stackoverflow.com/a/13756038
 
     seconds = td_object.total_seconds()
@@ -120,24 +122,26 @@ def td_format(td_object: timedelta, milliseconds: bool = False, append_str: bool
         past = True
         seconds = float(re.sub(r"^-+", "", str(seconds)))
     elif seconds == 0:
-        return _("0 seconds")
+        return "0 seconds"
 
     strs = []
 
-    for period_seconds, period_name, period_plural in time_periods:
+    for period_seconds, period_name in time_periods:
         if seconds >= period_seconds:
             period_value, seconds = divmod(seconds, period_seconds)
-            strs.append(" ".join([str(round(period_value)), period_plural if period_value != 1 else period_name]))
+            plural = "s" if period_value != 1 else ""
+            strs.append(" ".join([str(round(period_value)), f"{period_name}{plural}"]))
 
     if milliseconds is True:
         ms = round(td_object.microseconds / 1000)
         if ms > 0:
-            strs.append((_("{ms} milliseconds") if ms != 1 else _("{ms} millisecond")).format(ms=ms))
+            plural = "s" if ms != 1 else ""
+            strs.append(f"{ms} millisecond{plural}")
 
     built = ", ".join(strs)
     if not append_str:
         return built
-    return (_("in {}") if not past else _("{} ago")).format(built)
+    return ("in {}" if not past else "{} ago").format(built)
 
 
 def difference(list1: Iterable, list2: Iterable, *, check_val: bool = False, return_dict: bool = False)\

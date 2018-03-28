@@ -10,9 +10,7 @@ from discord.ext import commands
 
 from redbot.core.bot import Red
 
-from odinair_libs._i18n import _
-
-__all__ = ["FutureTime", "get_role_or_member", "cog_name", "td_seconds"]
+__all__ = ("FutureTime", "get_role_or_member", "cog_name", "td_seconds")
 
 
 def cog_name(bot: Red, name: str):
@@ -50,7 +48,7 @@ class FutureTime(timedelta, commands.Converter):
         return self.format()
 
     def format(self, milliseconds: bool = False):
-        from odinair_libs.formatting import td_format
+        from .formatting import td_format
         return td_format(self, milliseconds=milliseconds)
 
     @classmethod
@@ -86,7 +84,7 @@ class FutureTime(timedelta, commands.Converter):
         return self
 
     @staticmethod
-    def get_seconds(time: str) -> Optional[int]:
+    def get_seconds(time: str) -> Optional[float]:
         """Returns the amount of converted time or None if invalid"""
         seconds = 0
         for time_match in FutureTime.TIME_AMNT_REGEX.finditer(time):
@@ -98,18 +96,17 @@ class FutureTime(timedelta, commands.Converter):
                 seconds += time_amnt * time_quantity[1]
         return None if seconds == 0 else seconds
 
-    @classmethod
-    async def convert(cls, ctx, argument: str) -> Union[None, timedelta]:
-        from odinair_libs.formatting import td_format
-        seconds = cls.get_seconds(argument)
+    async def convert(self, ctx, argument: str) -> Union[None, timedelta]:
+        from .formatting import td_format
+        seconds = self.get_seconds(argument)
 
-        if seconds and cls.MAX_SECONDS is not None and seconds > cls.MAX_SECONDS:
-            raise commands.BadArgument(_('Time duration exceeds maximum of {}').format(
-                td_format(timedelta(seconds=cls.MAX_SECONDS))))
-        elif seconds and cls.MIN_SECONDS is not None and seconds < cls.MIN_SECONDS:
-            raise commands.BadArgument(_('Time duration does not exceed minimum of {}').format(
-                td_format(timedelta(seconds=cls.MIN_SECONDS))))
+        if seconds and self.MAX_SECONDS is not None and seconds > self.MAX_SECONDS:
+            raise commands.BadArgument(f'Time duration exceeds maximum of '
+                                       f'{td_format(timedelta(seconds=self.MAX_SECONDS))}')
+        elif seconds and self.MIN_SECONDS is not None and seconds < self.MIN_SECONDS:
+            raise commands.BadArgument(f'Time duration does not exceed minimum of '
+                                       f'{td_format(timedelta(seconds=self.MIN_SECONDS))}')
 
-        if seconds is None and cls.STRICT_MODE:
-            raise commands.BadArgument(_("Failed to parse duration"))
-        return cls(seconds=seconds) if seconds else None
+        if seconds is None and self.STRICT_MODE:
+            raise commands.BadArgument("Failed to parse duration")
+        return type(self)(seconds=seconds) if seconds else None

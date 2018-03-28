@@ -2,7 +2,6 @@ from typing import Tuple
 
 import discord
 from discord.ext import commands
-from discord.ext.commands import CheckFailure
 from discord.ext.commands.converter import RoleConverter
 
 from redbot.core.bot import Red, RedContext
@@ -10,20 +9,20 @@ from redbot.core import checks, Config
 from redbot.core.i18n import CogI18n
 from redbot.core.utils.chat_formatting import warning, escape
 
-from odinair_libs.formatting import tick
+from cog_shared.odinair_libs.formatting import tick
 
 _ = CogI18n("RequireRole", __file__)
 
 
 class RoleTuple(commands.Converter):
     async def convert(self, ctx: RedContext, argument: str):
-        second_arg = True
+        whitelist = True
         if argument.startswith('~'):
             argument = argument[1:]
-            second_arg = False
+            whitelist = False
         elif argument.startswith('\\'):
             argument = argument[1:]
-        return await RoleConverter().convert(ctx, argument), second_arg
+        return await RoleConverter().convert(ctx, argument), whitelist
 
 
 class RequireRole:
@@ -93,7 +92,7 @@ class RequireRole:
 
     async def __global_check_once(self, ctx: RedContext):
         if not await self.check(member=ctx.author):
-            raise CheckFailure
+            raise commands.CheckFailure()
         return True
 
     @commands.command()
@@ -113,12 +112,10 @@ class RequireRole:
         The guild owner and members with the Administrator permission
         always bypass these requirements, regardless of roles.
         """
-        roles: Tuple[Tuple[discord.Role, bool]] = roles  # yes, this is fine
-        modes: Tuple[bool] = tuple(x[1] for x in roles)
-        roles: Tuple[discord.Role] = tuple(x[0] for x in roles)
-
-        whitelist: Tuple[discord.Role] = tuple(x for x in roles if modes[roles.index(x)])
-        blacklist: Tuple[discord.Role] = tuple(x for x in roles if not modes[roles.index(x)])
+        # implicitly imply a different type than RoleTuple
+        roles: Tuple[Tuple[discord.Role, bool]] = roles
+        whitelist: Tuple[discord.Role] = tuple(x for x, y in roles if y)
+        blacklist: Tuple[discord.Role] = tuple(x for x, y in roles if not y)
 
         if ctx.guild.default_role in roles:
             await ctx.send(warning(_("I can't set a role requirement with the default role - if you'd like to clear "

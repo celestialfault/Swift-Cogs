@@ -6,9 +6,9 @@ from redbot.core import checks, Config
 from redbot.core.i18n import CogI18n
 from redbot.core.utils.chat_formatting import warning, pagify, escape
 
-from odinair_libs.formatting import tick
-from odinair_libs.converters import cog_name
-from odinair_libs.menus import confirm
+from cog_shared.odinair_libs.formatting import tick
+from cog_shared.odinair_libs.converters import cog_name
+from cog_shared.odinair_libs.menus import confirm
 
 _ = CogI18n("CogWhitelist", __file__)
 
@@ -105,6 +105,7 @@ class CogWhitelist:
 
     @cogwhitelist.command(name="reset")
     async def cogwhitelist_reset(self, ctx: RedContext):
+        """Reset whitelisted cog settings"""
         if await confirm(ctx=ctx, message=_("Are you sure you want to reset your whitelisted cogs?\n\n"
                                             "**This action is irreversable!**"), colour=discord.Colour.red()):
             await self.config.cogs.set({})
@@ -127,14 +128,13 @@ class CogWhitelist:
             msg = "\n".join(__cogs)
             await ctx.send_interactive(pagify(msg), box_lang="ini")
         else:
-            print(cog, cogs)
             cog = cog.lower()
             if cog not in cogs:
                 await ctx.send(warning(_("That cog doesn't require a whitelist to use")))
                 return
             guilds = [self.bot.get_guild(x) for x in cogs[cog]]
             guilds = [x for x in guilds if x]
-            if not len(guilds):
+            if not guilds:
                 await ctx.send(warning(_("No guilds that I'm currently in are allowed to use that cog")))
                 return
             proper_name = cog_name(self.bot, cog) or cog

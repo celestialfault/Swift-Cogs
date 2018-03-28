@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2018-03-16 06:59-0600\n"
+"POT-Creation-Date: 2018-03-28 09:22-0600\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -26,14 +26,14 @@ msgid "Parsing that status failed - {} is not a valid placeholder"
 msgstr ""
 
 #: ../rndactivity.py:69
-msgid "Status **#{}** added."
+msgid "Status **#{id}** added."
 msgstr ""
 
 #: ../rndactivity.py:121
 msgid ""
-"Placeholder {} does not exist\n"
+"Placeholder {placeholder} does not exist\n"
 "\n"
-"See `{}help rndactivity add` for the list of placeholder strings"
+"See `{prefix}help rndactivity add` for the list of placeholder strings"
 msgstr ""
 
 #: ../rndactivity.py:128
@@ -45,34 +45,34 @@ msgid ""
 "{result}"
 msgstr ""
 
+#: ../rndactivity.py:139
+msgid "The status {id} doesn't exist"
+msgstr ""
+
 #: ../rndactivity.py:145
-msgid "The status {} doesn't exist"
+msgid "Removed status #{id} (`{text}`) successfully."
 msgstr ""
 
-#: ../rndactivity.py:153
-msgid "Removed {amnt} status{plural}."
-msgstr ""
-
-#: ../rndactivity.py:165
+#: ../rndactivity.py:156
 msgid "I have no random statuses setup! Use `{}rndactivity add` to add some!"
 msgstr ""
 
-#: ../rndactivity.py:180
+#: ../rndactivity.py:171
 msgid "Placeholder {} doesn't exist"
 msgstr ""
 
-#: ../rndactivity.py:189
+#: ../rndactivity.py:180
 msgid ""
-"Are you sure you want to clear {amnt} statuses?\n"
+"Are you sure you want to clear {amount} statuses?\n"
 "\n"
 "This action is irreversible!"
 msgstr ""
 
-#: ../rndactivity.py:194
-msgid "Successfully cleared {amnt} status strings."
+#: ../rndactivity.py:185
+msgid "Successfully cleared {amount} status strings."
 msgstr ""
 
-#: ../rndactivity.py:196
+#: ../rndactivity.py:187
 msgid "Okay then."
 msgstr ""
 
