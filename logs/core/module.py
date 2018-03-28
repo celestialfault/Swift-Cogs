@@ -23,7 +23,7 @@ def get_module_cache(guild: discord.Guild = None):
 
 async def reload_guild_modules(guild: discord.Guild):
     for module in get_module_cache(guild):
-        if isinstance(module, str):  # :thinking:
+        if isinstance(module, str):
             module = get_module_cache(guild)[module]
         await module.reload_settings()
 
@@ -101,11 +101,12 @@ class Module(metaclass=ABCMeta):
     def is_opt_disabled(self, *opts: str):
         return not self.is_opt_enabled(*opts)
 
-    def get_config_value(self, *opts: str, config_value: bool = False) -> Value:
-        if config_value is False:
-            _opt = self.settings
+    def get_config_value(self, *opts: str, config_value: bool = False, guild: bool = False) -> Value:
+        config_value = config_value if guild is False else True
+        if config_value:
+            _opt = getattr(self, "module_config" if not guild else "guild_config")
         else:
-            _opt = self.module_config
+            _opt = self.settings
         for opt in opts:
             if config_value is False:
                 _opt = _opt[opt]
@@ -117,7 +118,11 @@ class Module(metaclass=ABCMeta):
 
     @property
     def module_config(self) -> Group:
-        return self.config.guild(self.guild).get_attr(self.name)
+        return self.guild_config.get_attr(self.name)
+
+    @property
+    def guild_config(self):
+        return self.config.guild(self.guild)
 
     @property
     def log_to(self) -> Optional[Union[discord.TextChannel, discord.Webhook]]:
@@ -152,28 +157,27 @@ class Module(metaclass=ABCMeta):
 
         return await self.module_config.all()
 
-    async def _send(self, *embeds: LogEntry):
-        log_to = self.log_to
-        kwargs = {}
-        if isinstance(log_to, discord.Webhook):
-            kwargs = {
-                "avatar_url": self.bot.user.avatar_url_as(format="png"),
-                "username": self.bot.user.name
-            }
-
-        for embed in embeds:
-            if not embed or not embed.is_valid:
-                continue
-            await log_to.send(embed=embed, **kwargs)
-
     async def log(self, fn_name: str, *args, **kwargs):
         if self.log_to is None or self.is_ignored(*args, **kwargs):
             return
         fn = getattr(self, fn_name)
-        data = await discord.utils.maybe_coroutine(fn, *args, **kwargs)
+        data: Union[LogEntry, Iterable] = await discord.utils.maybe_coroutine(fn, *args, **kwargs)
         if not isinstance(data, Iterable):
-            data = [data]
-        await self._send(*data)
+            data: Iterable[LogEntry] = [data]
+
+        kwargs = {
+            "avatar_url": self.bot.user.avatar_url_as(format="png"),
+            "username": self.bot.user.name
+        } if isinstance(self.log_to, discord.Webhook) else {}
+
+        for embed in data:
+            if not embed:
+                continue
+            try:
+                await embed.send(self.log_to, **kwargs)
+            except discord.HTTPException as e:
+                if e.status == 400 or isinstance(e, discord.Forbidden):
+                    raise
 
     def is_ignored(self, *args, **kwargs) -> bool:
         kwargs = tuple(y for x, y in tuple(kwargs))

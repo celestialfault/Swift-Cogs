@@ -34,7 +34,7 @@ class GuildModule(Module):
 
     def update(self, before: discord.Guild, after: discord.Guild):
         if any([before.unavailable, after.unavailable]):
-            return
+            return None
 
         embed = LogEntry(colour=discord.Colour.blurple())
         embed.set_author(name=_("Guild Updated"), icon_url=self.icon_uri())

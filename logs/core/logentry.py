@@ -20,6 +20,11 @@ class LogEntry(discord.Embed):
     def is_valid(self):
         return self.fields or (self.description and not self.require_fields)
 
+    async def send(self, channel: Union[discord.TextChannel, discord.Webhook], **kwargs):
+        if not self.is_valid:
+            return
+        await channel.send(embed=self, **kwargs)
+
     def add_differ_field(self, *, name: str, before: Union[List[str], str], after: Union[List[str], str]):
         if isinstance(before, str):
             before = before.splitlines()
@@ -28,7 +33,7 @@ class LogEntry(discord.Embed):
 
         changed = self._differ.compare(before, after)
         if not changed:
-            return
+            return self
         return self.add_field(name=name, value=box("\n".join(changed), lang="diff"))
 
     def add_diff_field(self, *, name: str, before, after, box_lang: str = None, inline: bool = False):
@@ -41,5 +46,5 @@ class LogEntry(discord.Embed):
 
     def add_field(self, *, name, value, inline: bool = False):
         if not all([name, value]):
-            return
+            return self
         return super().add_field(name=name, value=value, inline=inline)

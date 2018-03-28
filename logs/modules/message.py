@@ -19,10 +19,8 @@ class MessageModule(Module):
     }
 
     def edit(self, before: discord.Message, after: discord.Message):
-        if self.is_opt_disabled("edit"):
+        if any([self.is_opt_disabled("edit"), before.content == after.content, after.author.bot]):
             return None
-        if any([before.content == after.content, after.author.bot]):
-            return
 
         embed = LogEntry(colour=discord.Colour.blurple())
         embed.set_author(name=_("Message Edited"), icon_url=self.icon_uri(after.author))

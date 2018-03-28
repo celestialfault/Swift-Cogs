@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2018-03-24 19:59-0600\n"
+"POT-Creation-Date: 2018-03-27 12:50-0600\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -15,10 +15,43 @@ msgstr ""
 "Generated-By: pygettext.py 1.5\n"
 
 
-#: ../core/logentry.py:40
+#: ../core/logentry.py:45
 msgid ""
 "**Before:** {before}\n"
 "**After:** {after}"
+msgstr ""
+
+#: ../core/utils.py:30 ../core/utils.py:42 ../modules/guild.py:44
+#: ../modules/guild.py:45
+msgid "Disabled"
+msgstr ""
+
+#: ../core/utils.py:32
+msgid "Webhook"
+msgstr ""
+
+#: ../core/utils.py:34
+msgid "Channel {}"
+msgstr ""
+
+#: ../core/utils.py:37
+msgid "Logging"
+msgstr ""
+
+#: ../core/utils.py:38
+msgid "{} module settings"
+msgstr ""
+
+#: ../core/utils.py:39 ../modules/guild.py:44 ../modules/guild.py:45
+msgid "Enabled"
+msgstr ""
+
+#: ../core/utils.py:40
+msgid "**None** — All of this module's options are disabled"
+msgstr ""
+
+#: ../core/utils.py:43
+msgid "**None** — All of this module's options are enabled"
 msgstr ""
 
 #: ../logs.py:72 ../logs.py:114 ../logs.py:141
@@ -136,39 +169,7 @@ msgstr ""
 msgid "No longer ignoring the current guild"
 msgstr ""
 
-#: ../logs.py:404 ../logs.py:416 ../modules/guild.py:44 ../modules/guild.py:45
-msgid "Disabled"
-msgstr ""
-
-#: ../logs.py:406
-msgid "Via webhook"
-msgstr ""
-
-#: ../logs.py:408
-msgid "To channel {}"
-msgstr ""
-
-#: ../logs.py:411
-msgid "Logging"
-msgstr ""
-
-#: ../logs.py:412
-msgid "{} module settings"
-msgstr ""
-
-#: ../logs.py:413 ../modules/guild.py:44 ../modules/guild.py:45
-msgid "Enabled"
-msgstr ""
-
-#: ../logs.py:414
-msgid "**None** — All of this module's options are disabled"
-msgstr ""
-
-#: ../logs.py:417
-msgid "**None** — All of this module's options are enabled"
-msgstr ""
-
-#: ../modules/channel.py:8 ../modules/message.py:31 ../modules/message.py:44
+#: ../modules/channel.py:8 ../modules/message.py:29 ../modules/message.py:42
 msgid "Channel"
 msgstr ""
 
@@ -422,35 +423,35 @@ msgstr ""
 msgid "Message deletions"
 msgstr ""
 
-#: ../modules/message.py:28
+#: ../modules/message.py:26
 msgid "Message Edited"
 msgstr ""
 
-#: ../modules/message.py:29 ../modules/message.py:42
+#: ../modules/message.py:27 ../modules/message.py:40
 msgid "Message ID: {}"
 msgstr ""
 
-#: ../modules/message.py:30 ../modules/message.py:43
+#: ../modules/message.py:28 ../modules/message.py:41
 msgid "Message Author"
 msgstr ""
 
-#: ../modules/message.py:32
+#: ../modules/message.py:30
 msgid "Content Diff"
 msgstr ""
 
-#: ../modules/message.py:41
+#: ../modules/message.py:39
 msgid "Message Deleted"
 msgstr ""
 
-#: ../modules/message.py:45
+#: ../modules/message.py:43
 msgid "Content"
 msgstr ""
 
-#: ../modules/message.py:45
+#: ../modules/message.py:43
 msgid "No message content"
 msgstr ""
 
-#: ../modules/message.py:47
+#: ../modules/message.py:45
 msgid "Attachments"
 msgstr ""
 
