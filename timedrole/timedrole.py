@@ -64,7 +64,7 @@ class TimedRole:
         if modlog_type is not None:
             try:
                 # noinspection PyTypeChecker
-                await modlog.create_case(guild=member.guild, action_type=modlog_type,
+                await modlog.create_case(bot=self.bot, guild=member.guild, action_type=modlog_type,
                                          until=(now + timedelta(seconds=duration)).timestamp(),
                                          created_at=now, user=member, moderator=granted_by,
                                          reason=reason)
