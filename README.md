@@ -1,5 +1,5 @@
 <h1 align="center">Swift Cogs</h1>
-<p align="center">Some moderation, bot management, and other various kinds of cogs.</p>
+<p align="center">Some moderation, bot management, and other various cogs.</p>
 <p align="center">
   <a href="https://circleci.com/gh/notodinair/Swift-Cogs"><img src="https://circleci.com/gh/notodinair/Swift-Cogs.svg?style=svg" /></a>
   <a href="https://python.org/"><img src="https://img.shields.io/badge/Python-3.6-red.svg?style=flat-square" /></a>
@@ -9,10 +9,12 @@
 
 # Installation
 
-This repository is for Red v3; if you're looking for Red v2, please see my [Red-Cogs](https://github.com/notodinair/Red-Cogs) repository.
+### Required Reading
 
-Until Red V3 is considered stable, these cogs should be considered prone to breaking changes being made
-at any time with no warning, nor with any form of backward compatibility.
+- **These cogs require Python 3.6 to properly function.** Some cogs may be able to work on 3.5, but your mileage may vary.
+- Until Red V3 is considered stable, these cogs should be considered prone to breaking changes being made at any time, with or without warning, nor with any backward compatibility of any sort.
+
+----
 
 ```
 [p]repo add swift-cogs https://github.com/notodinair/Swift-Cogs.git

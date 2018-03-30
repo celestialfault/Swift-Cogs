@@ -1,3 +1,14 @@
+# pycharm generated files
 .idea/
 *.iws
+
+# compiled python files
 **/__pycache__/
+**/*.pyc
+
+# virtual environments
+.venv/
+venv/
+
+# this only contains a symlink to odinair_libs for pycharm hints, and isn't actually all that useful
+cog_shared/
