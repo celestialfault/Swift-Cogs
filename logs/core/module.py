@@ -56,12 +56,6 @@ class Module(ABC):
         self.settings: Dict[str, ...] = {}
         self.ignore: Dict[str, List[int]] = {}
 
-        _defaults = flatten(self.defaults, sep=":")
-        if any([" " in i for i in _defaults.keys()]):
-            raise RuntimeError("one or more of this module's config keys contains a space")
-        if not all([isinstance(i, bool) for i in _defaults]):
-            raise RuntimeError("not all default config values are of type bool")
-
     async def init_module(self):
         await self.reload_settings()
 
