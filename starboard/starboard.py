@@ -1,8 +1,6 @@
 import asyncio
 from asyncio import sleep
 
-from typing import Sequence
-
 import discord
 from discord.ext import commands
 
@@ -19,7 +17,7 @@ from starboard.base import StarboardBase, get_starboard, get_starboard_cache, se
 from starboard.v2_migration import v2_import
 from starboard.i18n import _
 
-from cog_shared.odinair_libs.formatting import tick
+from cog_shared.odinair_libs.formatting import tick, cmd_help
 from cog_shared.odinair_libs.checks import cogs_loaded
 from cog_shared.odinair_libs.converters import cog_name
 from cog_shared.odinair_libs.menus import confirm
@@ -211,7 +209,7 @@ class Starboard(StarboardBase):
         if await starboard.ignore(member):
             await ctx.tick()
             try:
-                await modlog.create_case(ctx.guild, ctx.message.created_at, "starboardblock",
+                await modlog.create_case(self.bot, ctx.guild, ctx.message.created_at, "starboardblock",
                                          member, ctx.author, reason, until=None, channel=None)
             except RuntimeError:
                 pass
@@ -231,7 +229,7 @@ class Starboard(StarboardBase):
         if await starboard.unignore(member):
             await ctx.tick()
             try:
-                await modlog.create_case(ctx.guild, ctx.message.created_at, "starboardunblock",
+                await modlog.create_case(self.bot, ctx.guild, ctx.message.created_at, "starboardunblock",
                                          member, ctx.author, reason, until=None, channel=None)
             except RuntimeError:
                 pass
@@ -251,17 +249,15 @@ class Starboard(StarboardBase):
         await ctx.send(tick(_("The starboard message for the message sent by **{}** has been updated")
                             .format(star.author)))
 
-    @commands.group(name="starboard")
-    @commands.guild_only()
-    @checks.admin_or_permissions(manage_channels=True)
-    async def cmd_starboard(self, ctx: RedContext):
-        """Manage the guild's starboard"""
-        if not ctx.invoked_subcommand:
-            await ctx.send_help()
-
-    @cmd_starboard.command(name="v2_import", hidden=True)
+    @commands.group(name="starboardset")
     @checks.is_owner()
-    async def starboard_v2_import(self, ctx: RedContext, mongo_uri: str):
+    async def starboardset(self, ctx: RedContext):
+        """Core Starboard cog management"""
+        await cmd_help(ctx)
+
+    @starboardset.command(name="v2_import")
+    @checks.is_owner()
+    async def starboardset_v2_import(self, ctx: RedContext, mongo_uri: str):
         """Import Red v2 instance data
 
         Only messages are imported currently; guild settings are not imported,
@@ -270,10 +266,10 @@ class Starboard(StarboardBase):
         In most cases, `mongodb://localhost:27017` will work just fine
         if you're importing a local v2 instance.
         """
-        if not await confirm(ctx, message="Are you sure you want to import your v2 instances data?\n\n"
-                                          "Guild settings will not be imported and must be setup again.\n\n"
-                                          "Any messages starred previous to this import that are also present "
-                                          "in the v2 data **will be overwritten.**",
+        if not await confirm(ctx, message=_("Are you sure you want to import your v2 instances data?\n\n"
+                                            "Guild settings will not be imported and must be setup again.\n\n"
+                                            "Any messages starred previous to this import that are also present "
+                                            "in the v2 data **will be overwritten.**"),
                              colour=discord.Colour.red()):
             await ctx.send(_("Okay then."), delete_after=30)
             return
@@ -282,6 +278,14 @@ class Starboard(StarboardBase):
             await v2_import(self.bot, mongo_uri)
         await tmp.delete()
         await ctx.send(tick(_("Successfully imported v2 data")))
+
+    @commands.group(name="starboard")
+    @commands.guild_only()
+    @checks.admin_or_permissions(manage_channels=True)
+    async def cmd_starboard(self, ctx: RedContext):
+        """Manage the guild's starboard"""
+        if not ctx.invoked_subcommand:
+            await ctx.send_help()
 
     @cmd_starboard.command(name="settings")
     async def starboard_settings(self, ctx: RedContext):
@@ -292,13 +296,13 @@ class Starboard(StarboardBase):
 
         strs = (
             _("Starboard channel: {}").format(getattr(await starboard.starboard_channel(), "mention", _("None"))),
+            _("Min # of stars: {}").format(await starboard.min_stars()),
             _("RequireRole integration: {}").format(requirerole),
             _("Can members self-star: {}").format(_("Yes") if await starboard.selfstar() else _("No"))
         )
 
-        await ctx.send(embed=discord.Embed(colour=discord.Colour.blurple(),
-                                           description="\n".join(strs),
-                                           title=_("Starboard Settings")))
+        await ctx.send(embed=discord.Embed(title=_("Starboard Settings"), description="\n".join(strs),
+                                           colour=discord.Colour.blurple()))
 
     @cmd_starboard.command(name="selfstar")
     async def starboard_selfstar(self, ctx: RedContext):
@@ -306,8 +310,8 @@ class Starboard(StarboardBase):
         starboard: StarboardGuild = await get_starboard(ctx.guild)
         current = await starboard.selfstar()
         await starboard.selfstar(not current)
-        await ctx.send(_("Members can now star their own messages") if current is False
-                       else _("Members can no longer star their own messages"))
+        await ctx.send(tick(_("Members can now star their own messages") if current is False
+                            else _("Members can no longer star their own messages")))
 
     @cmd_starboard.command(name="channel")
     async def starboard_channel(self, ctx: RedContext, channel: discord.TextChannel = None):
@@ -377,9 +381,9 @@ class Starboard(StarboardBase):
         new_val = not await starboard.requirerole()
         await starboard.requirerole(new_val)
         if new_val:
-            await ctx.send(_("Now respecting RequireRole settings."))
+            await ctx.send(tick(_("Now respecting RequireRole settings.")))
         else:
-            await ctx.send(_("No longer respecting RequireRole settings."))
+            await ctx.send(tick(_("No longer respecting RequireRole settings.")))
 
     async def on_raw_message_edit(self, message_id: int, data: dict):
         channel = self.bot.get_channel(data.get("channel_id"))
@@ -480,11 +484,6 @@ class Starboard(StarboardBase):
         while self == self.bot.get_cog('Starboard'):
             await self._empty_starboard_queue()
             await sleep(10)
-
-    @staticmethod
-    async def _handle_messages(starboards: Sequence[StarboardGuild]):
-        for starboard in starboards:
-            await starboard.handle_queue()
 
     async def _task_cache_cleanup(self):
         """Task to cleanup starboard message caches. Runs every 10 minutes"""

@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2018-03-27 11:36-0600\n"
+"POT-Creation-Date: 2018-03-30 23:34-0600\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -19,201 +19,214 @@ msgstr ""
 msgid "This guild has no starboard channel setup"
 msgstr ""
 
-#: ../starboard.py:88 ../starboard.py:122 ../starboard.py:134
+#: ../starboard.py:86 ../starboard.py:120 ../starboard.py:132
 msgid "Sorry, I couldn't find that message."
 msgstr ""
 
-#: ../starboard.py:92
+#: ../starboard.py:90
 msgid "That message cannot be starred as it does not have any content or attachments"
 msgstr ""
 
-#: ../starboard.py:96 ../starboard.py:137
+#: ../starboard.py:94 ../starboard.py:135
 msgid "The author of that message has been blocked from using this guild's starboard"
 msgstr ""
 
-#: ../starboard.py:101
+#: ../starboard.py:99
 msgid ""
 "You've already starred that message\n"
 "\n"
 "(you can use `{}star remove` to remove your star)"
 msgstr ""
 
-#: ../starboard.py:108
+#: ../starboard.py:106
 msgid "You cannot star your own messages"
 msgstr ""
 
-#: ../starboard.py:110
+#: ../starboard.py:108
 msgid "Failed to add star — `{}`"
 msgstr ""
 
-#: ../starboard.py:142
+#: ../starboard.py:140
 msgid ""
 "You haven't starred that message\n"
 "\n"
 "(you can use `{}star` to star it)"
 msgstr ""
 
-#: ../starboard.py:149
+#: ../starboard.py:147
 msgid "Failed to remove star"
 msgstr ""
 
-#: ../starboard.py:164
+#: ../starboard.py:162
 msgid "Stats for {}"
 msgstr ""
 
-#: ../starboard.py:165
+#: ../starboard.py:163
 msgid "Stars given"
 msgstr ""
 
-#: ../starboard.py:165 ../starboard.py:166
+#: ../starboard.py:163 ../starboard.py:164
 msgid "{} stars"
 msgstr ""
 
-#: ../starboard.py:166
+#: ../starboard.py:164
 msgid "Stars received"
 msgstr ""
 
-#: ../starboard.py:182 ../starboard.py:194
+#: ../starboard.py:180 ../starboard.py:192
 msgid "That message either hasn't been starred, or it doesn't exist"
 msgstr ""
 
-#: ../starboard.py:185
+#: ../starboard.py:183
 msgid "That message is already hidden"
 msgstr ""
 
-#: ../starboard.py:187
+#: ../starboard.py:185
 msgid "The message sent by **{}** is now hidden."
 msgstr ""
 
-#: ../starboard.py:197
+#: ../starboard.py:195
 msgid "That message hasn't been hidden"
 msgstr ""
 
-#: ../starboard.py:199
+#: ../starboard.py:197
 msgid "The message sent by **{}** is no longer hidden."
 msgstr ""
 
-#: ../starboard.py:208
+#: ../starboard.py:206
 msgid "You aren't allowed to block that member"
 msgstr ""
 
-#: ../starboard.py:219
+#: ../starboard.py:217
 msgid "That user is already blocked from using this guild's starboard"
 msgstr ""
 
-#: ../starboard.py:228
+#: ../starboard.py:226
 msgid "Bots are always blocked from using the starboard, and cannot be unblocked"
 msgstr ""
 
-#: ../starboard.py:239
+#: ../starboard.py:237
 msgid "That user isn't blocked from using this guild's starboard"
 msgstr ""
 
-#: ../starboard.py:247
+#: ../starboard.py:245
 msgid "I couldn't find a message with that ID - has the message been deleted?"
 msgstr ""
 
-#: ../starboard.py:251
+#: ../starboard.py:249
 msgid "The starboard message for the message sent by **{}** has been updated"
 msgstr ""
 
-#: ../starboard.py:278
+#: ../starboard.py:269
+msgid ""
+"Are you sure you want to import your v2 instances data?\n"
+"\n"
+"Guild settings will not be imported and must be setup again.\n"
+"\n"
+"Any messages starred previous to this import that are also present in the v2 data **will be overwritten.**"
+msgstr ""
+
+#: ../starboard.py:274
 msgid "Okay then."
 msgstr ""
 
-#: ../starboard.py:280
+#: ../starboard.py:276
 msgid "Importing data... (this could take a while)"
 msgstr ""
 
-#: ../starboard.py:284
+#: ../starboard.py:280
 msgid "Successfully imported v2 data"
 msgstr ""
 
-#: ../starboard.py:290
+#: ../starboard.py:294
 msgid "Cog not loaded"
 msgstr ""
 
-#: ../starboard.py:291
+#: ../starboard.py:295
 msgid "Disabled"
 msgstr ""
 
-#: ../starboard.py:291
+#: ../starboard.py:295
 msgid "Enabled"
 msgstr ""
 
-#: ../starboard.py:294
+#: ../starboard.py:298
 msgid "None"
 msgstr ""
 
-#: ../starboard.py:294
+#: ../starboard.py:298
 msgid "Starboard channel: {}"
 msgstr ""
 
-#: ../starboard.py:295
+#: ../starboard.py:299
+msgid "Min # of stars: {}"
+msgstr ""
+
+#: ../starboard.py:300
 msgid "RequireRole integration: {}"
 msgstr ""
 
-#: ../starboard.py:296
+#: ../starboard.py:301
 msgid "Can members self-star: {}"
 msgstr ""
 
-#: ../starboard.py:296
+#: ../starboard.py:301
 msgid "No"
 msgstr ""
 
-#: ../starboard.py:296
+#: ../starboard.py:301
 msgid "Yes"
 msgstr ""
 
-#: ../starboard.py:301
+#: ../starboard.py:304
 msgid "Starboard Settings"
 msgstr ""
 
-#: ../starboard.py:309
+#: ../starboard.py:313
 msgid "Members can now star their own messages"
 msgstr ""
 
-#: ../starboard.py:310
+#: ../starboard.py:314
 msgid "Members can no longer star their own messages"
 msgstr ""
 
-#: ../starboard.py:316
+#: ../starboard.py:320
 msgid "That channel isn't in this guild"
 msgstr ""
 
-#: ../starboard.py:320
+#: ../starboard.py:324
 msgid "Cleared the current starboard channel"
 msgstr ""
 
-#: ../starboard.py:322
+#: ../starboard.py:326
 msgid "Set the starboard channel to {}"
 msgstr ""
 
-#: ../starboard.py:328
+#: ../starboard.py:332
 msgid "The amount of stars must be a non-zero number"
 msgstr ""
 
-#: ../starboard.py:331
+#: ../starboard.py:335
 msgid "There aren't enough members in this guild to reach that amount of stars"
 msgstr ""
 
-#: ../starboard.py:345
+#: ../starboard.py:349
 msgid "That channel is already ignored from this guild's starboard"
 msgstr ""
 
-#: ../starboard.py:356
+#: ../starboard.py:360
 msgid "That channel isn't ignored from this guild's starboard"
 msgstr ""
 
-#: ../starboard.py:370
+#: ../starboard.py:374
 msgid "Successfully migrated {} starboard message(s)."
 msgstr ""
 
-#: ../starboard.py:380
+#: ../starboard.py:384
 msgid "Now respecting RequireRole settings."
 msgstr ""
 
-#: ../starboard.py:382
+#: ../starboard.py:386
 msgid "No longer respecting RequireRole settings."
 msgstr ""
 
