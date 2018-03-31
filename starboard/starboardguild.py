@@ -132,7 +132,7 @@ class StarboardGuild(StarboardBase):
         if channel is not False:
             if channel and channel.guild.id != self.guild.id:
                 raise ValueError("The passed TextChannel is not in the current Guild")
-            self._settings["channel"] = channel.id
+            self._settings["channel"] = getattr(channel, "id", None)
             await self.guild_config.channel.set(getattr(channel, "id", None))
         return self.bot.get_channel(self._settings["channel"])
 
