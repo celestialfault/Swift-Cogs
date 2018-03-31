@@ -8,7 +8,9 @@ from redbot.core import Config
 from redbot.core.bot import Red
 from redbot.core.config import Group, Value
 
-from logs.core import LogEntry, utils, _
+from logs.core.logentry import LogEntry
+from logs.core.i18n import _
+from logs.core.utils import add_descriptions
 
 from cog_shared.odinair_libs.formatting import flatten
 
@@ -171,8 +173,8 @@ class Module(ABC):
     def config_embed(self):
         module_opts = {x: y for x, y in flatten(self.settings, sep=":").items() if x in self.opt_keys}
 
-        enabled = utils.add_descriptions([x for x in module_opts if module_opts[x]], self.option_descriptions)
-        disabled = utils.add_descriptions([x for x in module_opts if not module_opts[x]], self.option_descriptions)
+        enabled = add_descriptions([x for x in module_opts if module_opts[x]], self.option_descriptions)
+        disabled = add_descriptions([x for x in module_opts if not module_opts[x]], self.option_descriptions)
 
         dest = _("Disabled")
         if isinstance(self.log_to, discord.Webhook):
