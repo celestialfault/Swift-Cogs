@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Iterable, Optional, Dict, Any, Union, List
+from typing import Iterable, Optional, Dict, Any, Union, List, Tuple
 from aiohttp import ClientSession
 
 import discord
@@ -92,6 +92,15 @@ class Module(ABC):
     @property
     def opt_keys(self) -> Iterable[str]:
         return list(flatten(self.defaults, sep=":"))
+
+    def has_changed(self, *items, conf_setting: Tuple[str, ...] = None):
+        changed = False
+        for item in items:
+            for compare in items:
+                if item != compare:
+                    changed = True
+                    break
+        return changed and (self.is_opt_enabled(*conf_setting) if conf_setting else True)
 
     def is_opt_enabled(self, *opts: str):
         return self.get_config_value(*opts)

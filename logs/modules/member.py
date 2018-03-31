@@ -2,6 +2,8 @@ from datetime import datetime
 
 import discord
 
+from redbot.core.utils.chat_formatting import inline
+
 from logs.core import Module, LogEntry, _
 
 from cog_shared.odinair_libs.formatting import td_format
@@ -39,6 +41,7 @@ class MemberModule(Module):
         embed.set_footer(text=_("Member ID: {}").format(member.id))
         embed.description = _("Member {} joined\n\nAccount was created {}")\
             .format(member.mention, td_format(member.created_at - datetime.utcnow(), append_str=True))
+
         return embed
 
     def leave(self, member: discord.Member):
@@ -49,6 +52,7 @@ class MemberModule(Module):
         embed.set_author(name=_("Member Left"), icon_url=self.icon_uri(member))
         embed.set_footer(text=_("Member ID: {}").format(member.id))
         embed.description = _("Member {} left").format(member.mention)
+
         return embed
 
     def update(self, before: discord.Member, after: discord.Member):
@@ -56,18 +60,20 @@ class MemberModule(Module):
         embed.set_author(name=_("Member Updated"), icon_url=self.icon_uri(after))
         embed.set_footer(text=_("Member ID: {}").format(after.id))
 
-        if hash(before.name) != hash(after.name) and self.is_opt_enabled("update", "name"):
+        if self.has_changed(before.name, after.name, conf_setting=('update', 'name')):
             embed.add_diff_field(name=_("Username"), before=before.name, after=after.name)
 
-        if hash(before.discriminator) != hash(after.discriminator) and self.is_opt_enabled("update", "discriminator"):
+        if self.has_changed(before.discriminator, after.discriminator, conf_setting=('update', 'discriminator')):
             embed.add_diff_field(name=_("Discriminator"), before=before.discriminator, after=after.discriminator)
 
-        if before.nick != after.nick and self.is_opt_enabled("update", "nickname"):
-            embed.add_diff_field(name=_("Nickname"), before=before.nick, after=after.nick)
+        if self.has_changed(before.nick, after.nick, conf_setting=('update', 'nickname')):
+            embed.add_diff_field(name=_("Nickname"),
+                                 before=before.nick or inline(_("None")),
+                                 after=after.nick or inline(_("None")))
 
-        if before.roles != after.roles and self.is_opt_enabled("update", "roles"):
+        if self.has_changed(before.roles, after.roles, conf_setting=('update', 'roles')):
             embed.add_differ_field(name="Roles",
-                                   before="\n".join([str(x) for x in before.roles if not x.is_default()]),
-                                   after="\n".join([str(x) for x in after.roles if not x.is_default()]))
+                                   before=[str(x) for x in before.roles if not x.is_default()],
+                                   after=[str(x) for x in after.roles if not x.is_default()])
 
         return embed

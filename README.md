@@ -1,5 +1,5 @@
 <h1 align="center">Swift Cogs</h1>
-<p align="center">Some moderation, bot management, and other various cogs.</p>
+<p align="center">A somewhat bland collection of moderation, bot management, utility, and various other kinds of cogs.</p>
 <p align="center">
   <a href="https://circleci.com/gh/notodinair/Swift-Cogs"><img src="https://circleci.com/gh/notodinair/Swift-Cogs.svg?style=svg" /></a>
   <a href="https://python.org/"><img src="https://img.shields.io/badge/Python-3.6-red.svg?style=flat-square" /></a>
@@ -27,7 +27,7 @@
 If you've either found a bug or would like to make a suggestion, please [open an issue](https://github.com/notodinair/Swift-Cogs/issues/new),
 as this is by far the best way to make sure that I notice it.
 
-Otherwise, you can contact me on Discord (`Emma#5555`) or Twitter (`@odinair_`).
+Otherwise, you can contact me on Discord (`odinair#0001`) or Twitter (`@odinair_`).
 
 # Cogs
 
@@ -232,7 +232,7 @@ Adds one or more roles to a member for a set amount of time
 
 #### Additional Notes
 
-- This cog creates a timer that runs once every 3 minutes.
+- This cog creates two individual timers that both run once every 3 minutes
 </details>
 
 <details>
