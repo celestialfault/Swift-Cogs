@@ -8,7 +8,7 @@ from redbot.core import checks, Config
 from redbot.core.bot import Red, RedContext
 from redbot.core.utils.chat_formatting import warning, info, error, escape, inline, bold
 
-from logs.core import Module, get_module, reload_guild_modules, _, utils
+from logs.core import Module, get_module, reload_guild_modules, _
 from logs.modules import all_modules
 
 from cog_shared.odinair_libs.formatting import tick, cmd_help
@@ -141,12 +141,11 @@ class Logs:
             await ctx.send(warning(_("That module could not be found")))
             return
         if not settings:
-            await ctx.send(embed=utils.status_embed(module))
+            await ctx.send(embed=module.config_embed())
         else:
             await module.toggle_options(*settings)
-            await module.reload_settings()
             await ctx.send(content=tick(_("Updated settings for module **{}**").format(module.friendly_name)),
-                           embed=utils.status_embed(module))
+                           embed=module.config_embed())
 
     @logset.command(name="reset")
     async def logset_reset(self, ctx: RedContext):

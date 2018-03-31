@@ -35,7 +35,7 @@ class MessageModule(Module):
         if self.is_opt_disabled("delete") or message.author.bot:
             return None
 
-        embed = LogEntry(colour=discord.Colour.blurple())
+        embed = LogEntry(colour=discord.Colour.red())
         embed.set_author(name=_("Message Deleted"), icon_url=self.icon_uri(message.author))
         embed.set_footer(text=_("Message ID: {}").format(message.id))
         embed.add_field(name=_("Message Author"), value=f"{message.author.mention} ({message.author.id})", inline=True)

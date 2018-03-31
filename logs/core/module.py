@@ -1,4 +1,4 @@
-from abc import ABCMeta, abstractmethod
+from abc import ABC, abstractmethod
 from typing import Iterable, Optional, Dict, Any, Union, List
 from aiohttp import ClientSession
 
@@ -8,7 +8,7 @@ from redbot.core import Config
 from redbot.core.bot import Red
 from redbot.core.config import Group, Value
 
-from logs.core import LogEntry
+from logs.core import LogEntry, utils, _
 
 from cog_shared.odinair_libs.formatting import flatten
 
@@ -43,7 +43,7 @@ async def get_module(module_id: str, guild: discord.Guild, *args, **kwargs):
     raise RuntimeError(f"a module with the id {module_id} was not found")
 
 
-class Module(metaclass=ABCMeta):
+class Module(ABC):
     # the following attributes are populated upon cog initialization
     config: Config = None
     bot: Red = None
@@ -54,42 +54,44 @@ class Module(metaclass=ABCMeta):
         self.settings: Dict[str, ...] = {}
         self.ignore: Dict[str, List[int]] = {}
 
+        _defaults = flatten(self.defaults, sep=":")
+        if any([" " in i for i in _defaults.keys()]):
+            raise RuntimeError("one or more of this module's config keys contains a space")
+        if not all([isinstance(i, bool) for i in _defaults]):
+            raise RuntimeError("not all default config values are of type bool")
+
     async def init_module(self):
         await self.reload_settings()
-
-    async def reload_settings(self):
-        self.settings = await self.config.guild(self.guild).get_attr(self.name).all()
-        self.ignore = await self.config.guild(self.guild).ignore.all()
-
-    # Begin abstract methods
 
     @property
     @abstractmethod
     def friendly_name(self):
+        """Friendly name that is shown to end-users"""
         raise NotImplementedError
 
     @property
     @abstractmethod
     def name(self) -> str:
+        """Internal name used for module config storage"""
         raise NotImplementedError
 
     @property
     @abstractmethod
     def module_description(self) -> str:
+        """Description of the module that is shown to end-users"""
         raise NotImplementedError
 
     @property
     @abstractmethod
     def option_descriptions(self) -> Dict[str, str]:
+        """Descriptions of the module's config settings"""
         raise NotImplementedError
 
     @property
     @abstractmethod
     def defaults(self) -> Dict[str, Any]:
+        """Default config values"""
         raise NotImplementedError
-
-    # End abstract methods
-    # Begin helper methods
 
     @property
     def opt_keys(self) -> Iterable[str]:
@@ -114,18 +116,23 @@ class Module(metaclass=ABCMeta):
                 _opt = _opt.get_attr(opt)
         return _opt
 
-    # The following methods are used by external code, and as such they shouldn't be modified by subclasses
-
     @property
     def module_config(self) -> Group:
+        """Retrieve the current guilds module config group"""
         return self.guild_config.get_attr(self.name)
 
     @property
     def guild_config(self):
+        """Retrieve the current guilds scoped config group"""
         return self.config.guild(self.guild)
+
+    async def reload_settings(self):
+        self.settings = await self.config.guild(self.guild).get_attr(self.name).all()
+        self.ignore = await self.config.guild(self.guild).ignore.all()
 
     @property
     def log_to(self) -> Optional[Union[discord.TextChannel, discord.Webhook]]:
+        """Retrieve the log channel or webhook that should be used for logging with the current module"""
         webhook = self.settings.get("_webhook", None)
         channel_id = self.settings.get("_log_channel", None)
         if webhook:
@@ -133,16 +140,19 @@ class Module(metaclass=ABCMeta):
         return self.bot.get_channel(channel_id)
 
     def icon_uri(self, member: discord.Member = None):
+        """Helper function for embed icon_url fields"""
         if member is None:
             return self.guild.icon_url_as(format="png")
         return member.avatar_url_as(format="png")
 
     async def toggle_options(self, *opts: str):
+        """Toggle config options"""
         for opt in opts:
-            if not "".join(opt.split(":")):
+            opt = opt.replace(" ", "")
+            if not "".join(opt.split("=")[0].split(":")).rstrip():
                 continue
 
-            # I'm so sorry for this monstrosity
+            # Split '=' delims; this allows for syntax like 'config:val=true'
             _opts = opt.split("=")
             opt_split = _opts[0].split(":")
             opt = self.get_config_value(*opt_split, config_value=True)
@@ -155,7 +165,31 @@ class Module(metaclass=ABCMeta):
                 new_val = not await opt()
             await opt.set(new_val)
 
+        await self.reload_settings()
         return await self.module_config.all()
+
+    def config_embed(self):
+        module_opts = {x: y for x, y in flatten(self.settings, sep=":").items() if x in self.opt_keys}
+
+        enabled = utils.add_descriptions([x for x in module_opts if module_opts[x]], self.option_descriptions)
+        disabled = utils.add_descriptions([x for x in module_opts if not module_opts[x]], self.option_descriptions)
+
+        dest = _("Disabled")
+        if isinstance(self.log_to, discord.Webhook):
+            dest = _("Webhook")
+        elif isinstance(self.log_to, discord.TextChannel):
+            dest = _("Channel {}").format(self.log_to.mention)
+
+        embed = discord.Embed(colour=discord.Colour.blurple(), description=self.module_description)
+        embed.add_field(name=_("Logging"), value=dest, inline=False)
+        embed.set_author(name=_("{} module settings").format(self.friendly_name), icon_url=self.icon_uri())
+        embed.add_field(name=_("Enabled"),
+                        value=enabled or _("**None** \N{EM DASH} All of this module's options are disabled"),
+                        inline=False)
+        embed.add_field(name=_("Disabled"),
+                        value=disabled or _("**None** \N{EM DASH} All of this module's options are enabled"),
+                        inline=False)
+        return embed
 
     async def log(self, fn_name: str, *args, **kwargs):
         if self.log_to is None or self.is_ignored(*args, **kwargs):
@@ -202,5 +236,3 @@ class Module(metaclass=ABCMeta):
             return any([self._check(item.author), self._check(item.channel)])
 
         return False
-
-    # End helper methods

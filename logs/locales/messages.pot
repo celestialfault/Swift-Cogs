@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2018-03-27 12:50-0600\n"
+"POT-Creation-Date: 2018-03-30 23:25-0600\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -21,36 +21,36 @@ msgid ""
 "**After:** {after}"
 msgstr ""
 
-#: ../core/utils.py:30 ../core/utils.py:42 ../modules/guild.py:44
+#: ../core/module.py:177 ../core/module.py:189 ../modules/guild.py:44
 #: ../modules/guild.py:45
 msgid "Disabled"
 msgstr ""
 
-#: ../core/utils.py:32
+#: ../core/module.py:179
 msgid "Webhook"
 msgstr ""
 
-#: ../core/utils.py:34
+#: ../core/module.py:181
 msgid "Channel {}"
 msgstr ""
 
-#: ../core/utils.py:37
+#: ../core/module.py:184
 msgid "Logging"
 msgstr ""
 
-#: ../core/utils.py:38
+#: ../core/module.py:185
 msgid "{} module settings"
 msgstr ""
 
-#: ../core/utils.py:39 ../modules/guild.py:44 ../modules/guild.py:45
+#: ../core/module.py:186 ../modules/guild.py:44 ../modules/guild.py:45
 msgid "Enabled"
 msgstr ""
 
-#: ../core/utils.py:40
+#: ../core/module.py:187
 msgid "**None** — All of this module's options are disabled"
 msgstr ""
 
-#: ../core/utils.py:43
+#: ../core/module.py:190
 msgid "**None** — All of this module's options are enabled"
 msgstr ""
 
@@ -85,87 +85,87 @@ msgid ""
 "{modules}"
 msgstr ""
 
-#: ../logs.py:148
+#: ../logs.py:147
 msgid "Updated settings for module **{}**"
 msgstr ""
 
-#: ../logs.py:154
+#: ../logs.py:153
 msgid "Are you sure you want to reset this guild's log settings?"
 msgstr ""
 
-#: ../logs.py:158
+#: ../logs.py:157
 msgid "Guild log settings have been reset."
 msgstr ""
 
-#: ../logs.py:162
+#: ../logs.py:161
 msgid "Okay then."
 msgstr ""
 
-#: ../logs.py:186
+#: ../logs.py:185
 msgid "That channel is already being ignored"
 msgstr ""
 
-#: ../logs.py:190
+#: ../logs.py:189
 msgid "The channel {channel} is now ignored from logging"
 msgstr ""
 
-#: ../logs.py:193
+#: ../logs.py:192
 msgid "The category {channel} and it's subchannels are now ignored from logging"
 msgstr ""
 
-#: ../logs.py:202
+#: ../logs.py:201
 msgid "That member is already being ignored"
 msgstr ""
 
-#: ../logs.py:205
+#: ../logs.py:204
 msgid "Member **{member}** is now ignored from logging"
 msgstr ""
 
-#: ../logs.py:218 ../logs.py:235
+#: ../logs.py:217 ../logs.py:234
 msgid "That role is already being ignored"
 msgstr ""
 
-#: ../logs.py:221
+#: ../logs.py:220
 msgid "The role **{role}** is now ignored from logging"
 msgstr ""
 
-#: ../logs.py:238 ../logs.py:308
+#: ../logs.py:237 ../logs.py:307
 msgid "Members with the role **{role}** are no longer ignored from logging"
 msgstr ""
 
-#: ../logs.py:246
+#: ../logs.py:245
 msgid "Now ignoring the current guild"
 msgstr ""
 
-#: ../logs.py:266
+#: ../logs.py:265
 msgid "That channel isn't currently being ignored"
 msgstr ""
 
-#: ../logs.py:270
+#: ../logs.py:269
 msgid "The channel {channel} is no longer ignored from logging"
 msgstr ""
 
-#: ../logs.py:273
+#: ../logs.py:272
 msgid "The category {channel} and it's subchannels are no longer ignored from logging"
 msgstr ""
 
-#: ../logs.py:282
+#: ../logs.py:281
 msgid "That member isn't currently being ignored"
 msgstr ""
 
-#: ../logs.py:285
+#: ../logs.py:284
 msgid "Member **{member}** is no longer ignored from logging"
 msgstr ""
 
-#: ../logs.py:293 ../logs.py:305
+#: ../logs.py:292 ../logs.py:304
 msgid "That role isn't currently being ignored"
 msgstr ""
 
-#: ../logs.py:296
+#: ../logs.py:295
 msgid "The role **{role}** is no longer ignored from logging"
 msgstr ""
 
-#: ../logs.py:316
+#: ../logs.py:315
 msgid "No longer ignoring the current guild"
 msgstr ""
 
@@ -391,19 +391,23 @@ msgstr ""
 msgid "Member {} left"
 msgstr ""
 
+#: ../modules/member.py:55 ../modules/voice.py:32
+msgid "Member: {}"
+msgstr ""
+
 #: ../modules/member.py:56
 msgid "Member Updated"
 msgstr ""
 
-#: ../modules/member.py:60
+#: ../modules/member.py:62
 msgid "Username"
 msgstr ""
 
-#: ../modules/member.py:63
+#: ../modules/member.py:65
 msgid "Discriminator"
 msgstr ""
 
-#: ../modules/member.py:66
+#: ../modules/member.py:68
 msgid "Nickname"
 msgstr ""
 
@@ -563,10 +567,6 @@ msgstr ""
 
 #: ../modules/voice.py:9
 msgid "Voice status logging"
-msgstr ""
-
-#: ../modules/voice.py:32
-msgid "Member: {}"
 msgstr ""
 
 #: ../modules/voice.py:36

@@ -52,14 +52,16 @@ class MemberModule(Module):
         return embed
 
     def update(self, before: discord.Member, after: discord.Member):
-        embed = LogEntry(colour=discord.Colour.blurple())
+        embed = LogEntry(colour=discord.Colour.blurple(), description=_("Member: {}").format(after.mention))
         embed.set_author(name=_("Member Updated"), icon_url=self.icon_uri(after))
         embed.set_footer(text=_("Member ID: {}").format(after.id))
 
-        if before.name != after.name and self.is_opt_enabled("update", "name"):
+        # I'm not sure why this has to be hashed to properly compare it,
+        # but somehow it does. For whatever reason.
+        if hash(before.name) != hash(after.name) and self.is_opt_enabled("update", "name"):
             embed.add_diff_field(name=_("Username"), before=before.name, after=after.name)
 
-        if before.discriminator != after.discriminator and self.is_opt_enabled("update", "discriminator"):
+        if hash(before.discriminator) != hash(after.discriminator) and self.is_opt_enabled("update", "discriminator"):
             embed.add_diff_field(name=_("Discriminator"), before=before.discriminator, after=after.discriminator)
 
         if before.nick != after.nick and self.is_opt_enabled("update", "nickname"):
