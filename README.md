@@ -27,7 +27,7 @@
 If you've either found a bug or would like to make a suggestion, please [open an issue](https://github.com/notodinair/Swift-Cogs/issues/new),
 as this is by far the best way to make sure that I notice it.
 
-Otherwise, you can contact me on Discord (`odinair#0001`) or Twitter (`@odinair_`).
+Otherwise, you can contact me on Discord (`Emma#5555`) or Twitter (`@odinair_`).
 
 # Cogs
 
@@ -83,7 +83,7 @@ Log anything and everything that may happen in your guild.
 <details>
 <summary>Misc Tools</summary>
 
-Quick and dirty utilities.
+Various quick and dirty utilities.
 
 This is mostly useful if you're either making a cog, or for advanced server moderation/administration.
 Otherwise, this cog may be entirely useless to you.
@@ -240,8 +240,6 @@ Adds one or more roles to a member for a set amount of time
 
 Mute a member for a set amount of time, with integration for the core Red modlog.
 
-*This cog requires Timed Role to function.*
-
 #### To install
 
 ```
@@ -251,7 +249,7 @@ Mute a member for a set amount of time, with integration for the core Red modlog
 
 #### Requirements
 
-- None
+- `Timed Role` cog
 
 #### Additional Notes
 
