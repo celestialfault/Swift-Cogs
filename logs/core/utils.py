@@ -1,6 +1,6 @@
 from typing import List, Dict
 
-from logs.core import _
+from logs.core.i18n import _
 
 __all__ = ('add_descriptions',)
 

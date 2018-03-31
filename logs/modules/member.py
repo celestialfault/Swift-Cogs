@@ -56,8 +56,6 @@ class MemberModule(Module):
         embed.set_author(name=_("Member Updated"), icon_url=self.icon_uri(after))
         embed.set_footer(text=_("Member ID: {}").format(after.id))
 
-        # I'm not sure why this has to be hashed to properly compare it,
-        # but somehow it does. For whatever reason.
         if hash(before.name) != hash(after.name) and self.is_opt_enabled("update", "name"):
             embed.add_diff_field(name=_("Username"), before=before.name, after=after.name)
 
