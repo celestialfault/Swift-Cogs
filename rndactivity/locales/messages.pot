@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2018-03-28 09:22-0600\n"
+"POT-Creation-Date: 2018-03-31 13:48-0600\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,16 +17,16 @@ msgstr ""
 
 #: ../rndactivity.py:57
 msgid ""
-"Set time between status changes to {}.\n"
-"This will take effect after the next status change."
+"Set time between status changes to {duration}.\n"
+"This change will take effect after the next status change."
 msgstr ""
 
 #: ../rndactivity.py:64
-msgid "Parsing that status failed - {} is not a valid placeholder"
+msgid "Parsing that status failed — {placeholder} is not a valid placeholder"
 msgstr ""
 
 #: ../rndactivity.py:69
-msgid "Status **#{id}** added."
+msgid "Added status **#{id}** successfully."
 msgstr ""
 
 #: ../rndactivity.py:121
@@ -36,43 +36,41 @@ msgid ""
 "See `{prefix}help rndactivity add` for the list of placeholder strings"
 msgstr ""
 
-#: ../rndactivity.py:128
+#: ../rndactivity.py:125
 msgid ""
 "📥 **Input:**\n"
-"{status}\n"
-"\n"
-"📤 **Result:**\n"
-"{result}"
+"{input}\n"
+"📤 **Result:** {result}"
 msgstr ""
 
-#: ../rndactivity.py:139
-msgid "The status {id} doesn't exist"
+#: ../rndactivity.py:136
+msgid "No status with the ID `{id}` exists"
 msgstr ""
 
-#: ../rndactivity.py:145
-msgid "Removed status #{id} (`{text}`) successfully."
+#: ../rndactivity.py:141
+msgid "Removed status **#{id}** (`{status}`) successfully."
 msgstr ""
 
-#: ../rndactivity.py:156
-msgid "I have no random statuses setup! Use `{}rndactivity add` to add some!"
+#: ../rndactivity.py:152
+msgid "I have no statuses setup yet! Use `{prefix}rndactivity add` to add some!"
 msgstr ""
 
-#: ../rndactivity.py:171
+#: ../rndactivity.py:166
 msgid "Placeholder {} doesn't exist"
 msgstr ""
 
-#: ../rndactivity.py:180
+#: ../rndactivity.py:175
 msgid ""
 "Are you sure you want to clear {amount} statuses?\n"
 "\n"
 "This action is irreversible!"
 msgstr ""
 
-#: ../rndactivity.py:185
-msgid "Successfully cleared {amount} status strings."
+#: ../rndactivity.py:180
+msgid "Successfully removed {amount} status strings."
 msgstr ""
 
-#: ../rndactivity.py:187
+#: ../rndactivity.py:182
 msgid "Okay then."
 msgstr ""
 

@@ -138,7 +138,7 @@ class RNDActivity:
             if not statuses:
                 await self.bot.change_presence(activity=None, status=getattr(ctx.me, "status", None))
         removed = escape(self.format_status(removed, return_formatted=False)[0], mass_mentions=True)
-        await fmt(ctx, tick(_("Removed status **#{id}** (`{text}`) successfully.")), id=status, text=removed)
+        await fmt(ctx, tick(_("Removed status **#{id}** (`{status}`) successfully.")), id=status, status=removed)
 
     @rndactivity.command(name="list")
     async def rndactivity_list(self, ctx: RedContext, parse: bool=False):
