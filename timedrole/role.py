@@ -21,10 +21,10 @@ async def _get_roles(cls: Type["TempRole"], guild: discord.Guild, data: dict, *m
             if role is None:
                 continue
             role = await cls.get(role=role, member=member)
-            if role.expired:
-                await role.remove_role()
-                continue
             if role:
+                if role.expired:
+                    await role.remove_role()
+                    continue
                 roles.append(role)
     return roles
 
