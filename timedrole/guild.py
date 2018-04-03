@@ -34,6 +34,9 @@ class GuildRoles:
                 except ValueError:
                     await self.remove(member, temp_role.get("role_id"))
                 else:
+                    if role is None:
+                        await self.remove(member, temp_role.get("role_id"))
+                        continue
                     roles.append(role)
         return roles
 

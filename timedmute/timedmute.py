@@ -109,12 +109,16 @@ class TimedMute:
                 role = await self.create_role(ctx.guild)
             await tmp_msg.delete()
 
+        if role in member.roles:
+            await ctx.send(warning(_("That member is already muted!")))
+            return
+
         try:
             timed_role: TimedRole = self.bot.get_cog("TimedRole")
             await timed_role.add_roles(role, member=member, duration=duration, granted_by=ctx.author, reason=reason,
                                        modlog_type="timedmute")
-        except ValueError as e:
-            await ctx.send(warning(str(e)))
+        except ValueError:
+            await ctx.send(warning(_("That member is already muted!")))
         else:
             await ctx.send(tick(_("**{}** is now muted for for {}").format(member, td_format(duration))))
 

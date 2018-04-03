@@ -15,13 +15,16 @@ class TempRole:
         self.guild = guild
         self.duration = timedelta(seconds=duration)
         self.added_at = added_at
-        self.expiry_time = added_at + self.duration
         self.granted_by = guild.guild.get_member(granted_by) or granted_by
         self.hidden = kwargs.pop("hidden", False)
         self.reason = kwargs.pop("reason", None)
 
     def __str__(self):
         return str(self.role)
+
+    @property
+    def expiry_time(self):
+        return self.added_at + self.duration
 
     @classmethod
     def from_data(cls, guild, member: discord.Member, data: dict):

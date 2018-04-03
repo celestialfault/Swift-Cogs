@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2018-03-28 12:46-0600\n"
+"POT-Creation-Date: 2018-04-02 18:15-0600\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -15,83 +15,98 @@ msgstr ""
 "Generated-By: pygettext.py 1.5\n"
 
 
-#: ../role.py:40
+#: ../role.py:43
 msgid "Queued for removal"
 msgstr ""
 
-#: ../timedrole.py:46
-msgid "No roles were given, or the only roles given were roles the member already has"
-msgstr ""
-
-#: ../timedrole.py:90
+#: ../timedrole.py:88
 msgid "This guild has no currently active timed roles"
 msgstr ""
 
-#: ../timedrole.py:91
+#: ../timedrole.py:89
 msgid "None of those members have any active timed roles"
 msgstr ""
 
-#: ../timedrole.py:99
+#: ../timedrole.py:97
 msgid "**❯** Timed role #{} — **Hidden role**"
 msgstr ""
 
-#: ../timedrole.py:100
+#: ../timedrole.py:98
 msgid "**❯** Timed role #{}"
 msgstr ""
 
-#: ../timedrole.py:101
+#: ../timedrole.py:99
 msgid "**Member** — {}"
 msgstr ""
 
-#: ../timedrole.py:102
+#: ../timedrole.py:100
 msgid "**Role** — {}"
 msgstr ""
 
-#: ../timedrole.py:105
+#: ../timedrole.py:103
 msgid "**Reason** — {}"
 msgstr ""
 
-#: ../timedrole.py:108
+#: ../timedrole.py:106
 msgid "**Given by** — {} — {} ago"
 msgstr ""
 
-#: ../timedrole.py:109
+#: ../timedrole.py:107
 msgid "An unknown member"
 msgstr ""
 
-#: ../timedrole.py:112
+#: ../timedrole.py:110
 msgid "**Expires** — {}"
 msgstr ""
 
-#: ../timedrole.py:175
+#: ../timedrole.py:117
+msgid "Page {}/{}"
+msgstr ""
+
+#: ../timedrole.py:118
+msgid "Timed Roles"
+msgstr ""
+
+#: ../timedrole.py:176
 msgid "Role is equal to or above your highest ranked role"
 msgstr ""
 
-#: ../timedrole.py:177
+#: ../timedrole.py:178
 msgid "Role is equal to or above my highest ranked role"
+msgstr ""
+
+#: ../timedrole.py:183
+msgid ""
+"Cannot add one or more of the given roles for the following reason(s):\n"
+"\n"
+"{cannot_add}"
 msgstr ""
 
 #: ../timedrole.py:189
 msgid "I'm not allowed to give one or more of those roles to that user"
 msgstr ""
 
-#: ../timedrole.py:194
-msgid "Successfully granted {} to **{}** for {}"
+#: ../timedrole.py:191
+msgid "No roles were given, or the only roles given were roles the member already has"
 msgstr ""
 
-#: ../timedrole.py:205
+#: ../timedrole.py:194
+msgid "Successfully gave the role(s) {roles} to **{member}** for {duration}."
+msgstr ""
+
+#: ../timedrole.py:206
 msgid "Removed all timed roles from member **{}**"
 msgstr ""
 
-#: ../timedrole.py:207
+#: ../timedrole.py:208
 msgid "Removed roles {} from member **{}**"
 msgstr ""
 
-#: ../timedrole.py:226
+#: ../timedrole.py:228
 msgid "Missing timed role reapplied"
 msgstr ""
 
-#: ../timedrole.py:236
+#: ../timedrole.py:238
 msgid "Timed role reapplied after member rejoin"
 msgstr ""
 

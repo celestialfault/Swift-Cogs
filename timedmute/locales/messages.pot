@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2018-03-23 16:34-0600\n"
+"POT-Creation-Date: 2018-04-02 18:20-0600\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -29,7 +29,11 @@ msgid ""
 "(this may take a while, depending on how many channels you have)"
 msgstr ""
 
-#: ../timedmute.py:119
+#: ../timedmute.py:113 ../timedmute.py:121
+msgid "That member is already muted!"
+msgstr ""
+
+#: ../timedmute.py:123
 msgid "**{}** is now muted for for {}"
 msgstr ""
 

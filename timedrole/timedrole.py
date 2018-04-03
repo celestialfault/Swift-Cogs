@@ -13,7 +13,7 @@ from timedrole.role import TempRole
 from timedrole.guild import GuildRoles
 from timedrole.i18n import _
 
-from cog_shared.odinair_libs.formatting import td_format, chunks
+from cog_shared.odinair_libs.formatting import td_format, chunks, fmt, tick
 from cog_shared.odinair_libs.converters import FutureTime
 from cog_shared.odinair_libs.menus import PaginateMenu
 
@@ -22,12 +22,13 @@ class TimedRole:
     """Give users roles for a set amount of time"""
 
     __author__ = "odinair <odinair@odinair.xyz>"
-    __version__ = "1.1.0"
+    __version__ = "1.2.0"
 
     def __init__(self, bot: Red):
         self.bot = bot
         self.config = Config.get_conf(self, identifier=35235234, force_registration=True)
         self.config.register_member(roles=[])
+
         GuildRoles.config = self.config
         self._expiry_task = self.bot.loop.create_task(self.remove_expired_roles())
         self._reapply_task = self.bot.loop.create_task(self.reapply_missing_roles())
@@ -43,7 +44,7 @@ class TimedRole:
             if role.is_default() or role in member.roles:
                 roles.remove(role)
         if not roles:
-            raise ValueError(_("No roles were given, or the only roles given were roles the member already has"))
+            raise ValueError
 
         if duration is None:
             duration = timedelta(days=30)
@@ -63,11 +64,9 @@ class TimedRole:
 
         if modlog_type is not None:
             try:
-                # noinspection PyTypeChecker
                 await modlog.create_case(bot=self.bot, guild=member.guild, action_type=modlog_type,
-                                         until=(now + timedelta(seconds=duration)).timestamp(),
-                                         created_at=now, user=member, moderator=granted_by,
-                                         reason=reason)
+                                         until=now + timedelta(seconds=duration), created_at=now,
+                                         user=member, moderator=granted_by, reason=reason)
             except RuntimeError:
                 pass
 
@@ -114,9 +113,11 @@ class TimedRole:
                 yield "\n".join(_strs)
 
         def page_convert(x, page, pages):
-            return discord.Embed(description="\n\n".join(list(convert(x, page))), colour=ctx.me.colour)\
-                .set_footer(text=f"Page {page}/{pages}")\
-                .set_author(name="Timed Roles", icon_url=ctx.guild.icon_url)
+            return (
+                    discord.Embed(description="\n\n".join(list(convert(x, page))), colour=ctx.me.colour)
+                    .set_footer(text=_("Page {}/{}").format(page, pages))
+                    .set_author(name=_("Timed Roles"), icon_url=ctx.guild.icon_url)
+                )
 
         async with PaginateMenu(ctx, pages=roles, converter=page_convert, actions={}):
             pass
@@ -163,9 +164,10 @@ class TimedRole:
         Maximum duration for a timed role is two years. Expired timed roles are checked every 3 minutes.
         """
         roles = list(roles)
-        if ctx.guild.default_role in roles:
-            roles.remove(ctx.guild.default_role)
-        if not roles or len(roles) > 10:
+        for role in roles.copy():
+            if role in member.roles:
+                roles.remove(role)
+        if not 1 < len(roles) < 10:
             await ctx.send_help()
             return
 
@@ -179,19 +181,19 @@ class TimedRole:
         if any(cannot_add):
             cannot_add = "\n".join(f"`{escape(x.name, mass_mentions=True, formatting=True)}` "
                                    f"\N{EM DASH} {cannot_add[x]}" for x in cannot_add)
-            await ctx.send(warning(f"Cannot add one or more of the given roles for the following reasons:\n\n"
-                                   f"{cannot_add}"))
-            return
+            return await fmt(ctx, _("Cannot add one or more of the given roles for the following reason(s):\n\n"
+                                    "{cannot_add}"), cannot_add=cannot_add)
 
         try:
             await self.add_roles(*roles, member=member, duration=duration, granted_by=ctx.author)
         except discord.Forbidden:
             await ctx.send(warning(_("I'm not allowed to give one or more of those roles to that user")))
-        except ValueError as e:
-            await ctx.send(warning(str(e)))
+        except ValueError:
+            await ctx.send(warning(_("No roles were given, or the only roles given were roles the member already has")))
         else:
             roles = ", ".join([bold(str(x)) for x in roles])
-            await ctx.send(_("Successfully granted {} to **{}** for {}").format(roles, member, td_format(duration)))
+            await fmt(ctx, tick(_("Successfully gave the role(s) {roles} to **{member}** for {duration}.")),
+                      roles=roles, member=member, duration=td_format(duration))
 
     @timedrole.command(name="remove")
     async def timedrole_expire(self, ctx: RedContext, member: discord.Member, *roles: discord.Role):
@@ -204,7 +206,8 @@ class TimedRole:
         if not roles:
             await ctx.send(_("Removed all timed roles from member **{}**").format(member))
         else:
-            await ctx.send(_("Removed roles {} from member **{}**").format(", ".join(bold(str(x)) for x in roles)))
+            await ctx.send(_("Removed roles {} from member **{}**").format(
+                ", ".join(bold(str(x)) for x in roles), member))
 
     async def remove_expired_roles(self):
         while self == self.bot.get_cog(self.__class__.__name__):
