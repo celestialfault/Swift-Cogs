@@ -11,10 +11,9 @@ from redbot.core.utils.mod import is_allowed_by_hierarchy
 
 from cog_shared.odinair_libs.converters import FutureTime
 from cog_shared.odinair_libs.checks import cogs_loaded
-from cog_shared.odinair_libs.formatting import td_format, tick
 
 try:
-    from timedrole.timedrole import TimedRole
+    from timedrole.role import TempRole
 except ImportError:
     raise RuntimeError("This cog requires my 'timedrole' cog to function")
 
@@ -26,7 +25,7 @@ class TimedMute:
     OVERWRITE_PERMISSIONS = discord.PermissionOverwrite(speak=False, send_messages=False, add_reactions=False)
 
     __author__ = "odinair <odinair@odinair.xyz>"
-    __version__ = "1.0.0"
+    __version__ = "1.1.0"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -113,14 +112,16 @@ class TimedMute:
             await ctx.send(warning(_("That member is already muted!")))
             return
 
+        (await TempRole.create(member=member, role=role, reason=reason, added_by=ctx.author, duration=duration))\
+            .apply_role(reason=reason)
+
         try:
-            timed_role: TimedRole = self.bot.get_cog("TimedRole")
-            await timed_role.add_roles(role, member=member, duration=duration, granted_by=ctx.author, reason=reason,
-                                       modlog_type="timedmute")
-        except ValueError:
-            await ctx.send(warning(_("That member is already muted!")))
-        else:
-            await ctx.send(tick(_("**{}** is now muted for for {}").format(member, td_format(duration))))
+            await modlog.create_case(bot=self.bot, guild=ctx.guild, user=member, moderator=ctx.author,
+                                     reason=reason, until=role.expires_at, action_type="timedmute",
+                                     created_at=role.added_at)
+        except RuntimeError:
+            pass
+        await ctx.tick()
 
     async def on_guild_channel_create(self, channel: discord.abc.GuildChannel):
         # noinspection PyUnresolvedReferences
