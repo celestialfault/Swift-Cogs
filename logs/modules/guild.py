@@ -10,22 +10,13 @@ from cog_shared.odinair_libs.formatting import td_format, normalize
 class GuildModule(Module):
     name = "guild"
     friendly_name = _("Guild")
-    module_description = _("Guild update logging")
-    defaults = {
-        "2fa": False,
-        "afk": {
-            "timeout": False,
-            "channel": None
-        },
-        "name": False,
-        "owner": False,
-        "region": False,
-        "filter": False
-    }
-    option_descriptions = {
+    description = _("Guild update logging")
+    settings = {
         "2fa": _("Administration two-factor authentication requirement"),
-        "afk:timeout": _("How long members can be AFK in voice"),
-        "afk:channel": _("The voice channel AFK members will be moved to"),
+        "afk": {
+            "timeout": _("How long members can be AFK in voice"),
+            "channel": _("The voice channel AFK members will be moved to"),
+        },
         "name": _("Guild name"),
         "owner": _("Guild ownership transfers"),
         "region": _("Voice server region"),
@@ -36,9 +27,11 @@ class GuildModule(Module):
         if any([before.unavailable, after.unavailable]):
             return None
 
-        embed = LogEntry(colour=discord.Colour.blurple())
-        embed.set_author(name=_("Guild Updated"), icon_url=self.icon_uri())
-        embed.set_footer(text=_("Guild ID: {}").format(after.id))
+        embed = (
+            LogEntry(colour=discord.Color.blurple())
+            .set_author(name=_("Guild Updated"), icon_url=self.icon_uri())
+            .set_footer(text=_("Guild ID: {}").format(after.id))
+        )
 
         if before.mfa_level != after.mfa_level and self.is_opt_enabled("2fa"):
             embed.add_diff_field(name=_("2FA Requirement"), before=_("Enabled") if before.mfa_level else _("Disabled"),

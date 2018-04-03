@@ -8,40 +8,33 @@ from logs.core import Module, LogEntry, _
 class MessageModule(Module):
     name = "message"
     friendly_name = _("Message")
-    defaults = {
-        "edit": False,
-        "delete": False
-    }
-    module_description = _("Message edit and deletion logging")
-    option_descriptions = {
+    description = _("Message edit and deletion logging")
+    settings = {
         "edit": _("Message edits"),
         "delete": _("Message deletions")
     }
 
     def edit(self, before: discord.Message, after: discord.Message):
-        if any([self.is_opt_disabled("edit"), before.content == after.content, after.author.bot]):
-            return None
-
-        embed = LogEntry(colour=discord.Colour.blurple())
-        embed.set_author(name=_("Message Edited"), icon_url=self.icon_uri(after.author))
-        embed.set_footer(text=_("Message ID: {}").format(after.id))
-        embed.add_field(name=_("Message Author"), value=f"{after.author.mention} ({after.author.id})", inline=True)
-        embed.add_field(name=_("Channel"), value=f"{after.channel.mention} ({after.channel.id})", inline=True)
-        embed.add_differ_field(name=_("Content Diff"), before=before.content, after=after.content)
-
-        return embed
+        return (
+            LogEntry(colour=discord.Colour.blurple())
+            .set_author(name=_("Message Edited"), icon_url=self.icon_uri(after.author))
+            .set_footer(text=_("Message ID: {}").format(after.id))
+            .add_field(name=_("Message Author"), value=f"{after.author.mention} ({after.author.id})", inline=True)
+            .add_field(name=_("Channel"), value=f"{after.channel.mention} ({after.channel.id})", inline=True)
+            .add_differ_field(name=_("Content Diff"), before=before.content, after=after.content)
+        ) if all([self.is_opt_enabled("edit"), before.content != after.content, not after.author.bot]) else None
 
     def delete(self, message: discord.Message):
-        if self.is_opt_disabled("delete") or message.author.bot:
-            return None
-
-        embed = LogEntry(colour=discord.Colour.red())
-        embed.set_author(name=_("Message Deleted"), icon_url=self.icon_uri(message.author))
-        embed.set_footer(text=_("Message ID: {}").format(message.id))
-        embed.add_field(name=_("Message Author"), value=f"{message.author.mention} ({message.author.id})", inline=True)
-        embed.add_field(name=_("Channel"), value=f"{message.channel.mention} ({message.channel.id})", inline=True)
-        embed.add_field(name=_("Content"), value=message.content or inline(_("No message content")))
-        if message.attachments:
-            embed.add_field(name=_("Attachments"), value="\n".join([f"<{x.url}>" for x in message.attachments]))
-
-        return embed
+        return (
+            LogEntry(colour=discord.Colour.red())
+            .set_author(name=_("Message Deleted"), icon_url=self.icon_uri(message.author))
+            .set_footer(text=_("Message ID: {}").format(message.id))
+            .add_field(name=_("Message Author"), value=f"{message.author.mention} ({message.author.id})",
+                       inline=True)
+            .add_field(name=_("Channel"), value=f"{message.channel.mention} ({message.channel.id})", inline=True)
+            .add_field(name=_("Content"), value=message.content or inline(_("No message content")))
+            # due to how LogEntry.add_field works, this will only display if value is not None
+            .add_field(name=_("Attachments"),
+                       value="\n".join([f"<{x.url}>" for x in message.attachments])
+                             if message.attachments else None)
+        ) if all([self.is_opt_enabled("delete"), not message.author.bot]) else None

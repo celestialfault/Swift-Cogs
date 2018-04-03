@@ -10,55 +10,43 @@ from cog_shared.odinair_libs.formatting import td_format
 
 
 class MemberModule(Module):
-    friendly_name = _("Member")
     name = "member"
-    module_description = _("Member joining, leaving, and update logging")
-    defaults = {
-        "join": False,
-        "leave": False,
-        "update": {
-            "name": False,
-            "discriminator": False,
-            "nickname": False,
-            "roles": False
-        }
-    }
-    option_descriptions = {
+    friendly_name = _("Member")
+    description = _("Member joining, leaving, and update logging")
+    settings = {
         "join": _("Member joining"),
         "leave": _("Member leaving"),
-        "update:name": _("Member username changes"),
-        "update:discriminator": _("Member discriminator changes"),
-        "update:nickname": _("Member nickname changes"),
-        "update:roles": _("Member role changes")
+        "update": {
+            "name": _("Member username changes"),
+            "discriminator": _("Member discriminator changes"),
+            "nickname": _("Member nickname changes"),
+            "roles": _("Member role changes")
+        }
     }
 
     def join(self, member: discord.Member):
-        if self.is_opt_disabled("join"):
-            return None
-
-        embed = LogEntry(colour=discord.Colour.green(), require_fields=False)
-        embed.set_author(name=_("Member Joined"), icon_url=self.icon_uri(member))
-        embed.set_footer(text=_("Member ID: {}").format(member.id))
-        embed.description = _("Member {} joined\n\nAccount was created {}")\
-            .format(member.mention, td_format(member.created_at - datetime.utcnow(), append_str=True))
-
-        return embed
+        return (
+            LogEntry(colour=discord.Color.green(), require_fields=False,
+                     description=_("Member {} joined\n\nAccount was created {}").format(
+                         member.mention, td_format(member.created_at - datetime.utcnow(), append_str=True)))
+            .set_author(name=_("Member Joined"), icon_url=self.icon_uri(member))
+            .set_footer(text=_("Member ID: {}").format(member.id))
+        ) if self.is_opt_enabled("join") else None
 
     def leave(self, member: discord.Member):
-        if self.is_opt_disabled("leave"):
-            return None
-
-        embed = LogEntry(colour=discord.Colour.red(), require_fields=False)
-        embed.set_author(name=_("Member Left"), icon_url=self.icon_uri(member))
-        embed.set_footer(text=_("Member ID: {}").format(member.id))
-        embed.description = _("Member {} left").format(member.mention)
-
-        return embed
+        return (
+            LogEntry(colour=discord.Color.red(), require_fields=False,
+                     description=_("Member {} left").format(member.mention))
+            .set_author(name=_("Member Left"), icon_url=self.icon_uri(member))
+            .set_footer(text=_("Member ID: {}").format(member.id))
+        ) if self.is_opt_enabled("leave") else None
 
     def update(self, before: discord.Member, after: discord.Member):
-        embed = LogEntry(colour=discord.Colour.blurple(), description=_("Member: {}").format(after.mention))
-        embed.set_author(name=_("Member Updated"), icon_url=self.icon_uri(after))
-        embed.set_footer(text=_("Member ID: {}").format(after.id))
+        embed = (
+            LogEntry(colour=discord.Color.blurple(), description=_("Member: {}").format(after.mention))
+            .set_author(name=_("Member Updated"), icon_url=self.icon_uri(after))
+            .set_footer(text=_("Member ID: {}").format(after.id))
+        )
 
         if self.has_changed(before.name, after.name, conf_setting=('update', 'name')):
             embed.add_diff_field(name=_("Username"), before=before.name, after=after.name)

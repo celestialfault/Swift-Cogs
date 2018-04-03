@@ -6,30 +6,20 @@ from cog_shared.odinair_libs.formatting import normalize
 
 
 class RoleModule(Module):
-    friendly_name = _("Role")
     name = "role"
-    module_description = _("Role creation, deletion and update logging")
-    defaults = {
-        "create": False,
-        "delete": False,
-        "update": {
-            "name": False,
-            "permissions": False,
-            "colour": False,
-            "mentionable": False,
-            "hoist": False,
-            "position": False
-        }
-    }
-    option_descriptions = {
+    friendly_name = _("Role")
+    description = _("Role creation, deletion and update logging")
+    settings = {
         "create": _("Role creations"),
         "delete": _("Role deletions"),
-        "update:name": _("Role names"),
-        "update:permissions": _("Role permissions"),
-        "update:colour": _("Role colour"),
-        "update:mentionable": _("If a role can be mentioned or not"),
-        "update:hoist": _("If a role is displayed separately from online members"),
-        "update:position": _("A roles position in the role hierarchy")
+        "update": {
+            "name": _("Role names"),
+            "permissions": _("Role permissions"),
+            "colour": _("Role colour"),
+            "mentionable": _("If a role can be mentioned or not"),
+            "hoist": _("If a role is displayed separately from online members"),
+            "position": _("A roles position in the role hierarchy")
+        }
     }
 
     def create(self, role: discord.Role):

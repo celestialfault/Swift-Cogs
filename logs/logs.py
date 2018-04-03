@@ -11,8 +11,8 @@ from redbot.core.utils.chat_formatting import warning, info, error, escape, inli
 from logs.core import Module, get_module, reload_guild_modules, _
 from logs.modules import all_modules
 
-from cog_shared.odinair_libs.formatting import tick, cmd_help
-from cog_shared.odinair_libs.menus import confirm
+from cog_shared.odinair_libs.formatting import tick, cmd_help, fmt
+from cog_shared.odinair_libs.menus import ConfirmMenu, prompt
 
 
 # noinspection PyMethodMayBeStatic
@@ -20,14 +20,14 @@ class Logs:
     """Log anything and everything that happens in your server"""
 
     __author__ = "odinair <odinair@odinair.xyz>"
-    __version__ = "1.1.1"
+    __version__ = "1.2.0"
 
     defaults_guild = {
         **{
             all_modules[x].name: {
                 "_log_channel": None,
                 "_webhook": None,
-                **all_modules[x].defaults
+                **all_modules[x](guild=None).defaults
             } for x in all_modules
         },
         "ignore": {
@@ -48,7 +48,7 @@ class Logs:
         Module.session = ClientSession()
 
     def __unload(self):
-        self.bot.loop.create_task(Module.session.close())
+        Module.session.close()
 
     @commands.group(name="logset")
     @commands.guild_only()
@@ -56,6 +56,48 @@ class Logs:
     async def logset(self, ctx: RedContext):
         """Manage log settings"""
         await cmd_help(ctx)
+
+    @logset.command(name="setup")
+    async def logset_setup(self, ctx: RedContext):
+        """Quick-start for logging settings"""
+        for module_name in all_modules.keys():
+            module = await get_module(module_id=module_name, guild=ctx.guild)
+            async with ConfirmMenu(ctx, colour=discord.Color.blurple(),
+                                   message=_("Would you like to enable the **{}** module?").format(
+                                       module.friendly_name)) as result:
+                await module.module_config.clear()
+                if not result:
+                    continue
+                channel = None
+                while channel is None:
+                    given = await prompt(ctx, content=_("What channel would you like to log to?"), timeout=120.0,
+                                         delete_messages=True)
+                    if given is None:
+                        break
+                    try:
+                        channel = commands.TextChannelConverter().convert(ctx, given.content)
+                    except commands.BadArgument:
+                        continue
+                    else:
+                        break
+                if channel is None:
+                    continue
+                await module.module_config.set_raw("_log_channel", value=getattr(channel, "id", None))
+                async with ConfirmMenu(ctx, colour=discord.Color.blurple(),
+                                       message=_("Would you like to setup logging options for module **{}**?").format(
+                                           module.friendly_name))\
+                        as setup_opts:
+                    if setup_opts:
+                        tmp = await ctx.send(embed=module.config_embed())
+                        resp = await prompt(ctx, content=_("Please respond with a space-separated list of options you "
+                                                           "would like to enable"), delete_messages=True)
+                        if resp:
+                            await module.toggle_options(*str(resp.content).split(" "))
+                        await tmp.delete()
+                    await fmt(ctx, info(_("You can setup the options for this module later with "
+                                          "`{prefix}logset module {module}`.")),
+                              module=module_name, delete_after=30.0)
+        await ctx.send(tick(_("You're all done!")))
 
     @logset.command(name="webhook")
     @commands.bot_has_permissions(manage_webhooks=True)
@@ -150,8 +192,8 @@ class Logs:
     @logset.command(name="reset")
     async def logset_reset(self, ctx: RedContext):
         """Reset the guild's log settings"""
-        if await confirm(ctx, _("Are you sure you want to reset this guild's log settings?"),
-                         colour=discord.Colour.red()):
+        if await ConfirmMenu(ctx, _("Are you sure you want to reset this guild's log settings?"),
+                             colour=discord.Colour.red()).prompt():
             await self.config.guild(ctx.guild).set(self.defaults_guild)
             await ctx.send(embed=discord.Embed(
                 description=_("Guild log settings have been reset."),
@@ -209,8 +251,8 @@ class Logs:
         """Add a role to the guild ignore list
 
         This only ignores roles themselves from being logged with the Role module,
-        and not members with the role. To ignore members with a given role,
-        please see `[p]help logset ignore memberrole`
+        and not members with the role, nor members being given / having the role revoked.
+        To ignore members with a given role, please see `[p]help logset ignore memberrole`
         """
         async with self.config.guild(ctx.guild).ignore.roles() as ignored:
             if role.id in ignored:

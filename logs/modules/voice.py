@@ -6,24 +6,17 @@ from logs.core import Module, LogEntry, _
 class VoiceModule(Module):
     name = "voice"
     friendly_name = _("Voice")
-    module_description = _("Voice status logging")
-    defaults = {
-        "channel": False,
+    description = _("Voice status logging")
+    settings = {
+        "channel": _("Channel joining, leaving, and switching"),
         "mute": {
-            "server": False,
-            "self": False
+            "self": _("Self mute"),
+            "server": _("Server mute"),
         },
         "deaf": {
-            "server": False,
-            "self": False
+            "self": _("Self deaf"),
+            "server": _("Server deaf")
         }
-    }
-    option_descriptions = {
-        "channel": "Channel joining, leaving, and switching",
-        "mute:self": "Self mute",
-        "mute:server": "Server mute",
-        "deaf:self": "Self deaf",
-        "deaf:server": "Server deaf",
     }
 
     def update(self, before: discord.VoiceState, after: discord.VoiceState, member: discord.Member):

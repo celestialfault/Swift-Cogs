@@ -1,5 +1,6 @@
+import attr
 from abc import ABC, abstractmethod
-from typing import Iterable, Optional, Dict, Any, Union, List, Tuple
+from typing import Iterable, Optional, Union, Tuple, Dict
 from aiohttp import ClientSession
 
 import discord
@@ -10,11 +11,12 @@ from redbot.core.config import Group, Value
 
 from logs.core.logentry import LogEntry
 from logs.core.i18n import _
-from logs.core.utils import add_descriptions
+from logs.core.utils import add_descriptions, replace_dict_items
 
 from cog_shared.odinair_libs.formatting import flatten
 
 _module_cache = {}
+_guild_ignores = {}
 
 
 def get_module_cache(guild: discord.Guild = None):
@@ -23,7 +25,16 @@ def get_module_cache(guild: discord.Guild = None):
     return _module_cache
 
 
+def get_ignores(guild: discord.Guild) -> Dict[str, Iterable[int]]:
+    return _guild_ignores.get(guild.id, {})
+
+
+async def load_ignores(guild: discord.Guild):
+    _guild_ignores[guild.id] = await Module.config.guild(guild).ignore.all()
+
+
 async def reload_guild_modules(guild: discord.Guild):
+    await load_ignores(guild)
     for module in get_module_cache(guild):
         if isinstance(module, str):
             module = get_module_cache(guild)[module]
@@ -32,6 +43,7 @@ async def reload_guild_modules(guild: discord.Guild):
 
 async def get_module(module_id: str, guild: discord.Guild, *args, **kwargs):
     from logs.modules import all_modules
+    await load_ignores(guild)
     module_id = module_id.lower()
     if guild.id not in _module_cache:
         _module_cache[guild.id] = {}
@@ -45,25 +57,23 @@ async def get_module(module_id: str, guild: discord.Guild, *args, **kwargs):
     raise RuntimeError(f"a module with the id {module_id} was not found")
 
 
+@attr.s
 class Module(ABC):
+    """Base logging module class
+
+    Loggers should extend this class with the abstract properties implemented.
+    """
     # the following attributes are populated upon cog initialization
     config: Config = None
     bot: Red = None
     session: ClientSession = None
 
-    def __init__(self, guild: discord.Guild):
-        self.guild = guild
-        self.settings: Dict[str, ...] = {}
-        self.ignore: Dict[str, List[int]] = {}
+    guild = attr.ib(type=discord.Guild)
+    module_settings = attr.ib(type=dict, default={})
 
     async def init_module(self):
+        """Helper method to allow modules to have their own init procedures"""
         await self.reload_settings()
-
-    @property
-    @abstractmethod
-    def friendly_name(self):
-        """Friendly name that is shown to end-users"""
-        raise NotImplementedError
 
     @property
     @abstractmethod
@@ -73,25 +83,38 @@ class Module(ABC):
 
     @property
     @abstractmethod
-    def module_description(self) -> str:
+    def friendly_name(self):
+        """Friendly name that is shown to end-users"""
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def description(self) -> str:
         """Description of the module that is shown to end-users"""
         raise NotImplementedError
 
     @property
     @abstractmethod
-    def option_descriptions(self) -> Dict[str, str]:
+    def settings(self) -> dict:
         """Descriptions of the module's config settings"""
         raise NotImplementedError
 
     @property
-    @abstractmethod
-    def defaults(self) -> Dict[str, Any]:
-        """Default config values"""
-        raise NotImplementedError
+    def opt_keys(self) -> Iterable[str]:
+        """Available config option keys. Sub-dicts are denoted by `:` separator characters."""
+        return list(flatten(self.defaults, sep=":"))
 
     @property
-    def opt_keys(self) -> Iterable[str]:
-        return list(flatten(self.defaults, sep=":"))
+    def defaults(self) -> dict:
+        """Default config values"""
+        return replace_dict_items(self.settings, False)
+
+    @property
+    def descriptions(self):
+        return {
+            "module": self.description,
+            "options": flatten(self.settings, sep=":")
+        }
 
     def has_changed(self, *items, conf_setting: Tuple[str, ...] = None):
         changed = False
@@ -113,7 +136,7 @@ class Module(ABC):
         if config_value:
             _opt = getattr(self, "module_config" if not guild else "guild_config")
         else:
-            _opt = self.settings
+            _opt = self.module_settings
         for opt in opts:
             if config_value is False:
                 _opt = _opt[opt]
@@ -132,14 +155,13 @@ class Module(ABC):
         return self.config.guild(self.guild)
 
     async def reload_settings(self):
-        self.settings = await self.config.guild(self.guild).get_attr(self.name).all()
-        self.ignore = await self.config.guild(self.guild).ignore.all()
+        self.module_settings = await self.config.guild(self.guild).get_attr(self.name).all()
 
     @property
     def log_to(self) -> Optional[Union[discord.TextChannel, discord.Webhook]]:
         """Retrieve the log channel or webhook that should be used for logging with the current module"""
-        webhook = self.settings.get("_webhook", None)
-        channel_id = self.settings.get("_log_channel", None)
+        webhook = self.module_settings.get("_webhook", None)
+        channel_id = self.module_settings.get("_log_channel", None)
         if webhook:
             return discord.Webhook.from_url(webhook, adapter=discord.AsyncWebhookAdapter(self.session))
         return self.bot.get_channel(channel_id)
@@ -157,7 +179,7 @@ class Module(ABC):
             if not "".join(opt.split("=")[0].split(":")).rstrip():
                 continue
 
-            # Split '=' delims; this allows for syntax like 'config:val=true'
+            # Split on '=' characters; this allows for syntax like 'config:val=true'
             _opts = opt.split("=")
             opt_split = _opts[0].split(":")
             opt = self.get_config_value(*opt_split, config_value=True)
@@ -174,10 +196,10 @@ class Module(ABC):
         return await self.module_config.all()
 
     def config_embed(self):
-        module_opts = {x: y for x, y in flatten(self.settings, sep=":").items() if x in self.opt_keys}
+        module_opts = {x: y for x, y in flatten(self.module_settings, sep=":").items() if x in self.opt_keys}
 
-        enabled = add_descriptions([x for x in module_opts if module_opts[x]], self.option_descriptions)
-        disabled = add_descriptions([x for x in module_opts if not module_opts[x]], self.option_descriptions)
+        enabled = add_descriptions([x for x in module_opts if module_opts[x]], self.descriptions["options"])
+        disabled = add_descriptions([x for x in module_opts if not module_opts[x]], self.descriptions["options"])
 
         dest = _("Disabled")
         if isinstance(self.log_to, discord.Webhook):
@@ -185,7 +207,7 @@ class Module(ABC):
         elif isinstance(self.log_to, discord.TextChannel):
             dest = _("Channel {}").format(self.log_to.mention)
 
-        embed = discord.Embed(colour=discord.Colour.blurple(), description=self.module_description)
+        embed = discord.Embed(colour=discord.Colour.blurple(), description=self.descriptions["module"])
         embed.add_field(name=_("Logging"), value=dest, inline=False)
         embed.set_author(name=_("{} module settings").format(self.friendly_name), icon_url=self.icon_uri())
         embed.add_field(name=_("Enabled"),
@@ -221,13 +243,13 @@ class Module(ABC):
     def is_ignored(self, *args, **kwargs) -> bool:
         kwargs = tuple(y for x, y in tuple(kwargs))
         args = args + kwargs
-        return self.ignore.get("guild", False) or any([self._check(x) for x in args])
+        return get_ignores(self.guild).get("guild", False) or any([self._check(x) for x in args])
 
     def _check(self, item) -> bool:
-        channels = self.ignore.get("channels", {})
-        roles = self.ignore.get("roles", {})
-        members = self.ignore.get("members", {})
-        member_roles = self.ignore.get("member_roles", {})
+        channels = get_ignores(self.guild).get("channels", {})
+        roles = get_ignores(self.guild).get("roles", {})
+        members = get_ignores(self.guild).get("members", {})
+        member_roles = get_ignores(self.guild).get("member_roles", {})
 
         if isinstance(item, discord.Member):
             return any([item.bot, item.id in members, *[x.id in member_roles for x in item.roles]])

@@ -6,55 +6,42 @@ from logs.core import Module, LogEntry, _
 class ChannelModule(Module):
     name = "channel"
     friendly_name = _("Channel")
-    module_description = _("Channel creation, deletion, and update logging")
-    defaults = {
-        "create": False,
-        "delete": False,
-        "update": {
-            "name": False,
-            "category": False,
-            "position": False,
-            "topic": False,
-            "bitrate": False,
-            "userlimit": False
-        }
-    }
-    option_descriptions = {
+    description = _("Channel creation, deletion, and update logging")
+    settings = {
         "create": _("Channel creations"),
         "delete": _("Channel deletions"),
-        "update:name": _("Channel name update"),
-        "update:category": _("Channel category changes"),
-        "update:position": _("Channel position changes"),
-        "update:topic": _("Channel topic changes"),
-        "update:bitrate": _("Channel bitrate changes"),
-        "update:userlimit": _("Channel user limit changes")
+        "update": {
+            "name": _("Channel name update"),
+            "category": _("Channel category changes"),
+            "position": _("Channel position changes"),
+            "topic": _("Channel topic changes"),
+            "bitrate": _("Channel bitrate changes"),
+            "userlimit": _("Channel user limit changes")
+        }
     }
 
     def create(self, channel: discord.abc.GuildChannel):
-        if self.is_opt_disabled("create"):
-            return None
-
-        embed = LogEntry(colour=discord.Colour.green(), require_fields=False)
-        embed.set_footer(text=_("Channel ID: {}").format(channel.id))
-        embed.set_author(name=_("Channel Created"), icon_url=self.icon_uri())
-        embed.description = _("Channel {} was created").format(channel.mention)
-        return embed
+        return (
+            LogEntry(colour=discord.Color.green(), require_fields=False,
+                     description=_("Channel {} was created").format(channel.mention))
+            .set_author(name=_("Channel Created"), icon_url=self.icon_uri())
+            .set_footer(text=_("Channel ID: {}").format(channel.id))
+        ) if self.is_opt_enabled("create") else None
 
     def delete(self, channel: discord.abc.GuildChannel):
-        if self.is_opt_disabled("delete"):
-            return None
-
-        embed = LogEntry(colour=discord.Colour.red(), require_fields=False)
-        embed.set_footer(text=_("Channel ID: {}").format(channel.id))
-        embed.set_author(name=_("Channel Deleted"), icon_url=self.icon_uri())
-        # noinspection PyUnresolvedReferences
-        embed.description = _("Channel `{}` was deleted").format(channel.name)
-        return embed
+        return (
+            LogEntry(colour=discord.Color.red(), require_fields=False,
+                     description=_("Channel `{}` was deleted").format(getattr(channel, "name", _("Unknown channel"))))
+            .set_author(name=_("Channel Deleted"), icon_url=self.icon_uri())
+            .set_footer(text=_("Channel ID: {}").format(channel.id))
+        ) if self.is_opt_enabled("delete") else None
 
     def update(self, before: discord.abc.GuildChannel, after: discord.abc.GuildChannel):
-        embed = LogEntry(colour=discord.Colour.blurple())
-        embed.set_footer(text=_("Channel ID: {}").format(after.id))
-        embed.set_author(name=_("Channel Updated"), icon_url=self.icon_uri())
+        embed = (
+            LogEntry(colour=discord.Color.blurple(), description=_("Channel: {}").format(after.mention))
+            .set_footer(text=_("Channel ID: {}").format(after.id))
+            .set_author(name=_("Channel Updated"), icon_url=self.icon_uri())
+        )
 
         # noinspection PyUnresolvedReferences
         if before.name != after.name and self.is_opt_enabled("update", "name"):
