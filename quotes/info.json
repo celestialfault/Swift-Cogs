@@ -1,9 +1,10 @@
 {
   "author": ["odinair"],
   "bot_version": [3, 0, 0],
+  "min_python_version": [3, 6, 0],
   "description": "Save and retrieve quotes",
   "short": "Save and retrieve quotes",
   "type": "COG",
   "tags": ["fun"],
-  "install_msg": "Hello!~ Thank you for installing one of my cogs.\nIf you experience any issues, please open an issue on my GitHub repo (<https://github.com/notodinair/Swift-Cogs/issues/new>)\n\n~ odinair 💜"
+  "install_msg": "Hello!~ Thank you for installing one of my cogs.\nIf you experience any problems, please open an issue: <https://github.com/notodinair/Swift-Cogs/issues/new>\n\n~ Emma (odinair) 💜"
 }
