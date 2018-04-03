@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2018-03-17 03:18-0600\n"
+"POT-Creation-Date: 2018-04-02 19:24-0600\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -15,59 +15,70 @@ msgstr ""
 "Generated-By: pygettext.py 1.5\n"
 
 
-#: ../cogwhitelist.py:21
-msgid "Cog `{}` could not be found"
+#: ../cogwhitelist.py:55
+msgid "No cog with that name is currently loaded"
 msgstr ""
 
-#: ../cogwhitelist.py:65
-msgid "**{}** now requires a whitelist to use"
+#: ../cogwhitelist.py:61
+msgid "**{cog}** now requires a whitelist to use"
+msgstr ""
+
+#: ../cogwhitelist.py:63
+msgid "**{cog}** already requires a whitelist to use"
 msgstr ""
 
 #: ../cogwhitelist.py:67
-msgid "**{}** already requires a whitelist to use"
-msgstr ""
-
-#: ../cogwhitelist.py:72
 msgid "I couldn't find a guild with that ID"
 msgstr ""
 
-#: ../cogwhitelist.py:74
-msgid "That guild is already allowed to use **{}**"
+#: ../cogwhitelist.py:69
+msgid "That guild is already allowed to use **{cog}**"
 msgstr ""
 
-#: ../cogwhitelist.py:77
-msgid "**{}** is now allowed to use **{}**"
+#: ../cogwhitelist.py:71
+msgid "**{guild}** is now allowed to use **{cog}**"
 msgstr ""
 
-#: ../cogwhitelist.py:90
-msgid "**{}** doesn't require a whitelist to use"
+#: ../cogwhitelist.py:85
+msgid "**{}** doesn't currently require a whitelist to use"
 msgstr ""
 
-#: ../cogwhitelist.py:94
+#: ../cogwhitelist.py:88
 msgid "That guild isn't allowed to use **{}**"
 msgstr ""
 
-#: ../cogwhitelist.py:97
+#: ../cogwhitelist.py:90
 msgid "That guild is no longer allowed to use **{}**."
 msgstr ""
 
-#: ../cogwhitelist.py:100
-msgid "**{}** no longer requires a whitelist to use."
+#: ../cogwhitelist.py:93
+msgid "**{}** no longer requires a whitelist to use"
 msgstr ""
 
-#: ../cogwhitelist.py:113
-msgid "[{}] {} guilds"
+#: ../cogwhitelist.py:98
+msgid ""
+"Are you sure you want to reset your whitelisted cogs?\n"
+"\n"
+"**This action is irreversible!**"
 msgstr ""
 
-#: ../cogwhitelist.py:118
+#: ../cogwhitelist.py:103
+msgid "Ok then."
+msgstr ""
+
+#: ../cogwhitelist.py:116
+msgid "[{cog}] {guilds} guilds"
+msgstr ""
+
+#: ../cogwhitelist.py:122
 msgid "That cog doesn't require a whitelist to use"
 msgstr ""
 
-#: ../cogwhitelist.py:123
+#: ../cogwhitelist.py:127
 msgid "No guilds that I'm currently in are allowed to use that cog"
 msgstr ""
 
-#: ../cogwhitelist.py:127
+#: ../cogwhitelist.py:131
 msgid ""
 "# Guilds that are allowed to use {}:\n"
 "\n"
