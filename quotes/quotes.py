@@ -1,21 +1,33 @@
+from pathlib import Path
+
 import discord
 from discord.ext import commands
 
-from redbot.core import RedContext
+from redbot.core import RedContext, checks
 from redbot.core.bot import Red
-from redbot.core.utils.chat_formatting import warning
+from redbot.core.utils.chat_formatting import warning, error
 
 from cog_shared.odinair_libs.formatting import tick
 from cog_shared.odinair_libs.menus import ReactMenu, confirm, PostMenuAction, prompt
 
 from quotes.quote import Quote, conf, _
+from quotes.v2_import import import_v2_data
+
+
+def has_not_converted_v2():
+    # noinspection PyUnusedLocal
+    async def predicate(ctx: RedContext):
+        return True
+        # return not await conf.converted_v2()
+
+    return commands.check(predicate)
 
 
 class Quotes:
     """Save and retrieve quotes"""
 
     __author__ = "odinair <odinair@odinair.xyz>"
-    __version__ = "1.0.0"
+    __version__ = "1.1.0"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -23,6 +35,7 @@ class Quotes:
         self.config = conf
 
     @commands.group(name="quote", aliases=["quotes"], invoke_without_command=True)
+    @commands.guild_only()
     async def quote(self, ctx: RedContext, quote: int):
         """Save and retrieve quotes"""
         quote = await Quote.get(ctx.guild, quote)
@@ -30,6 +43,20 @@ class Quotes:
             await ctx.send(warning(_("That quote doesn't exist")))
             return
         await ctx.send(embed=quote.embed)
+
+    @quote.command()
+    @has_not_converted_v2()
+    @checks.is_owner()
+    async def v2_import(self, ctx: RedContext, path: str):
+        """Import quotes data from a Red v2 instance"""
+        path = Path(path) / "data" / "quotes" / "quotes.json"
+        if not path.is_file():
+            await ctx.send(error(_("That file path doesn't seem to be valid")))
+            return
+        async with ctx.typing():
+            await import_v2_data(config=self.config, path=path, appinfo=await self.bot.application_info())
+        await ctx.send(tick(_("Imported data sucessfully.")))
+        return await conf.converted_v2.set(True)
 
     @quote.command(name="add")
     async def _quote_add(self, ctx: RedContext, *, message: str):

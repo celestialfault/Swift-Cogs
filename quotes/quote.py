@@ -7,6 +7,7 @@ from redbot.core.bot import Red
 from redbot.core.i18n import CogI18n
 
 conf = Config.get_conf(None, identifier=441356724, force_registration=True, cog_name="Quotes")
+conf.register_global(converted_v2=False)
 conf.register_guild(quotes=[])
 
 _ = CogI18n("Quotes", __file__)
@@ -22,6 +23,8 @@ class Quote:
         ------------
         id: int
             This quote's ID
+        text: str
+            The quotes content
         guild_id: int
             The guild ID that this quote belongs to
         author_id: int
