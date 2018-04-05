@@ -17,8 +17,7 @@ from quotes.v2_import import import_v2_data
 def has_not_converted_v2():
     # noinspection PyUnusedLocal
     async def predicate(ctx: RedContext):
-        return True
-        # return not await conf.converted_v2()
+        return not await conf.converted_v2()
 
     return commands.check(predicate)
 
@@ -54,8 +53,9 @@ class Quotes:
             await ctx.send(error(_("That file path doesn't seem to be valid")))
             return
         async with ctx.typing():
-            await import_v2_data(config=self.config, path=path, appinfo=await self.bot.application_info())
-        await ctx.send(tick(_("Imported data sucessfully.")))
+            app_info = await self.bot.application_info()
+            await import_v2_data(config=self.config, path=path, appinfo=app_info)
+        await ctx.send(tick(_("Imported data successfully.")))
         return await conf.converted_v2.set(True)
 
     @quote.command(name="add")
