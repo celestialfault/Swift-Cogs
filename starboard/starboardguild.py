@@ -9,6 +9,7 @@ from redbot.core.config import Group
 
 from starboard.starboardmessage import StarboardMessage
 from starboard.base import StarboardBase
+from starboard.log import log
 
 __all__ = ('StarboardGuild',)
 
@@ -22,7 +23,11 @@ class StarboardGuild(StarboardBase):
         self._cache: Dict[int, StarboardMessage] = {}
         self._settings: Dict[str, Any] = None
 
+    def __repr__(self):
+        return "<GuildStarboard guild={0!r} cache_size={1}>".format(self.guild, len(self._cache))
+
     async def init(self):
+        log.debug(f"Initializing guild {self.guild.id}")
         await self.reload_settings()
 
     async def reload_settings(self):
@@ -35,24 +40,6 @@ class StarboardGuild(StarboardBase):
     @property
     def messages(self) -> Group:
         return self.config.custom("MESSAGES", self.guild.id)
-
-    def __repr__(self):
-        return "<GuildStarboard guild={0!r} cache_size={1}>".format(self.guild, len(self._cache))
-
-    async def migrate(self, dry_run: bool = False) -> int:
-        if dry_run is True:
-            return len(await self.guild_config.messages())
-
-        async with self._migration_lock:
-            async with self.guild_config.messages() as old_data:
-                migrated = len(old_data)
-                for i in range(0, len(old_data)):
-                    item = old_data.pop()
-                    if not isinstance(item, dict) or 'message_id' not in item:
-                        continue
-                    await self.messages.set_raw(str(item.get("message_id")), value=item)
-                    await asyncio.sleep(0.3)
-            return migrated
 
     def is_cached(self, message: discord.Message) -> bool:
         return message.id in self._cache
@@ -90,7 +77,7 @@ class StarboardGuild(StarboardBase):
                 # or if they were in the Queue more than once
                 continue
             await item.update_starboard_message()
-            asyncio.sleep(0.5)
+            await asyncio.sleep(0.5)
 
     async def get_message(self, *, message: discord.Message = None, message_id: int = None,
                           channel: discord.TextChannel = None, auto_create: bool = False,
@@ -123,7 +110,7 @@ class StarboardGuild(StarboardBase):
         if message is not None:
             if message.id not in self._cache:
                 star = StarboardMessage(self, message)
-                await star.init(auto_create=auto_create)
+                await star.load_data(auto_create=auto_create)
                 self._cache[message.id] = star
             return self._cache[message.id]
         return None
@@ -134,6 +121,7 @@ class StarboardGuild(StarboardBase):
                 raise ValueError("The passed TextChannel is not in the current Guild")
             self._settings["channel"] = getattr(channel, "id", None)
             await self.guild_config.channel.set(getattr(channel, "id", None))
+            await self.bot.get_cog("Starboard").create_janitor(self.guild, overwrite=False)
         return self.bot.get_channel(self._settings["channel"])
 
     async def requirerole(self, toggle: bool = None) -> bool:

@@ -1,5 +1,5 @@
 <h1 align="center">Swift Cogs</h1>
-<p align="center">A somewhat bland collection of moderation, bot management, utility, and various other kinds of cogs.</p>
+<p align="center">A somewhat bland collection of moderation, bot management, and utility cogs.</p>
 <p align="center">
   <a href="https://circleci.com/gh/notodinair/Swift-Cogs"><img src="https://circleci.com/gh/notodinair/Swift-Cogs.svg?style=svg" /></a>
   <a href="https://python.org/"><img src="https://img.shields.io/badge/Python-3.6-red.svg?style=flat-square" /></a>
@@ -73,7 +73,7 @@ Log anything and everything that may happen in your guild.
 
 #### Requirements
 
-- None
+- `attrs` library
 
 #### Additional Notes
 
@@ -208,10 +208,8 @@ Send messages to a per-guild starboard channel, via means of reacting with :star
 
 #### Additional Notes
 
-- This cog creates several timers:
-    - An internal cache cleaner that runs every 10 minutes
-    - An update queue handler that runs every 10 seconds
-- This cog may use a fair amount of memory, due to the internal message cache
+- This cog creates a message update task for each guild the bot is present in that has a starboard channel setup
+- This cog may use a fair amount of memory on larger bots, due to the various internal caches
 </details>
 
 <details>
