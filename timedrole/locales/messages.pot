@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2018-04-03 14:27-0600\n"
+"POT-Creation-Date: 2018-04-06 16:50-0600\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -15,52 +15,35 @@ msgstr ""
 "Generated-By: pygettext.py 1.5\n"
 
 
-#: ../timedrole.py:45
+#: ../timedrole.py:44
 msgid "Re-applying missing timed role"
 msgstr ""
 
-#: ../timedrole.py:52
+#: ../timedrole.py:51
 msgid "Re-applying timed role after member re-join"
 msgstr ""
 
-#: ../timedrole.py:68
+#: ../timedrole.py:67
 msgid "This guild has no currently active timed roles"
 msgstr ""
 
-#: ../timedrole.py:76
-msgid "**❯** Timed role #{}"
+#: ../timedrole.py:74
+msgid ""
+"**❯** Timed role **#{id}**\n"
+"**Member** — {member}\n"
+"**Role** — {role}\n"
+"**Given by** — {given_by} — {given_at}\n"
+"**Reason** — {reason}\n"
+"**Expires** — {expires}\n"
+"**Total duration** — {duration}"
 msgstr ""
 
-#: ../timedrole.py:77
-msgid "**Member** — {}"
-msgstr ""
-
-#: ../timedrole.py:78
-msgid "**Role** — {}"
-msgstr ""
-
-#: ../timedrole.py:79
-msgid "**Reason** — {}"
-msgstr ""
-
-#: ../timedrole.py:79
+#: ../timedrole.py:84
 msgid "No reason specified"
 msgstr ""
 
-#: ../timedrole.py:80
-msgid "**Given by** — {} — {} ago"
-msgstr ""
-
-#: ../timedrole.py:82
-msgid "An unknown member"
-msgstr ""
-
 #: ../timedrole.py:85
-msgid "**Expires** — {}"
-msgstr ""
-
-#: ../timedrole.py:87
-msgid "**Total duration** — {}"
+msgid "An unknown member"
 msgstr ""
 
 #: ../timedrole.py:94
@@ -72,18 +55,18 @@ msgid "Timed Roles"
 msgstr ""
 
 #: ../timedrole.py:129
-msgid "Added role(s) {} to member **{}** for **{}** successfully."
+msgid "Added role(s) {roles} to member **{member}** for **{duration}** successfully."
 msgstr ""
 
-#: ../timedrole.py:139
+#: ../timedrole.py:138
 msgid "Role removed by {}"
 msgstr ""
 
-#: ../timedrole.py:141
+#: ../timedrole.py:140
 msgid "Removed all timed roles from member **{}**"
 msgstr ""
 
-#: ../timedrole.py:143
+#: ../timedrole.py:142
 msgid "Removed roles {} from member **{}**"
 msgstr ""
 

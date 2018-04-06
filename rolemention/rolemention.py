@@ -10,7 +10,8 @@ from redbot.core.bot import Red
 from redbot.core.i18n import CogI18n
 from redbot.core.utils.chat_formatting import warning, escape
 
-from cog_shared.odinair_libs.formatting import tick, cmd_help
+from cog_shared.odinair_libs.formatting import tick
+from cog_shared.odinair_libs.commands import cmd_help
 
 _ = CogI18n("RoleMention", __file__)
 
@@ -19,7 +20,7 @@ class RoleMention:
     MENTION_REGEX = re.compile(r"{{mention role: ?@?(?P<NAME>[\W\w]+)}}", re.IGNORECASE)
 
     __author__ = "odinair <odinair@odinair.xyz>"
-    __version__ = "0.1.0"
+    __version__ = "1.0.0"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -39,12 +40,12 @@ class RoleMention:
             my_cperms = message.channel.permissions_for(me)
             my_gperms = me.guild_permissions
             return all([
-                not message.author.bot,                       # ensure the author is not a bot account
-                my_gperms.manage_roles,                       # make sure we have manage role permissions
-                my_cperms.send_messages,                      # and send message permissions
-                any([                                         # ensure that the author can perform this action,
-                    guild.me.guild_permissions.manage_roles,  # by means of having manage role permissions,
-                    await self.bot.is_admin(message.author),  # or by having the guild admin role
+                not message.author.bot,
+                my_gperms.manage_roles,
+                my_cperms.send_messages,
+                any([
+                    guild.me.guild_permissions.manage_roles,
+                    await self.bot.is_admin(message.author),
                 ])
             ])
         except AttributeError:

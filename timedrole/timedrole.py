@@ -1,4 +1,4 @@
-import asyncio
+from asyncio import sleep
 from typing import Sequence
 from datetime import datetime
 
@@ -12,8 +12,9 @@ from redbot.core.utils.chat_formatting import warning, bold
 
 from timedrole.role import TempRole
 
-from cog_shared.odinair_libs.formatting import td_format, chunks, tick
-from cog_shared.odinair_libs.converters import FutureTime
+from cog_shared.odinair_libs.formatting import chunks, tick
+from cog_shared.odinair_libs.commands import fmt
+from cog_shared.odinair_libs.time import FutureTime, td_format
 from cog_shared.odinair_libs.menus import PaginateMenu
 
 _ = CogI18n("TimedRole", __file__)
@@ -35,15 +36,13 @@ class TimedRole:
 
     async def _handle_roles(self):
         await self.bot.wait_until_ready()
-        await asyncio.sleep(2)
-        while self == self.bot.get_guild(self.__class__.__name__):
-            for guild in self.bot.guilds:
-                # expired roles are automatically handled by simply calling all_roles
-                roles = await TempRole.all_roles(guild)
-                for role in roles:
-                    if role.role not in role.member.roles:
-                        await role.apply_role(reason=_("Re-applying missing timed role"))
-            await asyncio.sleep(60)
+        await sleep(2)
+        while True:
+            roles = await TempRole.all_roles()
+            for role in roles:
+                if role.role not in role.member.roles:
+                    await role.apply_role(reason=_("Re-applying missing timed role"))
+            await sleep(60)
 
     # noinspection PyMethodMayBeStatic
     async def on_member_join(self, member: discord.Member):
@@ -69,29 +68,30 @@ class TimedRole:
             return
 
         def convert(roles_: Sequence[TempRole], page_id: int):
-            page_id = page_id - 1
             for role in roles_:
                 rid = ((page_id * 4) + roles_.index(role)) + 1
 
-                yield "\n".join([_("**❯** Timed role #{}").format(rid),
-                                 _("**Member** \N{EM DASH} {}").format(role.member.mention),
-                                 _("**Role** \N{EM DASH} {}").format(role.role.mention),
-                                 _("**Reason** \N{EM DASH} {}").format(role.reason or _("No reason specified")),
-                                 _("**Given by** \N{EM DASH} {} \N{EM DASH} {} ago").format(
-                                     getattr(role.added_by, "mention",
-                                             _("An unknown member")),
-                                     td_format(role.added_at -
-                                               datetime.utcnow())),
-                                 _("**Expires** \N{EM DASH} {}").format(td_format(role.expires_at - datetime.utcnow(),
-                                                                                  append_str=True)),
-                                 _("**Total duration** \N{EM DASH} {}").format(td_format(role.expires_at
-                                                                                         - role.added_at))
-                                 ])
+                yield _(
+                    "**❯** Timed role **#{id}**\n"
+                    "**Member** \N{EM DASH} {member}\n"
+                    "**Role** \N{EM DASH} {role}\n"
+                    "**Given by** \N{EM DASH} {given_by} \N{EM DASH} {given_at}\n"
+                    "**Reason** \N{EM DASH} {reason}\n"
+                    "**Expires** \N{EM DASH} {expires}\n"
+                    "**Total duration** \N{EM DASH} {duration}"
+                ).format(
+                    id=rid, member=role.member.mention, role=role.role.mention,
+                    reason=role.reason or _("No reason specified"),
+                    given_by=getattr(role.added_by, "mention", _("An unknown member")),
+                    given_at=td_format(role.added_at - datetime.utcnow()),
+                    expires=td_format(role.expires_at - datetime.utcnow(), append_str=True),
+                    duration=td_format(role.expires_at - role.added_at)
+                )
 
         def page_convert(x, page, pages):
             return (
                 discord.Embed(description="\n\n".join(list(convert(x, page))), colour=ctx.me.colour)
-                .set_footer(text=_("Page {}/{}").format(page, pages))
+                .set_footer(text=_("Page {}/{}").format(page + 1, pages))
                 .set_author(name=_("Timed Roles"), icon_url=ctx.guild.icon_url)
             )
 
@@ -126,9 +126,8 @@ class TimedRole:
             role = await TempRole.create(member, role=role, duration=duration, added_by=ctx.author)
             await role.apply_role()
 
-        await ctx.send(tick(_("Added role(s) {} to member **{}** for **{}** successfully.").format(
-            ", ".join([bold(str(x)) for x in roles]), member, duration.format()
-        )))
+        await fmt(ctx, tick(_("Added role(s) {roles} to member **{member}** for **{duration}** successfully.")),
+                  roles=", ".join([bold(x.name) for x in roles]), member=member, duration=duration.format())
 
     @timedrole.command(name="remove")
     async def timedrole_expire(self, ctx: RedContext, member: discord.Member, *roles: discord.Role):

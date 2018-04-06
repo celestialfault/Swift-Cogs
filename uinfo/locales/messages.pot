@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2018-03-19 06:29-0600\n"
+"POT-Creation-Date: 2018-04-06 16:50-0600\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -35,73 +35,73 @@ msgstr ""
 msgid "👥 Server Member"
 msgstr ""
 
-#: ../uinfo.py:50
+#: ../uinfo.py:49
 msgid "🎮 Playing **{}**"
 msgstr ""
 
-#: ../uinfo.py:53
+#: ../uinfo.py:51
 msgid "📹 Streaming **{}**"
 msgstr ""
 
-#: ../uinfo.py:56
+#: ../uinfo.py:53
 msgid "🎵 Listening to **{}**"
 msgstr ""
 
-#: ../uinfo.py:58
+#: ../uinfo.py:55
 msgid "🎵 Listening to **{}** — **{}** on **Spotify**"
 msgstr ""
 
-#: ../uinfo.py:62
+#: ../uinfo.py:58
 msgid "📽 Watching **{}**"
 msgstr ""
 
-#: ../uinfo.py:70
+#: ../uinfo.py:66
 msgid "Online"
 msgstr ""
 
-#: ../uinfo.py:72
+#: ../uinfo.py:68
 msgid "Idle"
 msgstr ""
 
-#: ../uinfo.py:74
+#: ../uinfo.py:70
 msgid "Do Not Disturb"
 msgstr ""
 
-#: ../uinfo.py:76
+#: ../uinfo.py:72
 msgid "Offline"
 msgstr ""
 
-#: ../uinfo.py:99
+#: ../uinfo.py:94
 msgid ""
 "\n"
 "🏷 Nicknamed as {}"
 msgstr ""
 
-#: ../uinfo.py:103
+#: ../uinfo.py:98
 msgid "Member #{} | User ID: {}"
 msgstr ""
 
-#: ../uinfo.py:107
+#: ../uinfo.py:102
 msgid "Bot Roles"
 msgstr ""
 
-#: ../uinfo.py:111
+#: ../uinfo.py:105
 msgid "Guild Roles"
 msgstr ""
 
-#: ../uinfo.py:111
+#: ../uinfo.py:105
 msgid "None"
 msgstr ""
 
-#: ../uinfo.py:113
+#: ../uinfo.py:107
 msgid "Joined Discord"
 msgstr ""
 
-#: ../uinfo.py:114
+#: ../uinfo.py:108
 msgid "Joined Guild"
 msgstr ""
 
-#: ../uinfo.py:122
+#: ../uinfo.py:116
 msgid "{}'s avatar"
 msgstr ""
 

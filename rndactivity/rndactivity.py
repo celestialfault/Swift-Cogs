@@ -11,9 +11,10 @@ from redbot.core.utils.chat_formatting import pagify, warning, escape
 
 from random import choice
 
-from cog_shared.odinair_libs.menus import confirm
-from cog_shared.odinair_libs.converters import FutureTime
-from cog_shared.odinair_libs.formatting import tick, fmt
+from cog_shared.odinair_libs.menus import ConfirmMenu
+from cog_shared.odinair_libs.time import FutureTime
+from cog_shared.odinair_libs.commands import fmt
+from cog_shared.odinair_libs.formatting import tick
 
 _ = CogI18n("RNDActivity", __file__)
 
@@ -172,9 +173,8 @@ class RNDActivity:
     async def rndactivity_clear(self, ctx: RedContext):
         """Clears all set statuses"""
         amount = len(await self.config.statuses())
-        if await confirm(ctx, _("Are you sure you want to clear {amount} statuses?\n\n"
-                                "This action is irreversible!").format(amount=amount),
-                         colour=discord.Colour.red()):
+        if await ConfirmMenu(ctx, content=_("Are you sure you want to clear {amount} statuses?\n\n"
+                                            "**This action is irreversible!**").format(amount=amount)).prompt():
             await self.config.statuses.set([])
             await self.bot.change_presence(activity=None, status=self.bot.guilds[0].me.status)
             await fmt(ctx, tick(_("Successfully removed {amount} status strings.")), amount=amount)

@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2018-03-16 05:52-0600\n"
+"POT-Creation-Date: 2018-04-06 16:50-0600\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -15,11 +15,11 @@ msgstr ""
 "Generated-By: pygettext.py 1.5\n"
 
 
-#: ../misctools.py:33
+#: ../misctools.py:35
 msgid "That command doesn't exist"
 msgstr ""
 
-#: ../misctools.py:66
+#: ../misctools.py:68
 msgid ""
 "🏓 Pong!\n"
 "Time to command execution: {}\n"

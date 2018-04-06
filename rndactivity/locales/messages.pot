@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2018-03-31 13:48-0600\n"
+"POT-Creation-Date: 2018-04-06 16:50-0600\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -15,62 +15,62 @@ msgstr ""
 "Generated-By: pygettext.py 1.5\n"
 
 
-#: ../rndactivity.py:57
+#: ../rndactivity.py:58
 msgid ""
 "Set time between status changes to {duration}.\n"
 "This change will take effect after the next status change."
 msgstr ""
 
-#: ../rndactivity.py:64
+#: ../rndactivity.py:65
 msgid "Parsing that status failed — {placeholder} is not a valid placeholder"
 msgstr ""
 
-#: ../rndactivity.py:69
+#: ../rndactivity.py:70
 msgid "Added status **#{id}** successfully."
 msgstr ""
 
-#: ../rndactivity.py:121
+#: ../rndactivity.py:122
 msgid ""
 "Placeholder {placeholder} does not exist\n"
 "\n"
 "See `{prefix}help rndactivity add` for the list of placeholder strings"
 msgstr ""
 
-#: ../rndactivity.py:125
+#: ../rndactivity.py:126
 msgid ""
 "📥 **Input:**\n"
 "{input}\n"
 "📤 **Result:** {result}"
 msgstr ""
 
-#: ../rndactivity.py:136
+#: ../rndactivity.py:137
 msgid "No status with the ID `{id}` exists"
 msgstr ""
 
-#: ../rndactivity.py:141
+#: ../rndactivity.py:142
 msgid "Removed status **#{id}** (`{status}`) successfully."
 msgstr ""
 
-#: ../rndactivity.py:152
+#: ../rndactivity.py:153
 msgid "I have no statuses setup yet! Use `{prefix}rndactivity add` to add some!"
 msgstr ""
 
-#: ../rndactivity.py:166
+#: ../rndactivity.py:167
 msgid "Placeholder {} doesn't exist"
 msgstr ""
 
-#: ../rndactivity.py:175
+#: ../rndactivity.py:176
 msgid ""
 "Are you sure you want to clear {amount} statuses?\n"
 "\n"
-"This action is irreversible!"
+"**This action is irreversible!**"
 msgstr ""
 
-#: ../rndactivity.py:180
+#: ../rndactivity.py:181
 msgid "Successfully removed {amount} status strings."
 msgstr ""
 
-#: ../rndactivity.py:182
+#: ../rndactivity.py:183
 msgid "Okay then."
 msgstr ""
 

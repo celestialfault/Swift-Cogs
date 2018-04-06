@@ -4,7 +4,8 @@ import discord
 
 from logs.core import Module, LogEntry, _
 
-from cog_shared.odinair_libs.formatting import td_format, normalize
+from cog_shared.odinair_libs.formatting import normalize
+from cog_shared.odinair_libs.time import td_format
 
 
 class GuildModule(Module):

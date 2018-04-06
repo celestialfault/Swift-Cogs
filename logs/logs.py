@@ -11,7 +11,8 @@ from redbot.core.utils.chat_formatting import warning, info, error, escape, inli
 from logs.core import Module, get_module, reload_guild_modules, _
 from logs.modules import all_modules
 
-from cog_shared.odinair_libs.formatting import tick, cmd_help, fmt
+from cog_shared.odinair_libs.formatting import tick
+from cog_shared.odinair_libs.commands import cmd_help, fmt
 from cog_shared.odinair_libs.menus import ConfirmMenu, prompt
 
 
@@ -62,9 +63,8 @@ class Logs:
         """Quick-start for logging settings"""
         for module_name in all_modules.keys():
             module = await get_module(module_id=module_name, guild=ctx.guild)
-            async with ConfirmMenu(ctx, colour=discord.Color.blurple(),
-                                   message=_("Would you like to enable the **{}** module?").format(
-                                       module.friendly_name)) as result:
+            async with ConfirmMenu(ctx, message=_("Would you like to enable the **{}** module?").format(
+                    module.friendly_name)) as result:
                 await module.module_config.clear()
                 if not result:
                     continue

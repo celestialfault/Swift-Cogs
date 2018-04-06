@@ -33,5 +33,4 @@ def compile_cogs():
 
 
 if __name__ == '__main__':
-    if not compile_cogs():
-        sys.exit(1)
+    sys.exit(int(not compile_cogs()))

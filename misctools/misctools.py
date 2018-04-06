@@ -1,6 +1,9 @@
 import unicodedata
 from datetime import datetime
 
+from textwrap import dedent
+from inspect import getsource
+
 import discord
 from discord.ext import commands
 
@@ -8,7 +11,7 @@ from redbot.core.bot import Red, RedContext
 from redbot.core.utils.chat_formatting import warning, pagify
 from redbot.core.i18n import CogI18n
 
-from cog_shared.odinair_libs.formatting import td_format, get_source
+from cog_shared.odinair_libs.time import td_format
 
 _ = CogI18n("MiscTools", __file__)
 
@@ -31,7 +34,7 @@ class MiscTools:
         if command is None:
             await ctx.send(warning(_("That command doesn't exist")))
             return
-        await ctx.send_interactive(pagify(get_source(command.callback), shorten_by=10), box_lang="py")
+        await ctx.send_interactive(pagify(dedent(getsource(command.callback)), shorten_by=10), box_lang="py")
 
     @commands.command()
     async def charinfo(self, ctx: RedContext, *, characters: str):

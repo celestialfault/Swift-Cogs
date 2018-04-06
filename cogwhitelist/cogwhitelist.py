@@ -1,4 +1,3 @@
-import discord
 from discord.ext import commands
 
 from redbot.core.bot import Red, RedContext
@@ -6,9 +5,10 @@ from redbot.core import checks, Config
 from redbot.core.i18n import CogI18n
 from redbot.core.utils.chat_formatting import warning, pagify, escape
 
-from cog_shared.odinair_libs.formatting import tick, fmt
+from cog_shared.odinair_libs.formatting import tick
+from cog_shared.odinair_libs.commands import fmt
 from cog_shared.odinair_libs.converters import cog_name
-from cog_shared.odinair_libs.menus import confirm
+from cog_shared.odinair_libs.menus import ConfirmMenu
 
 _ = CogI18n("CogWhitelist", __file__)
 
@@ -96,8 +96,8 @@ class CogWhitelist:
     @cogwhitelist.command(name="reset")
     async def cogwhitelist_reset(self, ctx: RedContext):
         """Reset whitelisted cog settings"""
-        if await confirm(ctx=ctx, message=_("Are you sure you want to reset your whitelisted cogs?\n\n"
-                                            "**This action is irreversible!**"), colour=discord.Colour.red()):
+        if await ConfirmMenu(ctx=ctx, content=_("Are you sure you want to reset your whitelisted cogs?\n\n"
+                                                "**This action is irreversible!**")).prompt():
             await self.config.cogs.set({})
             await ctx.tick()
         else:

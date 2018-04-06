@@ -1,7 +1,7 @@
 from asyncio import TimeoutError
 
 from enum import Enum
-from typing import Union, Any, Dict, Sequence
+from typing import Union, Any, Dict, Sequence, Optional
 
 import discord
 
@@ -9,7 +9,7 @@ from redbot.core import RedContext
 from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import question
 
-__all__ = ("PostMenuAction", "ReactMenu", "ConfirmMenu", "PaginateMenu", "MenuResult", "confirm", "prompt")
+__all__ = ("PostMenuAction", "ReactMenu", "ConfirmMenu", "PaginateMenu", "MenuResult", "prompt")
 
 
 class PostMenuAction(Enum):
@@ -52,14 +52,13 @@ class MenuResult:
 
 
 async def prompt(ctx: RedContext, *, content: str = None, embed: discord.Embed = None, delete_messages: bool = False,
-                 timeout: float = 30.0):
+                 timeout: float = 30.0) -> Optional[discord.Message]:
     bot: Red = ctx.bot
     message_sent = await ctx.send(content=question(content), embed=embed)
     message_recv = None
     try:
-        message_recv = await bot.wait_for('message',
-                                          check=lambda x: x.author == ctx.author and x.channel == ctx.channel,
-                                          timeout=timeout)
+        message_recv = await bot.wait_for('message', timeout=timeout,
+                                          check=lambda x: x.author == ctx.author and x.channel == ctx.channel)
     except TimeoutError:
         pass
     finally:
@@ -157,7 +156,7 @@ class ReactMenu:
         self.content = kwargs.get("content", None)
         self.embed = kwargs.get("embed", None)
         self.message = kwargs.get("message", None)
-        if not any([self.message, self.embed, self.content, not getattr(self, "_allow_empty", False)]):
+        if not any([self.message, self.embed, self.content, getattr(self, "_allow_empty", False)]):
             raise RuntimeError("Expected any of either message, embed, or content attributes, received none")
 
         self.default = kwargs.get("default", None)
@@ -242,13 +241,17 @@ class ReactMenu:
 
 
 class ConfirmMenu(ReactMenu):
-    def __init__(self, ctx: RedContext, message: str, default: bool = False, **kwargs):
+    def __init__(self, ctx: RedContext, default: bool = False, **kwargs):
         actions = {
             True: "\N{WHITE HEAVY CHECK MARK}",
-            False: "\N{REGIONAL INDICATOR SYMBOL LETTER X}"
+            False: "\N{CROSS MARK}"
         }
-        embed = discord.Embed(colour=kwargs.pop("colour", discord.Colour.default()), description=message)
-        super().__init__(ctx, actions, embed=embed, default=default, post_action=PostMenuAction.DELETE,
+        post_action = kwargs.pop("post_action", PostMenuAction.DELETE)
+
+        if 'message' in kwargs:
+            kwargs['content'] = kwargs.pop('message')
+
+        super().__init__(ctx, actions, default=default, post_action=post_action,
                          post_action_check=None, **kwargs)
 
     async def prompt(self) -> bool:
@@ -259,6 +262,9 @@ class PaginateMenu(ReactMenu):
     def __init__(self, ctx: RedContext, actions: Dict[Any, Union[discord.Emoji, discord.Reaction, str]],
                  pages: Sequence[Any], **kwargs):
         """Create a pagination menu
+
+        Page switching is handled internally and any uses of the paginate buttons are not returned
+        to the calling function.
 
         Parameters
         -----------
@@ -275,7 +281,16 @@ class PaginateMenu(ReactMenu):
             The page index to start on. Defaults to `0`
         converter: Callable[[Any, int, int], discord.Embed]
             A converter to use to convert the items in `pages`. This defaults to a generic Embed converter
-            with the items as the description with a plain 'Page {}/{}' footer.
+            with the item as the description with a plain 'Page {}/{}' footer.
+
+            The call signature is as follows:
+
+            - page_data: `Any`
+            - current_page_index: `int`
+            - total_pages: `int`
+
+            This **must** return an Embed.
+
         message: discord.Message
             A message to re-use from prior ReactMenu executions
         member: discord.Member
@@ -292,21 +307,23 @@ class PaginateMenu(ReactMenu):
         self.pages = pages
         self.page = kwargs.pop("page", 0)
         self.converter = kwargs.pop("converter", lambda x, page, pages_: discord.Embed(description=str(x))
-                                    .set_footer(text=f"Page {page}/{pages_}"))
-        embed = self.converter(self.pages[self.page], self.page + 1, len(self.pages))
+                                    .set_footer(text=f"Page {page + 1}/{pages_}"))
 
-        super().__init__(ctx, actions, embed=embed, post_action=PostMenuAction.REMOVE_REACTION, post_action_check=None,
+        self._allow_empty = True
+
+        super().__init__(ctx, actions, post_action=PostMenuAction.REMOVE_REACTION, post_action_check=None,
                          **kwargs)
 
-    async def prompt(self) -> (MenuResult, Any):
+    async def prompt(self):
         result = None
-        self.embed = self.converter(self.pages[self.page], self.page + 1, len(self.pages))
+        self.embed = self.converter(self.pages[self.page], self.page, len(self.pages))
         while True:
             try:
                 await result.message.edit(embed=self.embed)
             except AttributeError:
                 pass
             result = await super().prompt()
+            print(result, self.page, len(self.pages) - 1)
             if result == "__paginate_backward":
                 if self.page == 0:
                     continue
@@ -323,13 +340,3 @@ class PaginateMenu(ReactMenu):
                 except (discord.HTTPException, AttributeError):
                     pass
             return result, self.pages[self.page]
-
-
-@discord.utils.deprecated(instead="ConfirmMenu")
-async def confirm(ctx: RedContext, message: str, timeout: float = 30.0,
-                  colour: discord.Colour = discord.Colour.blurple(), default: bool = False, **kwargs) -> bool:
-    """Prompt a user for confirmation on an action
-
-    This function is deprecated in favour of ConfirmMenu
-    """
-    return await ConfirmMenu(ctx, message=message, timeout=timeout, colour=colour, default=default, **kwargs).prompt()

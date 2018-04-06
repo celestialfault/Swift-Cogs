@@ -1,7 +1,8 @@
 {
   "author": ["odinair"],
-  "description": "Yet another [p]userinfo variation",
+  "bot_version": [3, 0, 0],
   "min_python_version": [3, 6, 0],
+  "description": "Yet another [p]userinfo variation",
   "short": "Yet another [p]userinfo variation",
   "type": "COG",
   "tags": ["utility", "misc"],

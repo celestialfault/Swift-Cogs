@@ -9,7 +9,7 @@ from redbot.core.bot import Red, RedContext, Config
 from redbot.core.utils.chat_formatting import warning
 from redbot.core.utils.mod import is_allowed_by_hierarchy
 
-from cog_shared.odinair_libs.converters import FutureTime
+from cog_shared.odinair_libs.time import FutureTime
 from cog_shared.odinair_libs.checks import cogs_loaded
 
 try:
@@ -112,8 +112,8 @@ class TimedMute:
             await ctx.send(warning(_("That member is already muted!")))
             return
 
-        (await TempRole.create(member=member, role=role, reason=reason, added_by=ctx.author, duration=duration))\
-            .apply_role(reason=reason)
+        role = await TempRole.create(member, role, duration=duration, added_by=ctx.author, reason=reason)
+        await role.apply_role(reason=reason)
 
         try:
             await modlog.create_case(bot=self.bot, guild=ctx.guild, user=member, moderator=ctx.author,

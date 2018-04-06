@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2018-03-17 03:10-0600\n"
+"POT-Creation-Date: 2018-04-06 16:50-0600\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -15,31 +15,31 @@ msgstr ""
 "Generated-By: pygettext.py 1.5\n"
 
 
-#: ../rolemention.py:67
+#: ../rolemention.py:68
 msgid "Role mention by {}"
 msgstr ""
 
-#: ../rolemention.py:99
+#: ../rolemention.py:100
 msgid "That role is already mentionable"
 msgstr ""
 
-#: ../rolemention.py:102
+#: ../rolemention.py:103
 msgid "`{}` is now allowed to be mentioned"
 msgstr ""
 
-#: ../rolemention.py:116
+#: ../rolemention.py:117
 msgid "`{}` is no longer allowed to be mentioned"
 msgstr ""
 
-#: ../rolemention.py:128
+#: ../rolemention.py:129
 msgid "Mentionable roles"
 msgstr ""
 
-#: ../rolemention.py:130
+#: ../rolemention.py:131
 msgid "No mentionable roles"
 msgstr ""
 
-#: ../rolemention.py:140
+#: ../rolemention.py:141
 msgid "That role is not allowed to be mentioned"
 msgstr ""
 

@@ -6,7 +6,7 @@ from redbot.core.utils.chat_formatting import inline
 
 from logs.core import Module, LogEntry, _
 
-from cog_shared.odinair_libs.formatting import td_format
+from cog_shared.odinair_libs.time import td_format
 
 
 class MemberModule(Module):

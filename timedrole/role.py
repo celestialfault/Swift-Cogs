@@ -2,6 +2,7 @@ from typing import List, Type
 from datetime import timedelta, datetime
 
 import discord
+
 from redbot.core.bot import Red
 
 from timedrole.config import config
@@ -41,7 +42,7 @@ class TempRole:
         self.reason = kwargs.pop("reason", None)
 
     def __repr__(self):
-        return f"<TempRole role={self.role!r} member={self.member!r} duration={self.duration}>"
+        return f"<TempRole role={self.role!r} member={self.member!r} duration={self.duration!r}>"
 
     @property
     def expires_at(self):
@@ -49,14 +50,14 @@ class TempRole:
 
     @property
     def expired(self):
-        return self.expires_at < datetime.utcnow()
+        return self.expires_at <= datetime.utcnow()
 
     @property
     def guild(self) -> discord.Guild:
         return self.member.guild
 
     @property
-    def dict(self):
+    def as_dict(self):
         return {
             "duration": self.duration.total_seconds(),
             "added_at": self.added_at.timestamp(),
@@ -88,12 +89,13 @@ class TempRole:
     @classmethod
     async def create(cls, member: discord.Member, role: discord.Role, duration: timedelta,
                      added_by: discord.Member, *, reason: str = None):
-        return await cls(member, role=role, duration=duration.total_seconds(), reason=reason,
-                         added_by=added_by.id, added_at=datetime.utcnow().timestamp()).save()
+        self = cls(member, role=role, duration=duration.total_seconds(), reason=reason,
+                   added_by=added_by.id, added_at=datetime.utcnow().timestamp())
+        await self.save()
+        return self
 
     async def save(self):
-        await config.member(self.member).set_raw(str(self.role.id), value=self.dict)
-        return self
+        await config.member(self.member).set_raw(str(self.role.id), value=self.as_dict)
 
     async def remove_role(self, *, reason: str = None):
         await config.member(self.member).set_raw(str(self.role.id), value=None)
