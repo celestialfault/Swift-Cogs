@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Optional
 
 import discord
 
@@ -7,7 +8,6 @@ from redbot.core.bot import Red
 from redbot.core.i18n import CogI18n
 
 conf = Config.get_conf(None, identifier=441356724, force_registration=True, cog_name="Quotes")
-conf.register_global(converted_v2=False)
 conf.register_guild(quotes=[])
 
 _ = CogI18n("Quotes", __file__)
@@ -39,16 +39,16 @@ class Quote:
         edit_timestamp: int
             A datetime timestamp of when this quote was last edited. Defaults to ``None``
         """
-        self.guild = self.bot.get_guild(kwargs.get("guild_id"))
-        self.author = self.guild.get_member(kwargs.get("author_id"))
-        self.message_author = self.guild.get_member(kwargs.get("message_author_id"))
-        self.text = kwargs.get("text")
-        self.id = kwargs.get("id")
-        self.timestamp = datetime.fromtimestamp(kwargs.get("timestamp", 0))
+        self.guild: discord.Guild = self.bot.get_guild(kwargs.get("guild_id"))
+        self.author: Optional[discord.Member] = self.guild.get_member(kwargs.get("author_id"))
+        self.message_author: Optional[discord.Member] = self.guild.get_member(kwargs.get("message_author_id"))
+        self.text: str = kwargs.get("text")
+        self.id: int = kwargs.get("id")
+        self.timestamp: datetime = datetime.fromtimestamp(kwargs.get("timestamp", datetime.utcnow().timestamp()))
         # The following two fields are saved & properly modified when necessary,
         # but not displayed to end-users just yet
-        self.edited = kwargs.get("edited", False)
-        self._edit_timestamp = kwargs.get("edit_timestamp", None)
+        self.edited: bool = kwargs.get("edited", False)
+        self._edit_timestamp: datetime = datetime.fromtimestamp(kwargs.get("edit_timestamp", 0))
 
     @property
     def edit_timestamp(self):
@@ -77,13 +77,14 @@ class Quote:
 
         return embed
 
-    def to_dict(self) -> dict:
+    @property
+    def as_dict(self) -> dict:
         return {
             'author_id': self.author.id,
-            'message_author_id': self.message_author.id,
+            'message_author_id': getattr(self.message_author, "id", self.author.id),
             'text': self.text,
             'guild_id': self.guild.id,  # yes, this is redundant, but also necessary
-            'timestamp': datetime.utcnow().timestamp(),
+            'timestamp': self.timestamp.timestamp(),
             'edited': self.edited,
             'edit_timestamp': self.edit_timestamp
         }
@@ -95,7 +96,7 @@ class Quote:
     async def save(self):
         self.edit_timestamp = datetime.utcnow()
         async with conf.guild(self.guild).quotes() as quotes:
-            quotes[self.id - 1].update(self.to_dict())
+            quotes[self.id - 1].update(self.as_dict)
 
     async def delete(self):
         async with conf.guild(self.guild).quotes() as quotes:
@@ -103,14 +104,14 @@ class Quote:
 
     # noinspection PyShadowingBuiltins
     @classmethod
-    async def get(cls, guild: discord.Guild, id: int):
+    async def get(cls, guild: discord.Guild, id: int) -> Optional["Quote"]:
         quotes = list(await conf.guild(guild).quotes())
         if 0 < len(quotes) >= id:
             return cls(**quotes[id - 1], id=id)
         return None
 
     @classmethod
-    async def create(cls, text: str, author: discord.Member, message_author: discord.Member):
+    async def create(cls, text: str, author: discord.Member, message_author: discord.Member) -> Optional["Quote"]:
         guild = author.guild
         quote = {
             'author_id': author.id,

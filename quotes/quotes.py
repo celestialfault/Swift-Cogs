@@ -8,18 +8,10 @@ from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import warning, error
 
 from cog_shared.odinair_libs.formatting import tick
-from cog_shared.odinair_libs.menus import ReactMenu, confirm, PostMenuAction, prompt
+from cog_shared.odinair_libs.menus import ReactMenu, PostMenuAction, prompt, ConfirmMenu
 
 from quotes.quote import Quote, conf, _
 from quotes.v2_import import import_v2_data
-
-
-def has_not_converted_v2():
-    # noinspection PyUnusedLocal
-    async def predicate(ctx: RedContext):
-        return not await conf.converted_v2()
-
-    return commands.check(predicate)
 
 
 class Quotes:
@@ -27,6 +19,11 @@ class Quotes:
 
     __author__ = "odinair <odinair@odinair.xyz>"
     __version__ = "1.1.0"
+
+    DELETE_WARNING = _(
+        "\N{HEAVY EXCLAMATION MARK SYMBOL} Are you sure you want to delete this quote?\n\n"
+        "Unless you have a time machine, this action **cannot be undone**."
+    )
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -43,8 +40,7 @@ class Quotes:
             return
         await ctx.send(embed=quote.embed)
 
-    @quote.command()
-    @has_not_converted_v2()
+    @quote.command(hidden=True)
     @checks.is_owner()
     async def v2_import(self, ctx: RedContext, path: str):
         """Import quotes data from a Red v2 instance"""
@@ -53,10 +49,10 @@ class Quotes:
             await ctx.send(error(_("That file path doesn't seem to be valid")))
             return
         async with ctx.typing():
+            # noinspection PyUnresolvedReferences
             app_info = await self.bot.application_info()
             await import_v2_data(config=self.config, path=path, appinfo=app_info)
         await ctx.send(tick(_("Imported data successfully.")))
-        return await conf.converted_v2.set(True)
 
     @quote.command(name="add")
     async def _quote_add(self, ctx: RedContext, *, message: str):
@@ -149,9 +145,7 @@ class Quotes:
                     await ctx.send(tick(_("Modified quote contents successfully.")), delete_after=30.0)
 
                 elif result == "delete":
-                    if await confirm(ctx, message=_("Are you sure you want to delete this quote?\n\n"
-                                                    "**This action cannot be undone!**"),
-                                     colour=discord.Colour.red()):
+                    if await ConfirmMenu(ctx, content=self.DELETE_WARNING).prompt():
                         await quote.delete()
                         await ctx.send(tick(_("Quote successfully deleted.")), delete_after=30.0)
                         break
@@ -194,9 +188,7 @@ class Quotes:
             await ctx.send(warning(_("You aren't authorized to remove that quote")))
             return
 
-        if await confirm(ctx, message=_("Are you sure you want to delete this quote?\n\n"
-                                        "**This action cannot be undone!**"),
-                         colour=discord.Colour.red()):
+        if await ConfirmMenu(ctx, content=self.DELETE_WARNING).prompt():
             await quote.delete()
             await ctx.send(tick(_("Quote successfully deleted.")))
         else:
