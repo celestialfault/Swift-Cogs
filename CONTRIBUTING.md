@@ -3,15 +3,19 @@ Hi, thanks for taking the time to contribute!
 The following is a set of guidelines (not rules!) to contributing. Use your best judgement, and feel free
 to propose changes to this document in a pull request.
 
+-------
+
 # Code style guidelines
 
-Aside from pep8 requirements, there's not much in terms of guidelines as to how you should style your code.
+Aside from enforced pep8 compliance, there's not much in terms of guidelines as to how you should style your code.
 
 However, I do ask that you avoid the following:
 
 - `*` imports
-- Unnecessary code duplication
+- Unnecessary and/or excessive code duplication
 - Lines that are over 120 characters long
+- Use of any blocking functions (e.g. `requests`)
+- Pull requests that only change whitespace in a cosmetic way
 - Practically unreadable code (read: [do anything but this](https://gist.github.com/Eros/177f87042cc8a4d8bf97baaeabab266b))
 
 # Submitting a pull request
@@ -26,4 +30,4 @@ In most cases, if your changes deviate a cog from the core design, or significan
 - Move your changes into a separate cog that integrates with the initial cog
 - Make your own fork with the changes you made
 
-However, please keep in mind that exceptions may occasionally be made, such as if a pull request helps improve usability in a notable way.
+However, please keep in mind that exceptions can be made, such as if a pull request helps improve usability in a notable way.
