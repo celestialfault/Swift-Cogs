@@ -48,7 +48,7 @@ class StarboardMessage(StarboardBase):
     @property
     def attachments(self) -> List[Union[discord.Attachment, discord.Embed]]:
         embeds: List[discord.Embed] = self.message.embeds
-        image_embeds = [x for x in embeds if x.thumbnail]
+        image_embeds = [x for x in embeds if x.thumbnail or x.image]
         return [*self.message.attachments, *image_embeds]
 
     @property
@@ -61,18 +61,23 @@ class StarboardMessage(StarboardBase):
             if isinstance(attach, discord.Attachment):
                 return attach.url
             elif isinstance(attach, discord.Embed):
-                return attach.thumbnail.url
+                if attach.image:
+                    return attach.image.url
+                elif attach.thumbnail:
+                    return attach.thumbnail.url
         return discord.Embed.Empty
 
     @property
     def starboard_content(self):
         return self.STARBOARD_FORMAT.format(stars=self.stars, channel=self.channel, message=self.message)
 
+    @property
     def is_message_valid(self) -> bool:
         return self.message.content or self.attachments
 
-    def build_embed(self) -> Optional[discord.Embed]:
-        if not self.is_message_valid():
+    @property
+    def embed(self) -> Optional[discord.Embed]:
+        if not self.is_message_valid:
             return None
         embed = discord.Embed(colour=discord.Colour.gold(), timestamp=self.message.created_at,
                               description=self.message.content or discord.Embed.Empty)
@@ -84,6 +89,7 @@ class StarboardMessage(StarboardBase):
 
         return embed
 
+    @property
     def as_dict(self) -> dict:
         return {
             "channel_id": self.channel.id,
@@ -116,7 +122,7 @@ class StarboardMessage(StarboardBase):
 
     async def _save(self) -> None:
         log.debug(f"Saving data for message {self.message.id}")
-        await self.starboard.messages.set_raw(str(self.message.id), value=self.as_dict())
+        await self.starboard.messages.set_raw(str(self.message.id), value=self.as_dict)
         self.last_update = datetime.utcnow()
 
     async def update_cached_message(self):
@@ -130,7 +136,7 @@ class StarboardMessage(StarboardBase):
         self.starboard.update_queue.put_nowait(self)
 
     async def add_star(self, member: discord.Member) -> None:
-        if not self.is_message_valid():
+        if not self.is_message_valid:
             raise StarException()
         if member.id in self.starrers:
             raise StarException(_("The passed member already starred this message"))
@@ -144,8 +150,9 @@ class StarboardMessage(StarboardBase):
 
         self.starrers.append(member.id)
         self.queue_for_update()
-        await (await get_stats(member=member)).increment(StarType.GIVEN)
-        await (await get_stats(member=self.author)).increment(StarType.RECEIVED)
+        if member != self.author:
+            await (await get_stats(member=member)).increment(StarType.GIVEN)
+            await (await get_stats(member=self.author)).increment(StarType.RECEIVED)
 
     async def remove_star(self, member: discord.Member) -> None:
         if member.id not in self.starrers:
@@ -157,8 +164,9 @@ class StarboardMessage(StarboardBase):
 
         self.starrers.remove(member.id)
         self.queue_for_update()
-        await (await get_stats(member=member)).decrement(StarType.GIVEN)
-        await (await get_stats(member=self.author)).decrement(StarType.RECEIVED)
+        if member != self.author:
+            await (await get_stats(member=member)).decrement(StarType.GIVEN)
+            await (await get_stats(member=self.author)).decrement(StarType.RECEIVED)
 
     def has_starred(self, member: discord.Member) -> bool:
         return member.id in self.starrers
@@ -186,7 +194,7 @@ class StarboardMessage(StarboardBase):
             return
 
         if self.stars >= min_stars and not self.hidden:
-            embed = self.build_embed()
+            embed = self.embed
             if embed is None:
                 return
 

@@ -11,13 +11,15 @@ from starboard.starboardmessage import StarboardMessage
 from starboard.base import StarboardBase
 from starboard.log import log
 
+from cog_shared.odinair_libs.converters import IterQueue
+
 __all__ = ('StarboardGuild',)
 
 
 class StarboardGuild(StarboardBase):
     def __init__(self, guild: discord.Guild):
         self.guild = guild
-        self.update_queue = asyncio.Queue()
+        self.update_queue = IterQueue()
 
         self._migration_lock = asyncio.Lock()
         self._cache: Dict[int, StarboardMessage] = {}
@@ -45,11 +47,11 @@ class StarboardGuild(StarboardBase):
         return message.id in self._cache
 
     async def remove_from_cache(self, message: discord.Message) -> bool:
-        if not self.is_cached(message):
+        star = await self.get_message(message=message, cache_only=True)
+        if star is None:
             return False
-        message_ = await self.get_message(message=message)
-        if message_.in_queue:
-            await message_.update_starboard_message()
+        if star.in_queue:
+            await star.update_starboard_message()
         self._cache.pop(message.id)
         return True
 
@@ -68,8 +70,7 @@ class StarboardGuild(StarboardBase):
         return purged
 
     async def handle_queue(self) -> None:
-        while not self.update_queue.empty():
-            item = self.update_queue.get_nowait()
+        for item in self.update_queue:
             if not isinstance(item, StarboardMessage):
                 continue
             if not item.in_queue:
