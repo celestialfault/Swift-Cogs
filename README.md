@@ -27,7 +27,7 @@
 If you've either found a bug or would like to make a suggestion, please [open an issue](https://github.com/notodinair/Swift-Cogs/issues/new),
 as this is by far the best way to make sure that I notice it.
 
-Otherwise, you can contact me on Discord (`odinair#0001`) or Twitter (`@odinair_`).
+Otherwise, you can contact me on Discord (`odinair#0001`).
 
 # Cogs
 
@@ -73,7 +73,7 @@ Log anything and everything that may happen in your guild.
 
 #### Requirements
 
-- `attrs` library
+- None
 
 #### Additional Notes
 
@@ -208,6 +208,7 @@ Send messages to a per-guild starboard channel, via means of reacting with :star
 
 #### Additional Notes
 
+- Your bot *must* be able to read message history, otherwise this cog will silently fail to work with no proper explanation given.
 - This cog creates a message update task for each guild the bot is present in that has a starboard channel setup
 - This cog may use a fair amount of memory on larger bots, due to the various internal caches
 </details>

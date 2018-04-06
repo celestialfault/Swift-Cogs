@@ -1,4 +1,3 @@
-import attr
 from abc import ABC, abstractmethod
 from typing import Iterable, Optional, Union, Tuple, Dict
 from aiohttp import ClientSession
@@ -57,7 +56,6 @@ async def get_module(module_id: str, guild: discord.Guild, *args, **kwargs):
     raise RuntimeError(f"a module with the id {module_id} was not found")
 
 
-@attr.s
 class Module(ABC):
     """Base logging module class
 
@@ -68,8 +66,9 @@ class Module(ABC):
     bot: Red = None
     session: ClientSession = None
 
-    guild = attr.ib(type=discord.Guild)
-    module_settings = attr.ib(type=dict, default={})
+    def __init__(self, guild: discord.Guild):
+        self.guild = guild
+        self.module_settings = {}
 
     async def init_module(self):
         """Helper method to allow modules to have their own init procedures"""
