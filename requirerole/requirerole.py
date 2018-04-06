@@ -4,14 +4,22 @@ import discord
 from discord.ext import commands
 from discord.ext.commands.converter import RoleConverter
 
-from redbot.core.bot import Red, RedContext
 from redbot.core import checks, Config
+from redbot.core.bot import Red, RedContext
 from redbot.core.i18n import CogI18n
 from redbot.core.utils.chat_formatting import warning, escape
 
 from cog_shared.odinair_libs.formatting import tick
 
 _ = CogI18n("RequireRole", __file__)
+
+
+class SeenSet(set):  # quick and dirty utility class to filter out duplicated roles
+    def mark_seen(self, element):
+        if element in self:
+            return False
+        self.add(element)
+        return True
 
 
 class RoleTuple(commands.Converter):
@@ -29,20 +37,17 @@ class RequireRole:
     """Allow and disallow users to use a bot's commands based on per-guild configurable roles"""
 
     __author__ = "odinair <odinair@odinair.xyz>"
-    __version__ = "0.1.0"
+    __version__ = "1.0.0"
 
     def __init__(self, bot: Red):
         self.bot = bot
         self.config = Config.get_conf(self, identifier=90834678413, force_registration=True)
-        try:
-            self.config.register_guild(**{
-                "roles": {
-                    "whitelist": [],
-                    "blacklist": []
-                }
-            })
-        except KeyError:  # duct tape to resolve Group / Value conflict
-            self.config.register_guild(**{"roles": []})
+        self.config.register_guild(**{
+            "roles": {
+                "whitelist": [],
+                "blacklist": []
+            }
+        })
 
     async def check(self, member: discord.Member = None) -> bool:
         """Check if a member or context is allowed to continue
@@ -90,7 +95,7 @@ class RequireRole:
 
         return True
 
-    async def __global_check_once(self, ctx: RedContext):
+    async def __global_check(self, ctx: RedContext):
         if not await self.check(member=ctx.author):
             raise commands.CheckFailure()
         return True
@@ -112,15 +117,15 @@ class RequireRole:
         The guild owner and members with the Administrator permission
         always bypass these requirements, regardless of roles.
         """
-        # implicitly imply a different type than RoleTuple
-        roles: Tuple[Tuple[discord.Role, bool]] = roles
+        seen = SeenSet()
+        roles: Tuple[Tuple[discord.Role, bool]] = tuple((role, v) for role, v in roles if seen.mark_seen(role))
         whitelist: Tuple[discord.Role] = tuple(x for x, y in roles if y)
         blacklist: Tuple[discord.Role] = tuple(x for x, y in roles if not y)
 
         if ctx.guild.default_role in roles:
-            await ctx.send(warning(_("I can't set a role requirement with the default role - if you'd like to clear "
-                                     "your current role requirements, you can execute this command "
-                                     "with no arguments.")))
+            await ctx.send(warning(_("I can't set a role requirement with the guild's default role - "
+                                     "if you'd like to clear your current role requirements, "
+                                     "you can execute this command with no arguments to do so.")))
             return
 
         await self.config.guild(ctx.guild).roles.set({

@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2018-03-16 06:47-0600\n"
+"POT-Creation-Date: 2018-04-06 16:50-0600\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -15,27 +15,27 @@ msgstr ""
 "Generated-By: pygettext.py 1.5\n"
 
 
-#: ../requirerole.py:124
-msgid "I can't set a role requirement with the default role - if you'd like to clear your current role requirements, you can execute this command with no arguments."
+#: ../requirerole.py:126
+msgid "I can't set a role requirement with the guild's default role - if you'd like to clear your current role requirements, you can execute this command with no arguments to do so."
 msgstr ""
 
-#: ../requirerole.py:134
+#: ../requirerole.py:136
 msgid "Cleared currently set role requirements"
 msgstr ""
 
-#: ../requirerole.py:140
+#: ../requirerole.py:142
 msgid ""
 "A member will now need to pass the following checks to use my commands:\n"
 "\n"
 msgstr ""
 
-#: ../requirerole.py:142
+#: ../requirerole.py:144
 msgid ""
 "**Any of the following roles:**\n"
 "{roles}"
 msgstr ""
 
-#: ../requirerole.py:146
+#: ../requirerole.py:148
 msgid ""
 "**None of the following roles:**\n"
 "{roles}"
