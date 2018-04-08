@@ -311,19 +311,17 @@ class PaginateMenu(ReactMenu):
 
         self._allow_empty = True
 
-        super().__init__(ctx, actions, post_action=PostMenuAction.REMOVE_REACTION, post_action_check=None,
-                         **kwargs)
+        super().__init__(ctx, actions, post_action=PostMenuAction.REMOVE_REACTION, post_action_check=None, **kwargs)
 
     async def prompt(self):
         result = None
-        self.embed = self.converter(self.pages[self.page], self.page, len(self.pages))
         while True:
+            self.embed = self.converter(self.pages[self.page], self.page, len(self.pages))
             try:
                 await result.message.edit(embed=self.embed)
             except AttributeError:
                 pass
             result = await super().prompt()
-            print(result, self.page, len(self.pages) - 1)
             if result == "__paginate_backward":
                 if self.page == 0:
                     continue
