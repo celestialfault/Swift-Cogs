@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2018-04-06 16:50-0600\n"
+"POT-Creation-Date: 2018-04-07 22:36-0600\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -15,100 +15,157 @@ msgstr ""
 "Generated-By: pygettext.py 1.5\n"
 
 
-#: ../quote.py:71
+#: ../quote.py:20
+msgid "Content"
+msgstr ""
+
+#: ../quote.py:21
+msgid "Attributed Author"
+msgstr ""
+
+#: ../quote.py:22
+msgid "Quote Creator"
+msgstr ""
+
+#: ../quote.py:38
+msgid "⮊ Revision #{} [{}]"
+msgstr ""
+
+#: ../quote.py:48
+msgid ""
+"**Revision type:** {type}\n"
+"\n"
+"**Changed from:**\n"
+"{changed_from}\n"
+"\n"
+"**Changed to:**\n"
+"{changed_to}"
+msgstr ""
+
+#: ../quote.py:160
 msgid "Unknown quote author"
 msgstr ""
 
-#: ../quote.py:73
+#: ../quote.py:162 ../quotes.py:200 ../quotes.py:226
 msgid "Quote #{}"
 msgstr ""
 
-#: ../quote.py:75
+#: ../quote.py:164
 msgid "Quote #{} | Quoted by {}"
 msgstr ""
 
-#: ../quotes.py:23
+#: ../quotes.py:26
 msgid ""
 "❗ Are you sure you want to delete this quote?\n"
 "\n"
 "Unless you have a time machine, this action **cannot be undone**."
 msgstr ""
 
-#: ../quotes.py:39 ../quotes.py:91 ../quotes.py:166 ../quotes.py:185
+#: ../quotes.py:47 ../quotes.py:97 ../quotes.py:193 ../quotes.py:240
+#: ../quotes.py:259
 msgid "That quote doesn't exist"
 msgstr ""
 
-#: ../quotes.py:49
+#: ../quotes.py:57
 msgid "That file path doesn't seem to be valid"
 msgstr ""
 
-#: ../quotes.py:55
+#: ../quotes.py:61
 msgid "Imported data successfully."
 msgstr ""
 
-#: ../quotes.py:61 ../quotes.py:80
+#: ../quotes.py:67 ../quotes.py:86
 msgid "Quote added"
 msgstr ""
 
-#: ../quotes.py:75
+#: ../quotes.py:81
 msgid "I couldn't find that message. (is it in a different channel?)"
 msgstr ""
 
-#: ../quotes.py:77
+#: ../quotes.py:83
 msgid "I'm not allowed to retrieve that message"
 msgstr ""
 
-#: ../quotes.py:94 ../quotes.py:169
+#: ../quotes.py:100 ../quotes.py:243
 msgid "You aren't authorized to modify that quote"
 msgstr ""
 
-#: ../quotes.py:97
+#: ../quotes.py:103
 msgid "Edit Quote"
 msgstr ""
 
-#: ../quotes.py:98
+#: ../quotes.py:104
 msgid ""
 "What action(s) would you like to take?\n"
 "\n"
 "👤 — Attribute quote\n"
+"👥 — Change quote creator\n"
 "📝 — Edit content\n"
 "🗑 — Delete quote\n"
 "❌ — Cancel"
 msgstr ""
 
-#: ../quotes.py:118
+#: ../quotes.py:120
 msgid "Who would you like to attribute this quote to?"
 msgstr ""
 
-#: ../quotes.py:126
-msgid "Failed to convert `{}` into a Member - try again?"
+#: ../quotes.py:127
+msgid "Failed to convert `{}` into a member - try again?"
 msgstr ""
 
-#: ../quotes.py:134
+#: ../quotes.py:147
 msgid "Attributed quote to **{}**."
 msgstr ""
 
-#: ../quotes.py:137
+#: ../quotes.py:156
+msgid "You are not authorized to change the quote creator"
+msgstr ""
+
+#: ../quotes.py:164
+msgid "Changed quote creator to **{}**."
+msgstr ""
+
+#: ../quotes.py:167
 msgid "Please enter the new content for the quote"
 msgstr ""
 
-#: ../quotes.py:145
+#: ../quotes.py:175
 msgid "Modified quote contents successfully."
 msgstr ""
 
-#: ../quotes.py:150 ../quotes.py:193
+#: ../quotes.py:180 ../quotes.py:267
 msgid "Quote successfully deleted."
 msgstr ""
 
-#: ../quotes.py:175
+#: ../quotes.py:196
+msgid "That quote has no recorded modifications"
+msgstr ""
+
+#: ../quotes.py:201 ../quotes.py:224
+msgid "Page {}/{}"
+msgstr ""
+
+#: ../quotes.py:217
+msgid "This guild has no quotes! Use `{prefix}quote add` to add some!"
+msgstr ""
+
+#: ../quotes.py:222
+msgid "Guild Quotes"
+msgstr ""
+
+#: ../quotes.py:223
+msgid "Displaying {} out of {} quotes"
+msgstr ""
+
+#: ../quotes.py:249
 msgid "Attributed quote #{} to **{}**."
 msgstr ""
 
-#: ../quotes.py:188
+#: ../quotes.py:262
 msgid "You aren't authorized to remove that quote"
 msgstr ""
 
-#: ../quotes.py:195
+#: ../quotes.py:269
 msgid "Ok then."
 msgstr ""
 

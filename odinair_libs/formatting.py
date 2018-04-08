@@ -8,6 +8,12 @@ from redbot.core.bot import Red
 __all__ = ("difference", "normalize", "attempt_emoji", "tick", "chunks", "flatten")
 
 
+def trim_to(text: str, max_len: int):
+    if len(text) <= max_len:
+        return text
+    return f"{text[:max_len]}\N{HORIZONTAL ELLIPSIS}"
+
+
 def flatten(d, parent_key='', *, sep='_'):  # https://stackoverflow.com/a/6027615
     items = []
     for k, v in d.items():
