@@ -41,7 +41,11 @@ class Quotes:
         If no quote is given, a random quote is retrieved instead.
         """
         if quote is None:
-            quote = randint(1, len(await self.config.guild(ctx.guild).quotes()))
+            quotes = len(await self.config.guild(ctx.guild).quotes())
+            if not quotes:
+                await ctx.send_help()
+                return
+            quote = randint(1, quotes)
         quote = await Quote.get(ctx.guild, quote)
         if quote is None:
             await ctx.send(warning(_("That quote doesn't exist")))
