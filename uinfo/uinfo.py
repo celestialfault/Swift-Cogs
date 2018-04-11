@@ -102,7 +102,8 @@ class UInfo:
             embed.add_field(name=_("Bot Roles"), value=bot_roles, inline=False)
 
         roles = reversed([escape(x.name, formatting=True) for x in user.roles if not x.is_default()])
-        embed.add_field(name=_("Guild Roles"), value=", ".join(roles or [_("None")]), inline=False)
+        if roles:
+            embed.add_field(name=_("Guild Roles"), value=", ".join(roles or [_("None")]), inline=False)
 
         embed.add_field(name=_("Joined Discord"), value=since_created, inline=False)
         embed.add_field(name=_("Joined Guild"), value=since_joined, inline=False)
