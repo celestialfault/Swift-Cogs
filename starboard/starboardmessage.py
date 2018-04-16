@@ -23,15 +23,26 @@ class StarboardMessage(StarboardBase):
         self.message: discord.Message = message
         self.starboard_message: discord.Message = None
         self.starrers: List[int] = []
-        self.hidden = False
 
         self.starboard: StarboardGuild = starboard
         self.last_update = datetime.utcnow()
         self.in_queue = False
+        self._hidden = False
 
     def __repr__(self):
         return f"<Star stars={self.stars} hidden={self.hidden} starboard_msg={self.starboard_message!r} " \
                f"message={self.message!r} update_queued={self.in_queue}>"
+
+    @property
+    def hidden(self):
+        return self._hidden
+
+    @hidden.setter
+    def hidden(self, hidden: bool):
+        if hidden is self.hidden:
+            return
+        self._hidden = hidden
+        self.queue_for_update()
 
     @property
     def author(self) -> discord.Member:
@@ -106,7 +117,7 @@ class StarboardMessage(StarboardBase):
 
         if entry is not None:
             self.starrers = entry.get("starrers", entry.get("members", []))
-            self.hidden = entry.get("hidden", False)
+            self._hidden = entry.get("hidden", False)
 
             if entry.get("starboard_message", None) is not None:
                 channel = await self.starboard.starboard_channel()
@@ -170,20 +181,6 @@ class StarboardMessage(StarboardBase):
 
     def has_starred(self, member: discord.Member) -> bool:
         return member.id in self.starrers
-
-    def hide(self) -> bool:
-        if self.hidden is True:
-            return False
-        self.hidden = True
-        self.queue_for_update()
-        return True
-
-    def unhide(self) -> bool:
-        if self.hidden is False:
-            return False
-        self.hidden = False
-        self.queue_for_update()
-        return True
 
     async def update_starboard_message(self) -> None:
         self.in_queue = False

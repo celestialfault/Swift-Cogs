@@ -11,7 +11,7 @@ from starboard.starboardmessage import StarboardMessage
 from starboard.base import StarboardBase
 from starboard.log import log
 
-from cog_shared.odinair_libs.converters import IterQueue
+from cog_shared.odinair_libs import IterQueue
 
 __all__ = ('StarboardGuild',)
 
