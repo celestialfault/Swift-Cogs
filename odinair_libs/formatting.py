@@ -5,13 +5,13 @@ import discord
 
 from redbot.core.bot import Red
 
-__all__ = ("difference", "normalize", "attempt_emoji", "tick", "chunks", "flatten")
+__all__ = ("difference", "normalize", "attempt_emoji", "tick", "chunks", "flatten", "trim_to")
 
 
 def trim_to(text: str, max_len: int):
     if len(text) <= max_len:
         return text
-    return f"{text[:max_len]}\N{HORIZONTAL ELLIPSIS}"
+    return f"{text[:max_len - 1]}\N{HORIZONTAL ELLIPSIS}"
 
 
 def flatten(d, parent_key='', *, sep='_'):  # https://stackoverflow.com/a/6027615
@@ -19,10 +19,6 @@ def flatten(d, parent_key='', *, sep='_'):  # https://stackoverflow.com/a/602761
     for k, v in d.items():
         new_key = parent_key + sep + k if parent_key else k
         if isinstance(v, collections.MutableMapping):
-            # > "Unresolved attribute reference 'items' for class 'dict'"
-            # > https://u.odinair.xyz/6tGmDrs.png
-            # > ???????
-            # noinspection PyUnresolvedReferences
             items.extend(flatten(v, new_key, sep=sep).items())
         else:
             items.append((new_key, v))

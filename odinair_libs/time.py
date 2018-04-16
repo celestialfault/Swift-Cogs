@@ -94,7 +94,7 @@ class FutureTime(timedelta, commands.Converter):
 
     @classmethod
     def converter(cls, strict: bool = False, min_duration: Union[str, int, float, None] = None,
-                  max_duration: Union[str, int, float, None] = "2y"):
+                  max_duration: Union[str, int, float, None] = None):
         """Create a FutureTime converter
 
         Parameters
@@ -116,11 +116,20 @@ class FutureTime(timedelta, commands.Converter):
         max_duration: Union[str, int, float, None]
             How long in seconds to allow for a conversion to go up to.
 
-            Defaults to ``"2y"``
+            Defaults to ``None``
         """
         self = cls.__new__(cls)
-        self.MAX_SECONDS = self.get_seconds(max_duration) if isinstance(max_duration, str) else max_duration
-        self.MIN_SECONDS = self.get_seconds(min_duration) if isinstance(min_duration, str) else min_duration
+        maxs = self.get_seconds(max_duration) if isinstance(max_duration, str) else max_duration
+        mins = self.get_seconds(min_duration) if isinstance(min_duration, str) else min_duration
+
+        if isinstance(maxs, (int, float, timedelta)) and maxs <= 0:
+            maxs = None
+        if isinstance(mins, (int, float, timedelta)) and mins <= 0:
+            mins = None
+
+        self.MAX_SECONDS = maxs
+        self.MIN_SECONDS = mins
+
         self.STRICT_MODE = strict
         return self
 
@@ -137,7 +146,7 @@ class FutureTime(timedelta, commands.Converter):
                 seconds += time_amnt * time_quantity[1]
         return None if seconds == 0 else seconds
 
-    async def convert(self, ctx, argument: str) -> Union[None, timedelta]:
+    async def convert(self, ctx, argument: str) -> Union[None, "FutureTime"]:
         seconds = self.get_seconds(argument)
 
         if seconds and self.MAX_SECONDS is not None and seconds > self.MAX_SECONDS:

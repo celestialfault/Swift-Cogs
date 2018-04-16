@@ -2,7 +2,13 @@
 Shared library for all my cogs
 """
 
-from . import converters, formatting, menus, checks  # noqa
+from .commands import *  # noqa
+from .menus import *  # noqa
+from .time import *  # noqa
+from .converters import *  # noqa
+from .checks import *  # noqa
+from .formatting import *  # noqa
+from .asynctools import *  # noqa
+
 VERSION = (1, 1, 0)
 __author__ = "odinair <odinair@odinair.xyz>"
-__version__ = ".".join([str(x) for x in VERSION])

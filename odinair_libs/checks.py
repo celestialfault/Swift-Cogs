@@ -2,6 +2,8 @@ from discord import Member
 from discord.ext.commands import check
 from redbot.core.bot import Red
 
+__all__ = ('cogs_loaded', 'bot_in_x_guilds', 'bot_not_in_x_guilds', 'hierarchy_allows')
+
 
 def cogs_loaded(*cogs):
     """Ensure that the cogs specified are loaded.

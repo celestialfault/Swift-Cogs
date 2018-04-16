@@ -5,7 +5,7 @@ import discord
 
 from redbot.core.bot import Red
 
-__all__ = ("get_role_or_member", "cog_name", "IterQueue")
+__all__ = ("cog_name", "IterQueue")
 
 
 class IterQueue(Queue, Iterable):
@@ -22,7 +22,3 @@ class IterQueue(Queue, Iterable):
 def cog_name(bot: Red, name: str):
     """Returns a case-sensitive name from a case-insensitive cog name"""
     return discord.utils.find(lambda x: x.lower() == name.lower(), bot.cogs.keys())
-
-
-def get_role_or_member(snowflake: int, guild: discord.Guild):
-    return guild.get_member(snowflake) or discord.utils.get(guild.roles, id=snowflake)

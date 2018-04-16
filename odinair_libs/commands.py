@@ -1,12 +1,14 @@
 from typing import Optional
 
 from redbot.core import RedContext
+from redbot.core.utils.chat_formatting import pagify
 
 __all__ = ('fmt', 'cmd_help')
 
 
-async def fmt(ctx: RedContext, text: str, delete_after: Optional[float] = None, *args, **kwargs) -> None:
-    await ctx.send(text.format(*args, **kwargs, prefix=ctx.prefix), delete_after=delete_after)
+async def fmt(ctx: RedContext, text: str, *args, delete_after: Optional[float] = None, **kwargs) -> None:
+    for p in pagify(text.format(*args, **kwargs, prefix=ctx.prefix)):
+        await ctx.send(p, delete_after=delete_after)
 
 
 async def cmd_help(ctx: RedContext, cmd: str = "") -> None:

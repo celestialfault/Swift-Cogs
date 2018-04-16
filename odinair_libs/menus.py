@@ -1,13 +1,13 @@
 from asyncio import TimeoutError
 
 from enum import Enum
-from typing import Union, Any, Dict, Sequence, Optional
+from typing import Union, Any, Dict, Sequence, Optional, Tuple
+from types import GeneratorType
 
 import discord
 
 from redbot.core import RedContext
 from redbot.core.bot import Red
-from redbot.core.utils.chat_formatting import question
 
 __all__ = ("PostMenuAction", "ReactMenu", "ConfirmMenu", "PaginateMenu", "MenuResult", "prompt")
 
@@ -53,8 +53,27 @@ class MenuResult:
 
 async def prompt(ctx: RedContext, *, content: str = None, embed: discord.Embed = None, delete_messages: bool = False,
                  timeout: float = 30.0) -> Optional[discord.Message]:
+    """Prompt a user for input
+
+    Parameters
+    -----------
+    ctx: RedContext
+        The Red context object
+    content: str
+        The message content to send. If `embed` is given, this is optional
+    embed: discord.Embed
+        The embed to send. If `content` is given, this is optional
+    delete_messages: bool
+        Whether or not the sent messages are deleted when this function returns
+    timeout: float
+        How long to wait for a response from the user
+
+    Returns
+    --------
+    Optional[discord.Message]
+    """
     bot: Red = ctx.bot
-    message_sent = await ctx.send(content=question(content), embed=embed)
+    message_sent = await ctx.send(content=content, embed=embed)
     message_recv = None
     try:
         message_recv = await bot.wait_for('message', timeout=timeout,
@@ -81,14 +100,17 @@ class ReactMenu:
         Parameters
         -----------
         ctx: RedContext
-            The Red context object
+            The Red context object. This must at least implement the following attributes:
+
+            - `async send(content: Optional[str], embed: Optional[discord.Embed]) -> discord.Message`
+            - `bot: redbot.core.bot.Red`
         actions: Dict[Any, Union[discord.Emoji, str]]
             A dict of actions, similar to {action: emoji, ...}
 
             There can only be up to 15 different actions
 
-        Keyword args
-        -------------
+        Keyword Arguments
+        ------------------
         default: Any
             The default action.
 
@@ -260,7 +282,7 @@ class ConfirmMenu(ReactMenu):
 
 class PaginateMenu(ReactMenu):
     def __init__(self, ctx: RedContext, actions: Dict[Any, Union[discord.Emoji, discord.Reaction, str]],
-                 pages: Sequence[Any], **kwargs):
+                 pages: Union[Sequence[Any], GeneratorType], **kwargs):
         """Create a pagination menu
 
         Page switching is handled internally and any uses of the paginate buttons are not returned
@@ -274,12 +296,16 @@ class PaginateMenu(ReactMenu):
             The list of actions to allow members to perform.
             A set of two paginate actions are always surrounding the given actions,
             however the paginate actions are handled internally and are never returned.
-        pages: Sequence[Any]
+        pages: Union[Sequence[Any], GeneratorType]
             A sequence of pages. If `converter` is not given, this is expected to contain
             either strings, or objects that can be casted to strings.
+
+        Keyword Arguments
+        ------------------
+
         page: int
             The page index to start on. Defaults to `0`
-        converter: Callable[[Any, int, int], discord.Embed]
+        converter: Callable[[Any, int, int], Union[str, discord.Embed, Tuple[str, discord.Embed]]]
             A converter to use to convert the items in `pages`. This defaults to a generic Embed converter
             with the item as the description with a plain 'Page {}/{}' footer.
 
@@ -289,7 +315,14 @@ class PaginateMenu(ReactMenu):
             - current_page_index: `int`
             - total_pages: `int`
 
-            This **must** return an Embed.
+            `current_page_index` is the current index of `pages`,
+            whereas `total_pages` is the result of `len(pages)`.
+
+            This can return any of the following types:
+
+            - str
+            - discord.Embed
+            - tuple(str, discord.Embed)
 
         message: discord.Message
             A message to re-use from prior ReactMenu executions
@@ -304,6 +337,8 @@ class PaginateMenu(ReactMenu):
             "__paginate_forward": "\N{BLACK RIGHTWARDS ARROW}"
         }
 
+        if isinstance(pages, GeneratorType):
+            pages = list(pages)
         self.pages = pages
         self.page = kwargs.pop("page", 0)
         self.converter = kwargs.pop("converter", lambda x, page, pages_: discord.Embed(description=str(x))
@@ -313,10 +348,18 @@ class PaginateMenu(ReactMenu):
 
         super().__init__(ctx, actions, post_action=PostMenuAction.REMOVE_REACTION, post_action_check=None, **kwargs)
 
-    async def prompt(self):
+    async def prompt(self) -> Tuple[MenuResult, Any]:
         result = None
         while True:
-            self.embed = self.converter(self.pages[self.page], self.page, len(self.pages))
+            val = await discord.utils.maybe_coroutine(self.converter, self.pages[self.page], self.page, len(self.pages))
+            if isinstance(val, tuple):
+                self.content = val[0]
+                self.embed = val[1]
+            elif isinstance(val, str):
+                self.content = val
+            else:
+                self.embed = val
+
             try:
                 await result.message.edit(embed=self.embed)
             except AttributeError:

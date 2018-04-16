@@ -2,8 +2,8 @@
 <p align="center">A somewhat bland collection of moderation, bot management, and utility cogs.</p>
 <p align="center">
   <a href="https://circleci.com/gh/notodinair/Swift-Cogs"><img src="https://circleci.com/gh/notodinair/Swift-Cogs.svg?style=svg" /></a>
-  <a href="https://python.org/"><img src="https://img.shields.io/badge/Python-3.6-red.svg?style=flat-square" /></a>
-  <a href="https://github.com/Cog-Creators/Red-DiscordBot"><img src="https://img.shields.io/badge/Red--DiscordBot-3.0.0-blue.svg?style=flat-square" /></a>
+  <a href="https://python.org/"><img src="https://img.shields.io/badge/Python-3.6-blue.svg?style=flat-square" /></a>
+  <a href="https://github.com/Cog-Creators/Red-DiscordBot"><img src="https://img.shields.io/badge/Red--DiscordBot-3.0.0-red.svg?style=flat-square" /></a>
   <a href="http://makeapullrequest.com"><img src="https://img.shields.io/badge/PRs-welcome-green.svg?style=flat-square" /></a>
 </p>
 
@@ -11,7 +11,7 @@
 
 ### Required Reading
 
-- **These cogs require Python 3.6 to properly function.** Some cogs may be able to work on 3.5, but your mileage may vary.
+- **These cogs require Python 3.6 or higher to properly function.**
 - Until Red V3 is considered stable, these cogs should be considered prone to breaking changes being made at any time, with or without warning, nor with any backward compatibility of any sort.
 
 ----

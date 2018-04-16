@@ -7,27 +7,33 @@ to propose changes to this document in a pull request.
 
 # Code style guidelines
 
-Aside from enforced pep8 compliance, there's not much in terms of guidelines as to how you should style your code.
+Aside from enforced pep8 compliance (with the exception of allowing up to 120 character long lines),
+there's not much in terms of guidelines as to how you should style your code.
 
-However, I do ask that you avoid the following:
+#### Do the following
+
+- Ensure all Python features used exist and properly work in 3.6 and above
+
+#### Please avoid the following
+
+**Do note:** Pull requests that include any of these criteria won't necessarily be immediately closed,
+but I'll usually ask you to fix it, unless it has a valid technical reason for being included.
 
 - `*` imports
 - Unnecessary and/or excessive code duplication
 - Lines that are over 120 characters long
-- Use of any blocking functions (e.g. `requests`)
+- Practically unreadable code
+
+#### Any pull requests including the following will be closed
+
 - Pull requests that only change whitespace in a cosmetic way
-- Practically unreadable code (read: [do anything but this](https://gist.github.com/Eros/177f87042cc8a4d8bf97baaeabab266b))
+- Use of any blocking methods / libraries (e.g. `requests`)
 
 # Submitting a pull request
 
-Please ensure the pull request description clearly describes what has been changed. If a relevant issue is open, please mention it!
+Please ensure the pull request description clearly describes what has been changed. If a relevant issue is open,
+please mention it!
 
-If your pull request changes any features in a substantial way, **please open an issue first** before you start working on it,
-so I can provide feedback before you spend time working on the pull request itself.
-
-In most cases, if your changes deviate a cog from the core design, or significantly changes how the cog behaves, I'll usually ask you to either:
-
-- Move your changes into a separate cog that integrates with the initial cog
-- Make your own fork with the changes you made
-
-However, please keep in mind that exceptions can be made, such as if a pull request helps improve usability in a notable way.
+If your pull request introduces any new features, or changes any features in a substantial way,
+**please open an issue first** before you start working on it, so I can provide feedback
+before you spend time working on the pull request itself.
