@@ -18,20 +18,22 @@ class StarboardMessage(StarboardBase):
     def __init__(self, starboard, message: discord.Message):
         from starboard.starboardguild import StarboardGuild
         if not isinstance(starboard, StarboardGuild):
-            raise ValueError(f"Expected a GuildStarboard object, received {starboard.__class__.__name__}")
+            raise ValueError("Expected a GuildStarboard object, received {}".format(starboard.__class__.__name__))
 
-        self.message: discord.Message = message
-        self.starboard_message: discord.Message = None
-        self.starrers: List[int] = []
+        self.message = message  # type: discord.Message
+        self.starboard_message = None  # type: discord.Message
+        self.starrers = []  # type: List[int]
 
-        self.starboard: StarboardGuild = starboard
+        self.starboard = starboard  # type: StarboardGuild
         self.last_update = datetime.utcnow()
         self.in_queue = False
         self._hidden = False
 
     def __repr__(self):
-        return f"<Star stars={self.stars} hidden={self.hidden} starboard_msg={self.starboard_message!r} " \
-               f"message={self.message!r} update_queued={self.in_queue}>"
+        return (
+            "<Star stars={self.stars} hidden={self.hidden} starboard_msg={self.starboard_message!r} "
+            "message={self.message!r} update_queued={self.in_queue}>"
+        ).format(self=self)
 
     @property
     def hidden(self):
@@ -58,7 +60,7 @@ class StarboardMessage(StarboardBase):
 
     @property
     def attachments(self) -> List[Union[discord.Attachment, discord.Embed]]:
-        embeds: List[discord.Embed] = self.message.embeds
+        embeds = self.message.embeds  # type: List[discord.Embed]
         image_embeds = [x for x in embeds if x.thumbnail or x.image]
         return [*self.message.attachments, *image_embeds]
 
@@ -132,7 +134,7 @@ class StarboardMessage(StarboardBase):
                     self.queue_for_update()
 
     async def _save(self) -> None:
-        log.debug(f"Saving data for message {self.message.id}")
+        log.debug("Saving data for message {}".format(self.message.id))
         await self.starboard.messages.set_raw(str(self.message.id), value=self.as_dict)
         self.last_update = datetime.utcnow()
 

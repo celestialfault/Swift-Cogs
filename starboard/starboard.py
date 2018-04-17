@@ -10,7 +10,6 @@ from redbot.core.bot import Red, RedContext
 from redbot.core.utils.chat_formatting import error, warning, bold, info
 
 from starboard.log import log
-from starboard.starboardmessage import StarboardMessage
 from starboard.starboardguild import StarboardGuild
 from starboard.starboarduser import StarboardUser
 from starboard.checks import can_use_starboard, guild_has_starboard
@@ -46,11 +45,11 @@ class Starboard(StarboardBase):
 
         setup(bot, config)
 
-        self._guild_janitors: Dict[int, asyncio.Task] = {}
-        self._tasks: Tuple[asyncio.Task, ...] = (
+        self._guild_janitors = {}  # type: Dict[int, asyncio.Task]
+        self._tasks = (
             self.bot.loop.create_task(self._register_cases()),
             self.bot.loop.create_task(self._init_janitors())
-        )
+        )  # type: Tuple[asyncio.Task, ...]
 
     @commands.group(invoke_without_command=True)
     @commands.guild_only()
@@ -59,9 +58,8 @@ class Starboard(StarboardBase):
         """Star a message by it's ID"""
         if not await guild_has_starboard(ctx):
             return
-        starboard: StarboardGuild = await get_starboard(ctx.guild)
-        message: StarboardMessage = await starboard.get_message(message_id=message_id, channel=ctx.channel,
-                                                                auto_create=True)
+        starboard = await get_starboard(ctx.guild)  # type: StarboardGuild
+        message = await starboard.get_message(message_id=message_id, channel=ctx.channel, auto_create=True)
         if not message:
             await ctx.send(_("Sorry, I couldn't find that message."))
             return
@@ -94,8 +92,8 @@ class Starboard(StarboardBase):
         """Show the starboard message for the message given"""
         if not await guild_has_starboard(ctx):
             return
-        starboard: StarboardGuild = await get_starboard(ctx.guild)
-        message: StarboardMessage = await starboard.get_message(message_id=message_id)
+        starboard = await get_starboard(ctx.guild)  # type: StarboardGuild
+        message = await starboard.get_message(message_id=message_id)
         if not message:
             await ctx.send(_("Sorry, I couldn't find that message."))
             return
@@ -106,7 +104,7 @@ class Starboard(StarboardBase):
         """Remove a previously added star"""
         if not await guild_has_starboard(ctx):
             return
-        starboard: StarboardGuild = await get_starboard(ctx.guild)
+        starboard = await get_starboard(ctx.guild)  # type: StarboardGuild
         message = await starboard.get_message(message_id=message_id)
         if not message:
             await ctx.send(_("Sorry, I couldn't find that message."))
@@ -135,7 +133,7 @@ class Starboard(StarboardBase):
         """
         member = member or ctx.author
         member_stats = StarboardUser(await get_starboard(ctx.guild), member)
-        stats: Dict[str, int] = await member_stats.get_stats(global_stats)
+        stats = await member_stats.get_stats(global_stats)  # type: Dict[str, int]
         desc = _("Stats for member {member}:\n\n"
                  "\N{RIGHTWARDS BLACK CIRCLED WHITE ARROW} **{given}** stars given\n"
                  "\N{RIGHTWARDS BLACK CIRCLED WHITE ARROW} **{received}** stars received")\
@@ -159,7 +157,8 @@ class Starboard(StarboardBase):
     @stars.command(name="hide")
     async def stars_hide(self, ctx: RedContext, message_id: int):
         """Hide a message from the starboard"""
-        star: StarboardMessage = await (await get_starboard(ctx.guild)).get_message(message_id=message_id)
+        starboard = await get_starboard(ctx.guild)  # type: StarboardGuild
+        star = await starboard.get_message(message_id=message_id)
         if not star:
             await ctx.send(error(_("That message either hasn't been starred, or it doesn't exist")))
             return
@@ -172,7 +171,8 @@ class Starboard(StarboardBase):
     @stars.command(name="unhide")
     async def stars_unhide(self, ctx: RedContext, message_id: int):
         """Unhide a previously hidden message"""
-        star: StarboardMessage = await (await get_starboard(ctx.guild)).get_message(message_id=message_id)
+        starboard = await get_starboard(ctx.guild)  # type: StarboardGuild
+        star = await starboard.get_message(message_id=message_id)
         if not star:
             await ctx.send(error(_("That message either hasn't been starred, or it doesn't exist")))
             return
@@ -197,7 +197,7 @@ class Starboard(StarboardBase):
         if not await hierarchy_allows(self.bot, ctx.author, member):
             await ctx.send(error(_("You aren't allowed to block that member")))
             return
-        starboard: StarboardGuild = await get_starboard(ctx.guild)
+        starboard = await get_starboard(ctx.guild)  # type: StarboardGuild
         if await starboard.ignore(member):
             await ctx.tick()
             try:
@@ -220,7 +220,7 @@ class Starboard(StarboardBase):
             await ctx.send(warning(_("Bot accounts are always blocked from using the starboard, "
                                      "and cannot be manually blocked nor unblocked.")))
             return
-        starboard: StarboardGuild = await get_starboard(ctx.guild)
+        starboard = await get_starboard(ctx.guild)  # type: StarboardGuild
         if await starboard.unignore(member):
             await ctx.tick()
             try:
@@ -238,8 +238,8 @@ class Starboard(StarboardBase):
         `message_id` should be the corresponding message that the starboard message
         is for, and not the starboard message itself.
         """
-        starboard: StarboardGuild = await get_starboard(ctx.guild)
-        star: StarboardMessage = await starboard.get_message(message_id=message_id)
+        starboard = await get_starboard(ctx.guild)  # type: StarboardGuild
+        star = await starboard.get_message(message_id=message_id)
         if star is None:
             await ctx.send(warning(_("I couldn't find a message with that ID - has the message been deleted?")))
             return
@@ -302,7 +302,7 @@ class Starboard(StarboardBase):
     @cmd_starboard.command(name="settings")
     async def starboard_settings(self, ctx: RedContext):
         """Get the current settings for this guild's starboard"""
-        starboard: StarboardGuild = await get_starboard(ctx.guild)
+        starboard = await get_starboard(ctx.guild)  # type: StarboardGuild
         requirerole = _("Cog not loaded") if not cog_name(self.bot, "requirerole") \
             else _("Enabled") if await starboard.guild_config.respect_requirerole() else _("Disabled")
 
@@ -323,7 +323,7 @@ class Starboard(StarboardBase):
         Please note that user statistics are not updated if a member stars their own messages,
         regardless of if this setting is enabled or not.
         """
-        starboard: StarboardGuild = await get_starboard(ctx.guild)
+        starboard = await get_starboard(ctx.guild)  # type: StarboardGuild
         toggle = (not await starboard.selfstar()) if toggle is None else toggle
         await starboard.selfstar(toggle)
         await ctx.send(tick(_("Members can now star their own messages") if toggle
@@ -379,7 +379,7 @@ class Starboard(StarboardBase):
     @cogs_loaded("RequireRole")
     async def starboard_respect_requirerole(self, ctx: RedContext, toggle: bool = None):
         """Toggle whether or not the starboard respects your RequireRole settings"""
-        starboard: StarboardGuild = await get_starboard(ctx.guild)
+        starboard = await get_starboard(ctx.guild)  # type: StarboardGuild
         new_val = (not await starboard.requirerole()) if toggle is None else toggle
         await starboard.requirerole(new_val)
         if new_val:
@@ -412,7 +412,8 @@ class Starboard(StarboardBase):
                 await starboard.purge_cache()
                 await asyncio.sleep(8)
         except asyncio.CancelledError:
-            log.debug(f"Janitor for guild {starboard.guild.id} was cancelled; finishing message update queue & exiting")
+            log.debug("Janitor for guild {} was cancelled; finishing message update queue & exiting"
+                      .format(starboard.guild.id))
             await starboard.handle_queue()
 
     async def create_janitor(self, guild: discord.Guild, *, overwrite: bool):
@@ -422,19 +423,19 @@ class Starboard(StarboardBase):
         starboard = await get_starboard(guild)
         self.remove_janitor(guild)
         if await starboard.starboard_channel():
-            log.debug(f"Creating janitor task for guild {guild.id}")
+            log.debug("Creating janitor task for guild {}".format(guild.id))
             self._guild_janitors[guild.id] = self.bot.loop.create_task(self._guild_janitor(guild))
 
     def remove_janitor(self, guild: discord.Guild):
         if guild.id in self._guild_janitors:
             janitor = self._guild_janitors[guild.id]
-            log.debug(f"Removing janitor for guild {guild.id}")
+            log.debug("Removing janitor for guild {}".format(guild.id))
             if janitor.done():
                 try:
                     # noinspection PyArgumentList
                     exc = janitor.exception()
                     if exc is not None and not isinstance(exc, (asyncio.InvalidStateError, asyncio.CancelledError)):
-                        log.exception(msg=f"Detected exception in guild {guild.id} janitor task", exc_info=exc)
+                        log.exception(msg="Detected exception in guild {} janitor task".format(guild.id), exc_info=exc)
                 except (asyncio.InvalidStateError, asyncio.CancelledError):
                     pass
             else:
@@ -482,21 +483,21 @@ class Starboard(StarboardBase):
         if isinstance(channel, (discord.abc.PrivateChannel, type(None))):
             return
         guild = channel.guild
-        starboard: StarboardGuild = await get_starboard(guild)
-        message: StarboardMessage = await starboard.get_message(message_id=payload.message_id, cache_only=True)
+        starboard = await get_starboard(guild)  # type: StarboardGuild
+        message = await starboard.get_message(message_id=payload.message_id, cache_only=True)
         if message is not None:
             await message.update_cached_message()
             message.queue_for_update()
 
     async def _starboard_msg(self, message_id: int, channel_id: int, user_id: int, *, auto_create: bool = False):
-        channel: discord.TextChannel = self.bot.get_channel(channel_id)
+        channel = self.bot.get_channel(channel_id)  # type: discord.TextChannel
         if channel is None:
             return None, None, None
         # check that the channel is in a guild
         if isinstance(channel, discord.abc.PrivateChannel) or not getattr(channel, "guild", None):
             return None, None, None
-        guild: discord.Guild = channel.guild
-        starboard: StarboardGuild = await get_starboard(guild)
+        guild = channel.guild  # type: discord.Guild
+        starboard = await get_starboard(guild)  # type: StarboardGuild
         if await starboard.starboard_channel() is None:
             return None, None, None
 
@@ -512,7 +513,7 @@ class Starboard(StarboardBase):
         )
 
     async def on_raw_reaction_add(self, payload: RawReactionActionEvent):
-        emoji: discord.PartialEmoji = payload.emoji
+        emoji = payload.emoji  # type: discord.PartialEmoji
         if not emoji.is_custom_emoji() or str(emoji) != "\N{WHITE MEDIUM STAR}":
             return
         message, member, channel = await self._starboard_msg(
@@ -536,7 +537,7 @@ class Starboard(StarboardBase):
             pass
 
     async def on_raw_reaction_remove(self, payload: RawReactionActionEvent):
-        emoji: discord.PartialEmoji = payload.emoji
+        emoji = payload.emoji  # type: discord.PartialEmoji
         if not emoji.is_custom_emoji() or str(emoji) != "\N{WHITE MEDIUM STAR}":
             return
         message, member, channel = await self._starboard_msg(
@@ -554,12 +555,12 @@ class Starboard(StarboardBase):
             pass
 
     async def on_raw_reaction_clear(self, payload: RawReactionClearEvent):
-        channel: discord.TextChannel = self.bot.get_channel(payload.channel_id)
+        channel = self.bot.get_channel(payload.channel_id)  # type: discord.TextChannel
         if channel is None or isinstance(channel, discord.abc.PrivateChannel):
             return
         guild = channel.guild
-        starboard: StarboardGuild = await get_starboard(guild)
-        message: StarboardMessage = await starboard.get_message(message_id=payload.message_id)
+        starboard = await get_starboard(guild)  # type: StarboardGuild
+        message = await starboard.get_message(message_id=payload.message_id)
         if message is None:
             return
         message.starrers = []

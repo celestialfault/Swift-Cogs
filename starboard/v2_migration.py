@@ -47,9 +47,7 @@ async def v2_import(bot: Red, mongo_uri: str):
     log.info("Starting v2 data migration...")
     db = motor.AsyncIOMotorClient(mongo_uri)
     await dump_caches()
-    log.info("Attempting to retrieve lock")
     async with migrate_lock:
-        log.info("Lock retrieved, beginning...")
         async for item in db.starboard.stars.find({}):
             if not isinstance(item, dict):
                 continue
@@ -57,13 +55,13 @@ async def v2_import(bot: Red, mongo_uri: str):
             if message_id is None:
                 continue
             channel_id = item.get("channel_id", None)
-            channel: discord.TextChannel = bot.get_channel(int(channel_id))
+            channel = bot.get_channel(int(channel_id))  # type: discord.TextChannel
             if channel is None:
                 continue
-            guild: discord.Guild = getattr(channel, "guild", None)
+            guild = getattr(channel, "guild", None)  # type: discord.Guild
             if guild is None:
                 continue
-            starboard: StarboardGuild = await get_starboard(guild)
+            starboard = await get_starboard(guild)  # type: StarboardGuild
             await starboard.messages.set_raw(str(message_id), value={
                 "channel_id": channel.id,
                 "author_id": None,

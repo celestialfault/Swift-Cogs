@@ -22,14 +22,14 @@ class StarboardGuild(StarboardBase):
         self.update_queue = IterQueue()
 
         self._migration_lock = asyncio.Lock()
-        self._cache: Dict[int, StarboardMessage] = {}
-        self._settings: Dict[str, Any] = None
+        self._cache = {}  # type: Dict[int, StarboardMessage]
+        self._settings = None  # type: Dict[str, Any]
 
     def __repr__(self):
         return "<GuildStarboard guild={0!r} cache_size={1}>".format(self.guild, len(self._cache))
 
     async def init(self):
-        log.debug(f"Initializing guild {self.guild.id}")
+        log.debug("Initializing guild {}".format(self.guild.id))
         await self.reload_settings()
 
     async def reload_settings(self):
