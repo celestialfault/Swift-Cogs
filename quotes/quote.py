@@ -8,22 +8,24 @@ from redbot.core import Config
 from redbot.core.bot import Red
 from redbot.core.i18n import CogI18n
 
-__all__ = ('_', 'conf', 'RevisionType', 'QuoteRevision', 'Quote')
+__all__ = ('i18n', 'conf', 'RevisionType', 'QuoteRevision', 'Quote')
 
 conf = Config.get_conf(cog_instance=None, cog_name="Quotes", identifier=441356724, force_registration=True)
 conf.register_guild(quotes=[])
 
-_ = CogI18n("Quotes", __file__)
+i18n = CogI18n("Quotes", __file__)
 
 
 class RevisionType(Enum):
-    CONTENT = _("Content")
-    ATTRIBUTED_AUTHOR = _("Attributed Author")
-    QUOTE_CREATOR = _("Quote Creator")
+    CONTENT = i18n("Content")
+    ATTRIBUTED_AUTHOR = i18n("Attributed Author")
+    QUOTE_CREATOR = i18n("Quote Creator")
 
 
 class QuoteRevision:
-    def __init__(self, rev_type: RevisionType, changed_from, changed_to, rev_id: int, timestamp: datetime = None):
+    def __init__(self, quote: "Quote", rev_type: RevisionType, changed_from, changed_to, rev_id: int,
+                 timestamp: datetime = None):
+        self.quote = quote
         self.type = rev_type
         self.changed_from = changed_from
         self.changed_to = changed_to
@@ -35,9 +37,16 @@ class QuoteRevision:
 
     @property
     def title(self):
-        return _("\N{RIGHTWARDS BLACK CIRCLED WHITE ARROW} Revision #{} [{}]").format(self.id, self.type.value)
+        return i18n("Revision #{}").format(self.id)
 
-    def __str__(self):
+    def summary(self, prefix: str = "[p]"):
+        return i18n(
+            "**Type:** {type} \N{LIGHT VERTICAL BAR} Use `{prefix}quote history {quote} {rev}` to view this revision"
+        ).format(
+            type=self.type.value, prefix=prefix, quote=self.quote.id, rev=self.id
+        )
+
+    def embed(self, colour: discord.Colour = discord.Colour.blurple()):
         changed_from = self.changed_from
         changed_to = self.changed_to
         if isinstance(changed_from, discord.Member):
@@ -45,14 +54,10 @@ class QuoteRevision:
         if isinstance(changed_to, discord.Member):
             changed_to = changed_to.mention
 
-        return _(
-            "**Revision type:** {type}\n\n"
-            "**Changed from:**\n{changed_from}\n\n"
-            "**Changed to:**\n{changed_to}"
-        ).format(
-            type=self.type.value,
-            changed_from=changed_from,
-            changed_to=changed_to
+        return (
+            discord.Embed(colour=colour, title=self.title, timestamp=self.timestamp)
+            .add_field(name=i18n("Before"), value=changed_from, inline=False)
+            .add_field(name=i18n("After"), value=changed_to, inline=False)
         )
 
     @classmethod
@@ -65,7 +70,7 @@ class QuoteRevision:
         else:
             changed_from = data.get("changed_from")
             changed_to = data.get("changed_to")
-        return cls(rev_type, changed_from, changed_to, rev_id, ts)
+        return cls(quote, rev_type, changed_from, changed_to, rev_id, ts)
 
     @property
     def as_dict(self):
@@ -79,22 +84,16 @@ class QuoteRevision:
 
 
 class Quote:
-    bot: Red = None
+    bot = None  # type: Red
 
     def __init__(self, guild: discord.Guild, **kwargs):
         self.guild = guild
-        self._text: str = kwargs.get("text")
-
-        self._author: Optional[discord.Member] = self.guild.get_member(kwargs.get("author_id"))
-        if self._author is None:
-            self._author = kwargs.get("author_id")
-
-        self._message_author: Optional[discord.Member] = self.guild.get_member(kwargs.get("message_author_id"))
-        if self._message_author is None:
-            self._message_author = kwargs.get("message_author_id")
-
-        self.timestamp: datetime = datetime.fromtimestamp(kwargs.get("timestamp", datetime.utcnow().timestamp()))
-        self.id: int = kwargs.get("id")
+        self.id = kwargs.get("id")  # type: id
+        self._text = kwargs.get("text")  # type: str
+        self._message_author = kwargs.get("message_author_id")  # type: int
+        self._creator = kwargs.get("author_id")  # type: int
+        self.timestamp = datetime.fromtimestamp(kwargs.get("timestamp", datetime.utcnow().timestamp())
+                                                )  # type: datetime
 
         revisions = kwargs.get("revisions", [])
         self.revisions = [QuoteRevision.from_dict(self, data=x, rev_id=revisions.index(x) + 1) for x in revisions]
@@ -106,40 +105,40 @@ class Quote:
         return self.text
 
     def _add_rev(self, rev_type: RevisionType, old, new):
-        self.revisions.append(QuoteRevision(rev_type, old, new, len(self.revisions)))
+        self.revisions.append(QuoteRevision(self, rev_type, old, new, len(self.revisions)))
 
     @property
     def text(self):
         return self._text
 
     @text.setter
-    def text(self, new_text: str):
-        if new_text == self.text:
+    def text(self, text: str):
+        if text == self.text:
             return
-        self._add_rev(RevisionType.CONTENT, self.text, new_text)
-        self._text = new_text
+        self._add_rev(RevisionType.CONTENT, self.text, text)
+        self._text = text
 
     @property
     def creator(self) -> Optional[discord.Member]:
-        return self._author
+        return self.guild.get_member(self._creator)
 
     @creator.setter
-    def creator(self, new_author: discord.Member):
-        if new_author == self.creator:
+    def creator(self, creator: discord.Member):
+        if creator == self.creator:
             return
-        self._add_rev(RevisionType.QUOTE_CREATOR, self.creator, new_author)
-        self._author = new_author
+        self._add_rev(RevisionType.QUOTE_CREATOR, self.creator, creator)
+        self._creator = creator.id
 
     @property
     def message_author(self) -> Optional[discord.Member]:
-        return self._message_author
+        return self.guild.get_member(self._message_author)
 
     @message_author.setter
-    def message_author(self, new_author: discord.Member):
-        if new_author == self.message_author:
+    def message_author(self, message_author: discord.Member):
+        if message_author == self.message_author:
             return
-        self._add_rev(RevisionType.ATTRIBUTED_AUTHOR, self.message_author, new_author)
-        self._message_author = new_author
+        self._add_rev(RevisionType.ATTRIBUTED_AUTHOR, self.message_author, message_author)
+        self._message_author = message_author.id
 
     @property
     def embed(self):
@@ -157,11 +156,11 @@ class Quote:
         elif self.creator:  # Attempt to fall back to the quote creator
             embed.set_author(name=self.creator.display_name, icon_url=self.creator.avatar_url_as(format="png"))
         else:
-            embed.set_author(name=_("Unknown quote author"), icon_url=self.guild.icon_url)
+            embed.set_author(name=i18n("Unknown quote author"), icon_url=self.guild.icon_url)
 
-        footer_str = _("Quote #{}").format(self.id)
+        footer_str = i18n("Quote #{}").format(self.id)
         if self.creator != self.message_author:
-            footer_str = _("Quote #{} | Quoted by {}").format(self.id, str(self.creator))
+            footer_str = i18n("Quote #{} | Quoted by {}").format(self.id, str(self.creator))
         embed.set_footer(text=footer_str)
 
         return embed
@@ -177,8 +176,8 @@ class Quote:
         }
 
     async def can_modify(self, member: discord.Member) -> bool:
-        return any([self.message_author and self.message_author.id == member.id,
-                    self.creator and self.creator.id == member.id,
+        return any([getattr(self.message_author, "id", None) == member.id,
+                    getattr(self.creator, "id", None) == member.id,
                     await self.bot.is_mod(member), await self.bot.is_owner(member)])
 
     async def save(self):
@@ -213,4 +212,7 @@ class Quote:
 
     @classmethod
     async def all_quotes(cls, guild: discord.Guild) -> List["Quote"]:
-        return [await cls.get(guild, quote_id=x + 1) for x in range(len(await conf.guild(guild).quotes()))]
+        quotes = []
+        for i in range(len(await conf.guild(guild).quotes())):
+            quotes.append(await cls.get(guild, quote_id=i + 1))
+        return quotes

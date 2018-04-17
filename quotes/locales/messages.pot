@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2018-04-07 22:36-0600\n"
+"POT-Creation-Date: 2018-04-17 12:04-0600\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -27,30 +27,31 @@ msgstr ""
 msgid "Quote Creator"
 msgstr ""
 
-#: ../quote.py:38
-msgid "⮊ Revision #{} [{}]"
+#: ../quote.py:40
+msgid "Revision #{}"
 msgstr ""
 
-#: ../quote.py:48
-msgid ""
-"**Revision type:** {type}\n"
-"\n"
-"**Changed from:**\n"
-"{changed_from}\n"
-"\n"
-"**Changed to:**\n"
-"{changed_to}"
+#: ../quote.py:43
+msgid "**Type:** {type} ❘ Use `{prefix}quote history {quote} {rev}` to view this revision"
 msgstr ""
 
-#: ../quote.py:160
+#: ../quote.py:59
+msgid "Before"
+msgstr ""
+
+#: ../quote.py:60
+msgid "After"
+msgstr ""
+
+#: ../quote.py:159
 msgid "Unknown quote author"
 msgstr ""
 
-#: ../quote.py:162 ../quotes.py:200 ../quotes.py:226
+#: ../quote.py:161 ../quotes.py:211 ../quotes.py:246
 msgid "Quote #{}"
 msgstr ""
 
-#: ../quote.py:164
+#: ../quote.py:163
 msgid "Quote #{} | Quoted by {}"
 msgstr ""
 
@@ -61,40 +62,36 @@ msgid ""
 "Unless you have a time machine, this action **cannot be undone**."
 msgstr ""
 
-#: ../quotes.py:47 ../quotes.py:97 ../quotes.py:193 ../quotes.py:240
-#: ../quotes.py:259
+#: ../quotes.py:51 ../quotes.py:101 ../quotes.py:200 ../quotes.py:260
+#: ../quotes.py:280
 msgid "That quote doesn't exist"
 msgstr ""
 
-#: ../quotes.py:57
+#: ../quotes.py:61
 msgid "That file path doesn't seem to be valid"
 msgstr ""
 
-#: ../quotes.py:61
+#: ../quotes.py:65
 msgid "Imported data successfully."
 msgstr ""
 
-#: ../quotes.py:67 ../quotes.py:86
+#: ../quotes.py:71 ../quotes.py:90
 msgid "Quote added"
 msgstr ""
 
-#: ../quotes.py:81
+#: ../quotes.py:85
 msgid "I couldn't find that message. (is it in a different channel?)"
 msgstr ""
 
-#: ../quotes.py:83
+#: ../quotes.py:87
 msgid "I'm not allowed to retrieve that message"
 msgstr ""
 
-#: ../quotes.py:100 ../quotes.py:243
+#: ../quotes.py:104 ../quotes.py:263
 msgid "You aren't authorized to modify that quote"
 msgstr ""
 
-#: ../quotes.py:103
-msgid "Edit Quote"
-msgstr ""
-
-#: ../quotes.py:104
+#: ../quotes.py:107
 msgid ""
 "What action(s) would you like to take?\n"
 "\n"
@@ -105,67 +102,71 @@ msgid ""
 "❌ — Cancel"
 msgstr ""
 
-#: ../quotes.py:120
-msgid "Who would you like to attribute this quote to?"
+#: ../quotes.py:116
+msgid "Edit Quote"
 msgstr ""
 
 #: ../quotes.py:127
+msgid "Who would you like to attribute this quote to?"
+msgstr ""
+
+#: ../quotes.py:134
 msgid "Failed to convert `{}` into a member - try again?"
 msgstr ""
 
-#: ../quotes.py:147
+#: ../quotes.py:154
 msgid "Attributed quote to **{}**."
 msgstr ""
 
-#: ../quotes.py:156
+#: ../quotes.py:163
 msgid "You are not authorized to change the quote creator"
 msgstr ""
 
-#: ../quotes.py:164
+#: ../quotes.py:171
 msgid "Changed quote creator to **{}**."
 msgstr ""
 
-#: ../quotes.py:167
+#: ../quotes.py:174
 msgid "Please enter the new content for the quote"
 msgstr ""
 
-#: ../quotes.py:175
+#: ../quotes.py:182
 msgid "Modified quote contents successfully."
 msgstr ""
 
-#: ../quotes.py:180 ../quotes.py:267
+#: ../quotes.py:187 ../quotes.py:288
 msgid "Quote successfully deleted."
 msgstr ""
 
-#: ../quotes.py:196
+#: ../quotes.py:203
 msgid "That quote has no recorded modifications"
 msgstr ""
 
-#: ../quotes.py:201 ../quotes.py:224
+#: ../quotes.py:212 ../quotes.py:244
 msgid "Page {}/{}"
 msgstr ""
 
-#: ../quotes.py:217
+#: ../quotes.py:231
 msgid "This guild has no quotes! Use `{prefix}quote add` to add some!"
 msgstr ""
 
-#: ../quotes.py:222
+#: ../quotes.py:242
 msgid "Guild Quotes"
 msgstr ""
 
-#: ../quotes.py:223
+#: ../quotes.py:243
 msgid "Displaying {} out of {} quotes"
 msgstr ""
 
-#: ../quotes.py:249
+#: ../quotes.py:269
 msgid "Attributed quote #{} to **{}**."
 msgstr ""
 
-#: ../quotes.py:262
+#: ../quotes.py:283
 msgid "You aren't authorized to remove that quote"
 msgstr ""
 
-#: ../quotes.py:269
+#: ../quotes.py:290
 msgid "Ok then."
 msgstr ""
 
