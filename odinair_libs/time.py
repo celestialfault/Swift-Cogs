@@ -55,13 +55,13 @@ def td_format(td_object: timedelta, milliseconds: bool = False, append_str: bool
         if seconds >= period_seconds:
             period_value, seconds = divmod(seconds, period_seconds)
             plural = "s" if period_value != 1 else ""
-            strs.append(" ".join([str(round(period_value)), f"{period_name}{plural}"]))
+            strs.append(" ".join([str(round(period_value)), period_name + plural]))
 
     if milliseconds is True:
         ms = round(td_object.microseconds / 1000)
         if ms > 0:
             plural = "s" if ms != 1 else ""
-            strs.append(f"{ms} millisecond{plural}")
+            strs.append("{} millisecond{}".format(ms, plural))
 
     built = ", ".join(strs)
     if not append_str:
@@ -150,11 +150,11 @@ class FutureTime(timedelta, commands.Converter):
         seconds = self.get_seconds(argument)
 
         if seconds and self.MAX_SECONDS is not None and seconds > self.MAX_SECONDS:
-            raise commands.BadArgument(f'Time duration exceeds maximum of '
-                                       f'{td_format(timedelta(seconds=self.MAX_SECONDS))}')
+            raise commands.BadArgument('Time duration exceeds maximum of {}'
+                                       .format(td_format(timedelta(seconds=self.MAX_SECONDS))))
         elif seconds and self.MIN_SECONDS is not None and seconds < self.MIN_SECONDS:
-            raise commands.BadArgument(f'Time duration does not exceed minimum of '
-                                       f'{td_format(timedelta(seconds=self.MIN_SECONDS))}')
+            raise commands.BadArgument('Time duration does not exceed minimum of {}'
+                                       .format(td_format(timedelta(seconds=self.MIN_SECONDS))))
 
         if seconds is None and self.STRICT_MODE:
             raise commands.BadArgument("Failed to parse duration")

@@ -14,10 +14,6 @@ class IterQueue(Queue, Iterable):
         while not self.empty():
             yield self.get_nowait()
 
-    async def __aiter__(self):
-        while True:
-            yield await self.get()
-
 
 def cog_name(bot: Red, name: str):
     """Returns a case-sensitive name from a case-insensitive cog name"""

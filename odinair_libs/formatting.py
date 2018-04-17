@@ -11,7 +11,7 @@ __all__ = ("difference", "normalize", "attempt_emoji", "tick", "chunks", "flatte
 def trim_to(text: str, max_len: int):
     if len(text) <= max_len:
         return text
-    return f"{text[:max_len - 1]}\N{HORIZONTAL ELLIPSIS}"
+    return "{}\N{HORIZONTAL ELLIPSIS}".format(text[:max_len - 1])
 
 
 def flatten(d, parent_key='', *, sep='_'):  # https://stackoverflow.com/a/6027615
@@ -26,7 +26,7 @@ def flatten(d, parent_key='', *, sep='_'):  # https://stackoverflow.com/a/602761
 
 
 def tick(text: str):
-    return f"\N{WHITE HEAVY CHECK MARK} {text}"
+    return "\N{WHITE HEAVY CHECK MARK} {}".format(text)
 
 
 def attempt_emoji(bot: Red, fallback: str, guild: discord.Guild = None, **kwargs):

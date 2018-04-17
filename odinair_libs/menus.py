@@ -27,7 +27,7 @@ class MenuResult:
         self.message = getattr(menu, "message", None)
 
     def __repr__(self):
-        return f"<MenuResult action={self.action!r} timed_out={self.timed_out} menu={self.menu!r}>"
+        return "<MenuResult action={self.action!r} timed_out={self.timed_out} menu={self.menu!r}>".format(self=self)
 
     def __str__(self):
         return str(self.action)
@@ -72,7 +72,7 @@ async def prompt(ctx: RedContext, *, content: str = None, embed: discord.Embed =
     --------
     Optional[discord.Message]
     """
-    bot: Red = ctx.bot
+    bot = ctx.bot  # type: Red
     message_sent = await ctx.send(content=content, embed=embed)
     message_recv = None
     try:
@@ -166,7 +166,7 @@ class ReactMenu:
             Raised if the bot is not allowed to add reactions to messages in the context channel
         """
         if ctx.guild is not None:
-            perms: discord.Permissions = ctx.channel.permissions_for(ctx.guild.me)
+            perms = ctx.channel.permissions_for(ctx.guild.me)  # type: discord.Permissions
             if not all([perms.add_reactions, perms.send_messages]):
                 raise discord.Forbidden
         if len(actions.keys()) > 15:
@@ -192,10 +192,10 @@ class ReactMenu:
 
     def __repr__(self):
         return (
-            f"<ReactMenu content={self.content!r} embed={self.embed!r} message={self.message!r} "
-            f"default={self.default!r} action_count={len(self.actions)} post_action={self.post_action} "
-            f"member={self.member!r}>"
-        )
+            "<ReactMenu content={self.content!r} embed={self.embed!r} message={self.message!r} "
+            "default={self.default!r} action_count={actions} post_action={self.post_action} "
+            "member={self.member!r}>"
+        ).format(self=self, actions=len(self.actions))
 
     async def _add_reactions(self):
         """Internal task to add reactions to sent messages"""
@@ -232,8 +232,8 @@ class ReactMenu:
     def _reaction_check(self, reaction: discord.Reaction, user: discord.User):
         """Check for discord.py's wait_for function"""
         msg = reaction.message
-        ret = (msg.id == self.message.id and user.id == self.member.id
-               and (str(reaction.emoji) in self.emojis or reaction.emoji in self.emojis))
+        ret = all([msg.id == self.message.id, user.id == self.member.id,
+                   str(reaction.emoji) in self.emojis or reaction.emoji in self.emojis])
         return ret
 
     async def __aenter__(self):
@@ -342,7 +342,7 @@ class PaginateMenu(ReactMenu):
         self.pages = pages
         self.page = kwargs.pop("page", 0)
         self.converter = kwargs.pop("converter", lambda x, page, pages_: discord.Embed(description=str(x))
-                                    .set_footer(text=f"Page {page + 1}/{pages_}"))
+                                    .set_footer(text="Page {}/{}".format(page + 1, pages_)))
 
         self._allow_empty = True
 
