@@ -1,10 +1,13 @@
 {
   "author": ["odinair"],
   "bot_version": [3, 0, 0],
-  "min_python_version": [3, 6, 0],
+  "min_python_version": [3, 5, 1],
   "description": "Allow and disallow users to use a bot's commands based on per-guild roles",
   "short": "Allow and disallow users to use a bot's commands based on per-guild roles",
   "type": "COG",
-  "tags": ["utility", "roles"],
+  "tags": [
+    "utility",
+    "roles"
+  ],
   "install_msg": "Hello!~ Thank you for installing one of my cogs.\nIf you experience any problems, please open an issue: <https://github.com/notodinair/Swift-Cogs/issues/new>\n\n~ Emma (odinair) 💜"
 }

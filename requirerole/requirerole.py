@@ -9,7 +9,7 @@ from redbot.core.bot import Red, RedContext
 from redbot.core.i18n import CogI18n
 from redbot.core.utils.chat_formatting import warning, escape
 
-from cog_shared.odinair_libs.formatting import tick
+from cog_shared.odinair_libs import tick
 
 _ = CogI18n("RequireRole", __file__)
 
@@ -37,7 +37,6 @@ class RequireRole:
     """Allow and disallow users to use a bot's commands based on per-guild configurable roles"""
 
     __author__ = "odinair <odinair@odinair.xyz>"
-    __version__ = "1.0.0"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -115,12 +114,11 @@ class RequireRole:
         Passing no roles removes the currently set role requirement.
 
         The guild owner and members with the Administrator permission
-        always bypass these requirements, regardless of roles.
-        """
+        always bypass these requirements, regardless of roles."""
         seen = SeenSet()
-        roles: Tuple[Tuple[discord.Role, bool]] = tuple((role, v) for role, v in roles if seen.mark_seen(role))
-        whitelist: Tuple[discord.Role] = tuple(x for x, y in roles if y)
-        blacklist: Tuple[discord.Role] = tuple(x for x, y in roles if not y)
+        roles = tuple((r, v) for r, v in roles if seen.mark_seen(r))  # type: Tuple[Tuple[discord.Role, bool]]
+        whitelist = tuple(r for r, v in roles if v)  # type: Tuple[discord.Role]
+        blacklist = tuple(r for r, v in roles if not v)  # type: Tuple[discord.Role]
 
         if ctx.guild.default_role in roles:
             await ctx.send(warning(_("I can't set a role requirement with the guild's default role - "
@@ -133,7 +131,7 @@ class RequireRole:
             "blacklist": [x.id for x in blacklist]
         })
         if not roles:
-            await ctx.send(tick(_("Cleared currently set role requirements")))
+            await ctx.send(tick(_("Cleared currently set role requirements.")))
             return
 
         whitelist = ", ".join(escape(str(x), mass_mentions=True, formatting=True) for x in whitelist)
