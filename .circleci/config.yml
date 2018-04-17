@@ -3,7 +3,7 @@ version: 2
 jobs:
   py36:
     docker:
-      - image: circleci/python:3.6.1
+      - image: circleci/python:3.6
 
     working_directory: ~/repo
 
@@ -35,7 +35,7 @@ jobs:
 
   py35:
     docker:
-      - image: circleci/python:3.5.1
+      - image: circleci/python:3.5
 
     working_directory: ~/repo
 
