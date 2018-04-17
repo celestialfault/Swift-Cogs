@@ -10,8 +10,7 @@ from redbot.core.bot import Red
 from redbot.core.i18n import CogI18n
 from redbot.core.utils.chat_formatting import warning, escape
 
-from cog_shared.odinair_libs.formatting import tick
-from cog_shared.odinair_libs.commands import cmd_help
+from cog_shared.odinair_libs import tick, cmd_help
 
 _ = CogI18n("RoleMention", __file__)
 
@@ -20,7 +19,6 @@ class RoleMention:
     MENTION_REGEX = re.compile(r"{{mention role: ?@?(?P<NAME>[\W\w]+)}}", re.IGNORECASE)
 
     __author__ = "odinair <odinair@odinair.xyz>"
-    __version__ = "1.0.0"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -29,7 +27,7 @@ class RoleMention:
 
     async def _can_mention(self, message: discord.Message):
         try:
-            guild: discord.Guild = message.guild
+            guild = message.guild  # type: discord.Guild
             if guild is None:
                 return False
         except AttributeError:
@@ -55,15 +53,15 @@ class RoleMention:
             # and by extension I don't know how to reproduce the bug. But it happened *somehow*.
             return False
 
-    async def _make_mentionable(self, *roles: discord.Role, mod: discord.Member, mentionable: bool = True,
-                                check_if_allowed: bool = True):
+    async def _make_mentionable(self, *roles: discord.Role, mod: discord.Member, mentionable: bool = True):
         if not roles:
             raise ValueError("no roles were given to make mentionable")
         allowed_roles = await self.config.guild(roles[0].guild).roles()
         for role in roles:
             if role.mentionable == mentionable or role >= role.guild.me.top_role:
                 continue
-            if check_if_allowed and role.id not in allowed_roles:
+            # skip any roles that aren't marked as allowed to be mentioned
+            if role.id not in allowed_roles:
                 continue
             await role.edit(mentionable=mentionable, reason=_("Role mention by {}").format(mod))
 
@@ -85,9 +83,9 @@ class RoleMention:
         Role mentions can be sent by using `{{mention role: Role Name}}`
 
         Only users with the bot's Administrator role or with the Manage Roles permission
-        may use this feature.
+        may use the above mention syntax.
         """
-        await cmd_help(ctx, "")
+        await cmd_help(ctx)
 
     @rolemention.command(name="add")
     async def rolemention_add(self, ctx: RedContext, *, role: discord.Role):
@@ -127,33 +125,12 @@ class RoleMention:
                 continue
             roles.append(role)
         await ctx.send(embed=discord.Embed(title=_("Mentionable roles"), colour=discord.Colour.blurple(),
-                                           description=" ".join([x.mention for x in roles]
-                                                                or [_("No mentionable roles")])))
-
-    @rolemention.command(name="mention")
-    async def rolemention_mention(self, ctx: RedContext, role: discord.Role, *, text: str):
-        """Mention a role
-
-        This is an alternative to using the role mention syntax in a regular message.
-        The role mention will be appended to the beginning of `text`
-        """
-        if role.id not in await self.config.guild(ctx.guild).roles():
-            await ctx.send(warning(_("That role is not allowed to be mentioned")))
-            return
-        try:
-            await ctx.message.delete()
-        except discord.HTTPException:
-            pass
-
-        text = f"{role.mention} {text}"
-        await self._make_mentionable(role, mentionable=True, mod=ctx.author)
-        await self._send_message(text, ctx.author, ctx.channel, role)
-        await asyncio.sleep(5)
-        await self._make_mentionable(role, mentionable=False, mod=ctx.author)
+                                           description=" ".join(
+                                               [x.mention for x in roles] or [_("No mentionable roles")])))
 
     async def on_message(self, message: discord.Message):
         try:
-            guild: discord.Guild = message.guild
+            guild = message.guild  # type: discord.Guild
             if guild is None:
                 return
         except AttributeError:
@@ -168,7 +145,7 @@ class RoleMention:
         for match in self.MENTION_REGEX.finditer(message.content):
             name = match.group("NAME")
             full_match = match.group(0)
-            role: discord.Role = discord.utils.get(guild.roles, name=name)
+            role = discord.utils.get(guild.roles, name=name)  # type: discord.Role
 
             message_content = message_content.replace(full_match, getattr(role, "mention", full_match))
 
