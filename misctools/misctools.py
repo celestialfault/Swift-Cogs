@@ -11,18 +11,18 @@ from redbot.core.bot import Red, RedContext
 from redbot.core.utils.chat_formatting import warning, pagify
 from redbot.core.i18n import CogI18n
 
-from cog_shared.odinair_libs.time import td_format
+from cog_shared.odinair_libs import td_format
 
 _ = CogI18n("MiscTools", __file__)
 
 
 class MiscTools:
-    """Various quick & dirty utilities
-    Mostly useful when making cogs, and/or for advanced server administration use.
+    """A somewhat basic collection quick & dirty utilities
+
+    This is mostly only useful for making cogs, or working with the Discord API.
     """
 
     __author__ = "odinair <odinair@odinair.xyz>"
-    __version__ = "1.0.0"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -47,7 +47,7 @@ class MiscTools:
             return
 
         def convert(c):
-            return f"{c} \N{EM DASH} {unicodedata.name(c, 'Name not found')}"
+            return "{} \N{EM DASH} {}".format(c, unicodedata.name(c, 'Name not found'))
 
         await ctx.send("\n".join(map(convert, characters)))
 
@@ -70,15 +70,16 @@ class MiscTools:
                          "Typing indicator: {}\n\n"
                          "Full round trip: {}").format(time_to_execution, time_to_typing, full_round_trip))
 
-    @commands.command(aliases=["snowflaketime"])
-    async def snowflake(self, ctx: RedContext, *snowflakes: int):
-        """Get the time that one or more snowflake IDs were created at"""
+    @commands.command(aliases=["snowflake"])
+    async def snowflaketime(self, ctx: RedContext, *snowflakes: int):
+        """Retrieve when one or more snowflake IDs were created at"""
         if not snowflakes:
             await ctx.send_help()
             return
         strs = []
         for snowflake in snowflakes:
             snowflake_time = discord.utils.snowflake_time(snowflake)
-            strs.append(f"{snowflake}: `{snowflake_time.strftime('%A %B %d, %Y at %X UTC')}` \N{EM DASH} "
-                        f"{td_format(snowflake_time - datetime.utcnow(), append_str=True)}")
+            strs.append("{}: `{}` \N{EM DASH} {}"
+                        .format(snowflake, snowflake_time.strftime('%A %B %d, %Y at %X UTC'),
+                                td_format(snowflake_time - datetime.utcnow(), append_str=True)))
         await ctx.send_interactive(pagify("\n".join(strs)))
