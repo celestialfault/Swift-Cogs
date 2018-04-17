@@ -5,29 +5,23 @@ from compileall import compile_dir
 from pathlib import Path
 import sys
 
-PY36 = sys.version_info >= (3, 6, 0)
-
 root_path = Path(__file__).parent.parent
 cogs = [
     'botmonitor',
     'cogwhitelist',
     'misctools',
     'requirerole',
+    'odinair_libs',
+    'quotes',
     'rndactivity',
     'rolemention',
     'starboard',
     'timedmute',
-    'uinfo'
+    'uinfo',
+    'logs',
+    'timedrole'
 ]
 cogs.sort()
-
-if PY36:
-    cogs.extend([
-        'logs',
-        'quotes',
-        'timedrole',
-        'odinair_libs'
-    ])
 
 
 def compile_cogs():
@@ -39,10 +33,4 @@ def compile_cogs():
 
 
 if __name__ == '__main__':
-    if not PY36:
-        print("Not running on Py3.6, the following modules have been implicitly skipped:\n"
-              "- logs\n"
-              "- quotes\n"
-              "- timedrole\n"
-              "- odinair_libs")
     sys.exit(int(not compile_cogs()))

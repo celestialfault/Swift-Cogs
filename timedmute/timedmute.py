@@ -9,8 +9,7 @@ from redbot.core.bot import Red, RedContext, Config
 from redbot.core.utils.chat_formatting import warning
 from redbot.core.utils.mod import is_allowed_by_hierarchy
 
-from cog_shared.odinair_libs.time import FutureTime
-from cog_shared.odinair_libs.checks import cogs_loaded
+from cog_shared.odinair_libs import FutureTime, cogs_loaded
 
 try:
     from timedrole.role import TempRole
@@ -25,7 +24,6 @@ class TimedMute:
     OVERWRITE_PERMISSIONS = discord.PermissionOverwrite(speak=False, send_messages=False, add_reactions=False)
 
     __author__ = "odinair <odinair@odinair.xyz>"
-    __version__ = "1.1.0"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -46,21 +44,20 @@ class TimedMute:
         except RuntimeError:
             pass
 
-    async def add_overwrite(self, role: discord.Role, channel: discord.abc.GuildChannel):
+    async def setup_overwrites(self, role: discord.Role, channel: discord.abc.GuildChannel):
         # noinspection PyUnresolvedReferences
         if not channel.permissions_for(channel.guild.me).manage_roles:
             return
         await channel.set_permissions(target=role, overwrite=self.OVERWRITE_PERMISSIONS,
                                       reason=_("Timed mute role permissions"))
 
-    async def create_role(self, guild: discord.Guild):
+    async def setup_role(self, guild: discord.Guild) -> discord.Role:
         # `Guild.create_role` is a coroutine. PyCharm would like to disagree.
-        # Thus, this terrible workaround was created.
-        role = await discord.utils.maybe_coroutine(guild.create_role, name="Muted",
-                                                   permissions=discord.Permissions.none())
+        # noinspection PyUnresolvedReferences
+        role = await guild.create_role(name="Muted", permissions=discord.Permissions.none())
 
         for channel in guild.channels:
-            await self.add_overwrite(role, channel)
+            await self.setup_overwrites(role, channel)
 
         await self.config.guild(guild).punished_role.set(role.id)
         return role
@@ -68,31 +65,33 @@ class TimedMute:
     async def get_punished_role(self, guild: discord.Guild) -> Optional[discord.Role]:
         return discord.utils.get(guild.roles, id=await self.config.guild(guild).punished_role())
 
-    max_duration = FutureTime.get_seconds('2 years')
-    min_duration = FutureTime.get_seconds('2 minutes')
-
     @commands.command(aliases=["tempmute"])
     @commands.guild_only()
     @cogs_loaded("TimedRole")
     @checks.mod_or_permissions(manage_roles=True)
     @commands.bot_has_permissions(manage_roles=True)
     async def timedmute(self, ctx: RedContext, member: discord.Member,
-                        duration: FutureTime.converter(max_duration=max_duration, min_duration=min_duration,
-                                                       strict=True),
+                        duration: FutureTime.converter(min_duration=2 * 60, strict=True),
                         *, reason: str = None):
         """Mute a user for a set amount of time.
 
-        Muted users will not be able to send messages, add new reactions to messages, or speak in voice channels.
+        Muted users will not be able to send messages, add new reactions to messages
+        (they can still use existing reactions), or speak in voice channels.
 
-        Examples for duration: `1h30m`, `3d`, `1mo`
+        Examples for duration: `1h30m`, `3d`, `1mo`.
+        Longer form values (such as '2 hours') are also accepted, but must be wrapped
+        in double quotes if they contain spaces.
 
-        Abbreviations: `s` for seconds, `m` for minutes, `h` for hours, `d` for days, `w` for weeks,
-        `mo` for months, `y` for years. Any longer abbreviation is accepted. `m` assumes minutes instead of months.
+        Abbreviations: `s` for seconds, `m` for minutes, `h` for hours, `d` for days,
+        `w` for weeks, `mo` for months, `y` for years.
+
+        `m` assumes minutes instead of months.
 
         One month is counted as 30 days, and one year is counted as 365 days.
-        Maximum duration for a mute is 2 years. Minimum duration is 2 minutes.
+        Minimum duration for a mute is 2 minutes.
 
-        Expired mutes are checked alongside expired timed roles assigned with `[p]timedrole`
+        Expired mutes are checked alongside expired timed roles assigned with
+        `[p]timedrole`.
         """
         mod_cog = self.bot.get_cog('Mod')
         if mod_cog and not await is_allowed_by_hierarchy(bot=ctx.bot, settings=mod_cog.settings, guild=ctx.guild,
@@ -105,7 +104,7 @@ class TimedMute:
             tmp_msg = await ctx.send(_("Setting up this guild's muted role...\n"
                                        "(this may take a while, depending on how many channels you have)"))
             async with ctx.typing():
-                role = await self.create_role(ctx.guild)
+                role = await self.setup_role(ctx.guild)
             await tmp_msg.delete()
 
         if role in member.roles:
@@ -131,4 +130,4 @@ class TimedMute:
         role = await self.get_punished_role(guild)
         if not role:
             return
-        await self.add_overwrite(role, channel)
+        await self.setup_overwrites(role, channel)

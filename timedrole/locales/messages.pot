@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2018-04-06 16:50-0600\n"
+"POT-Creation-Date: 2018-04-17 12:04-0600\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -15,19 +15,19 @@ msgstr ""
 "Generated-By: pygettext.py 1.5\n"
 
 
-#: ../timedrole.py:44
+#: ../timedrole.py:39
 msgid "Re-applying missing timed role"
 msgstr ""
 
-#: ../timedrole.py:51
+#: ../timedrole.py:45
 msgid "Re-applying timed role after member re-join"
 msgstr ""
 
-#: ../timedrole.py:67
+#: ../timedrole.py:61
 msgid "This guild has no currently active timed roles"
 msgstr ""
 
-#: ../timedrole.py:74
+#: ../timedrole.py:68
 msgid ""
 "**❯** Timed role **#{id}**\n"
 "**Member** — {member}\n"
@@ -38,35 +38,35 @@ msgid ""
 "**Total duration** — {duration}"
 msgstr ""
 
-#: ../timedrole.py:84
+#: ../timedrole.py:78
 msgid "No reason specified"
 msgstr ""
 
-#: ../timedrole.py:85
+#: ../timedrole.py:79
 msgid "An unknown member"
 msgstr ""
 
-#: ../timedrole.py:94
+#: ../timedrole.py:88
 msgid "Page {}/{}"
 msgstr ""
 
-#: ../timedrole.py:95
+#: ../timedrole.py:89
 msgid "Timed Roles"
 msgstr ""
 
-#: ../timedrole.py:129
+#: ../timedrole.py:123
 msgid "Added role(s) {roles} to member **{member}** for **{duration}** successfully."
 msgstr ""
 
-#: ../timedrole.py:138
+#: ../timedrole.py:132
 msgid "Role removed by {}"
 msgstr ""
 
-#: ../timedrole.py:140
+#: ../timedrole.py:134
 msgid "Removed all timed roles from member **{}**"
 msgstr ""
 
-#: ../timedrole.py:142
+#: ../timedrole.py:136
 msgid "Removed roles {} from member **{}**"
 msgstr ""
 

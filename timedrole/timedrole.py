@@ -12,10 +12,7 @@ from redbot.core.utils.chat_formatting import warning, bold
 
 from timedrole.role import TempRole
 
-from cog_shared.odinair_libs.formatting import chunks, tick
-from cog_shared.odinair_libs.commands import fmt
-from cog_shared.odinair_libs.time import FutureTime, td_format
-from cog_shared.odinair_libs.menus import PaginateMenu
+from cog_shared.odinair_libs import chunks, tick, fmt, FutureTime, td_format, PaginateMenu
 
 _ = CogI18n("TimedRole", __file__)
 
@@ -24,7 +21,6 @@ class TimedRole:
     """Give users roles for a set amount of time"""
 
     __author__ = "odinair <odinair@odinair.xyz>"
-    __version__ = "2.0.0"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -36,18 +32,15 @@ class TimedRole:
 
     async def _handle_roles(self):
         await self.bot.wait_until_ready()
-        await sleep(2)
         while True:
-            roles = await TempRole.all_roles()
-            for role in roles:
+            for role in await TempRole.all_roles():
                 if role.role not in role.member.roles:
                     await role.apply_role(reason=_("Re-applying missing timed role"))
             await sleep(60)
 
     # noinspection PyMethodMayBeStatic
     async def on_member_join(self, member: discord.Member):
-        roles = await TempRole.all_roles(member.guild, member)
-        for role in roles:
+        for role in await TempRole.all_roles(member.guild, member):
             await role.apply_role(reason=_("Re-applying timed role after member re-join"))
 
     @commands.group()
@@ -62,7 +55,7 @@ class TimedRole:
     @timedrole.command(name="list")
     async def timedrole_list(self, ctx: RedContext):
         """List all active timed roles"""
-        roles = list(chunks(await TempRole.all_roles(guild=ctx.guild), 4))
+        roles = list(chunks(await TempRole.all_roles(ctx.guild), 4))
         if not roles:
             await ctx.send(warning(_("This guild has no currently active timed roles")))
             return
@@ -100,7 +93,7 @@ class TimedRole:
 
     @timedrole.command(name="add")
     async def timedrole_add(self, ctx: RedContext, member: discord.Member,
-                            duration: FutureTime.converter(strict=True, min_duration=5*60),
+                            duration: FutureTime.converter(strict=True, min_duration=2 * 60),
                             *roles: discord.Role):
         """Add one or more roles to a user for a set amount of time.
 
@@ -113,12 +106,12 @@ class TimedRole:
 
         One month is counted as 30 days, and one year is counted as 365 days. All invalid abbreviations are ignored.
 
-        Minimum duration for a timed role is five minutes; maximum duration is two years.
+        Minimum duration for a timed role is two minutes.
 
-        Any roles that are above the author or the bots top role are silently ignored.
+        Any roles that are above the top role of either the command issuer or the bot are silently filtered out.
         """
         roles = [x for x in roles if not any([x in member.roles, x >= ctx.author.top_role, x >= ctx.me.top_role])]
-        if any([not roles, len(roles) > 10]):
+        if not roles or len(roles) > 10:
             await ctx.send_help()
             return
 
