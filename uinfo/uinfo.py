@@ -15,7 +15,6 @@ class UInfo:
     """Yet another [p]userinfo variation"""
 
     __author__ = "odinair <odinair@odinair.xyz>"
-    __version__ = "1.0.0"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -48,7 +47,7 @@ class UInfo:
         if member.activity.type == discord.ActivityType.playing:
             game = _("\N{VIDEO GAME} Playing **{}**").format(member.activity.name)
         elif member.activity.type == discord.ActivityType.streaming:
-            game = _("\N{VIDEO CAMERA} Streaming **{}**").format(f"[{member.activity}]({member.activity.url})")
+            game = _("\N{VIDEO CAMERA} Streaming **{}**").format("[{0}]({0.url})".format(member.activity))
         elif member.activity.type == discord.ActivityType.listening:
             game = _("\N{MUSICAL NOTE} Listening to **{}**").format(member.activity.name)
             if isinstance(member.activity, discord.Spotify):
@@ -85,11 +84,11 @@ class UInfo:
         if colour == discord.Colour.default():
             colour = discord.Embed.Empty
 
-        description = f"\N{EARTH GLOBE AMERICAS} {self.get_status(user)}"
+        description = "\N{EARTH GLOBE AMERICAS} " + self.get_status(user)
 
         activity = self.get_activity(user)
         if activity is not None:
-            description += f"\n{activity}"
+            description += "\n" + activity
         if user.nick:
             description += _("\n\N{LABEL} Nicknamed as {}").format(bold(escape(user.nick, formatting=True)))
 

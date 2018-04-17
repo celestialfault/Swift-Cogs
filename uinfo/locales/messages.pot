@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2018-04-07 22:36-0600\n"
+"POT-Creation-Date: 2018-04-17 12:04-0600\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -15,82 +15,78 @@ msgstr ""
 "Generated-By: pygettext.py 1.5\n"
 
 
-#: ../uinfo.py:29
+#: ../uinfo.py:28
 msgid "🛠 **Bot Owner**"
 msgstr ""
 
-#: ../uinfo.py:32
+#: ../uinfo.py:31
 msgid "🔑 Guild Owner"
 msgstr ""
 
-#: ../uinfo.py:34
+#: ../uinfo.py:33
 msgid "🔨 Server Administrator"
 msgstr ""
 
-#: ../uinfo.py:36
+#: ../uinfo.py:35
 msgid "🛡 Server Moderator"
 msgstr ""
 
-#: ../uinfo.py:38
+#: ../uinfo.py:37
 msgid "👥 Server Member"
 msgstr ""
 
-#: ../uinfo.py:49
+#: ../uinfo.py:48
 msgid "🎮 Playing **{}**"
 msgstr ""
 
-#: ../uinfo.py:51
+#: ../uinfo.py:50
 msgid "📹 Streaming **{}**"
 msgstr ""
 
-#: ../uinfo.py:53
+#: ../uinfo.py:52
 msgid "🎵 Listening to **{}**"
 msgstr ""
 
-#: ../uinfo.py:55
+#: ../uinfo.py:54
 msgid "🎵 Listening to **{}** — **{}** on **Spotify**"
 msgstr ""
 
-#: ../uinfo.py:58
+#: ../uinfo.py:57
 msgid "📽 Watching **{}**"
 msgstr ""
 
-#: ../uinfo.py:66
+#: ../uinfo.py:65
 msgid "Online"
 msgstr ""
 
-#: ../uinfo.py:68
+#: ../uinfo.py:67
 msgid "Idle"
 msgstr ""
 
-#: ../uinfo.py:70
+#: ../uinfo.py:69
 msgid "Do Not Disturb"
 msgstr ""
 
-#: ../uinfo.py:72
+#: ../uinfo.py:71
 msgid "Offline"
 msgstr ""
 
-#: ../uinfo.py:94
+#: ../uinfo.py:93
 msgid ""
 "\n"
 "🏷 Nicknamed as {}"
 msgstr ""
 
-#: ../uinfo.py:98
+#: ../uinfo.py:97
 msgid "Member #{} | User ID: {}"
 msgstr ""
 
-#: ../uinfo.py:102
+#: ../uinfo.py:101
 msgid "Bot Roles"
 msgstr ""
 
 #: ../uinfo.py:105
 msgid "Guild Roles"
-msgstr ""
-
-#: ../uinfo.py:105
-msgid "None"
 msgstr ""
 
 #: ../uinfo.py:107
