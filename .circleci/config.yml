@@ -30,4 +30,4 @@ jobs:
           command: |
             . venv/bin/activate
             python3 odinair_libs/test_compile.py
-            flake8 --exclude venv --max-line-length 120 --show-source --statistics
+            flake8 --exclude venv --max-line-length 120 --show-source --statistics --ignore F401
