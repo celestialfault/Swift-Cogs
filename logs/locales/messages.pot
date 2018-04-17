@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2018-04-06 16:50-0600\n"
+"POT-Creation-Date: 2018-04-17 13:33-0600\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -15,109 +15,116 @@ msgstr ""
 "Generated-By: pygettext.py 1.5\n"
 
 
-#: ../core/logentry.py:45
+#: ../core/logentry.py:48
 msgid ""
 "**Before:** {before}\n"
 "**After:** {after}"
 msgstr ""
 
-#: ../core/module.py:203 ../core/module.py:215 ../modules/guild.py:38
-#: ../modules/guild.py:39
-msgid "Disabled"
+#: ../core/module.py:168
+msgid "Logging is disabled"
 msgstr ""
 
-#: ../core/module.py:205
-msgid "Webhook"
+#: ../core/module.py:170
+msgid "Logging via webhook"
 msgstr ""
 
-#: ../core/module.py:207
-msgid "Channel {}"
+#: ../core/module.py:172
+msgid "Logging to channel {channel}"
 msgstr ""
 
-#: ../core/module.py:210
-msgid "Logging"
+#: ../core/module.py:177
+msgid "{friendly_name} Logging Module"
 msgstr ""
 
-#: ../core/module.py:211
-msgid "{} module settings"
-msgstr ""
-
-#: ../core/module.py:212 ../modules/guild.py:38 ../modules/guild.py:39
+#: ../core/module.py:179 ../modules/guild.py:37 ../modules/guild.py:38
 msgid "Enabled"
 msgstr ""
 
-#: ../core/module.py:213
+#: ../core/module.py:180
 msgid "**None** — All of this module's options are disabled"
 msgstr ""
 
-#: ../core/module.py:216
+#: ../core/module.py:182 ../modules/guild.py:37 ../modules/guild.py:38
+msgid "Disabled"
+msgstr ""
+
+#: ../core/module.py:183
 msgid "**None** — All of this module's options are enabled"
 msgstr ""
 
-#: ../logs.py:67
+#: ../core/utils.py:16
+msgid "No description set"
+msgstr ""
+
+#: ../logs.py:64
 msgid "Would you like to enable the **{}** module?"
 msgstr ""
 
-#: ../logs.py:74
+#: ../logs.py:71
 msgid "What channel would you like to log to?"
 msgstr ""
 
-#: ../logs.py:88
+#: ../logs.py:85
 msgid "Would you like to setup logging options for module **{}**?"
 msgstr ""
 
-#: ../logs.py:93
+#: ../logs.py:90
 msgid "Please respond with a space-separated list of options you would like to enable"
 msgstr ""
 
-#: ../logs.py:98
+#: ../logs.py:95
 msgid "You can setup the options for this module later with `{prefix}logset module {module}`."
 msgstr ""
 
-#: ../logs.py:101
+#: ../logs.py:98
 msgid "You're all done!"
 msgstr ""
 
-#: ../logs.py:115 ../logs.py:157 ../logs.py:184
+#: ../logs.py:112 ../logs.py:153 ../logs.py:185
 msgid "That module could not be found"
 msgstr ""
 
-#: ../logs.py:121
+#: ../logs.py:118
 msgid "Any previously set webhook for module **{module}** has been cleared."
 msgstr ""
 
-#: ../logs.py:128
+#: ../logs.py:125
 msgid "I'm not authorized to manage webhooks in that channel"
 msgstr ""
 
-#: ../logs.py:146
+#: ../logs.py:142
 msgid "Module **{module}** will now log to {channel} via webhook."
 msgstr ""
 
-#: ../logs.py:163
+#: ../logs.py:156
+msgid "I'm not able to send messages in that channel"
+msgstr ""
+
+#: ../logs.py:161
 msgid "Module **{module}** will now log to {channel}"
 msgstr ""
 
-#: ../logs.py:166
+#: ../logs.py:164
 msgid "The log channel for module **{module}** has been cleared"
 msgstr ""
 
-#: ../logs.py:177
+#: ../logs.py:178
 msgid ""
 "Available modules:\n"
 "\n"
 "{modules}"
 msgstr ""
 
-#: ../logs.py:190
+#: ../logs.py:191
 msgid "Updated settings for module **{}**"
 msgstr ""
 
-#: ../logs.py:196
+#: ../logs.py:197
 msgid "Are you sure you want to reset this guild's log settings?"
 msgstr ""
 
-#: ../logs.py:200
+#: ../logs.py:201
 msgid "Guild log settings have been reset."
 msgstr ""
 
@@ -137,63 +144,63 @@ msgstr ""
 msgid "The category {channel} and it's subchannels are now ignored from logging"
 msgstr ""
 
-#: ../logs.py:244
+#: ../logs.py:243
 msgid "That member is already being ignored"
 msgstr ""
 
-#: ../logs.py:247
+#: ../logs.py:246
 msgid "Member **{member}** is now ignored from logging"
 msgstr ""
 
-#: ../logs.py:260 ../logs.py:277
+#: ../logs.py:258 ../logs.py:274
 msgid "That role is already being ignored"
 msgstr ""
 
-#: ../logs.py:263
+#: ../logs.py:261
 msgid "The role **{role}** is now ignored from logging"
 msgstr ""
 
-#: ../logs.py:280 ../logs.py:350
+#: ../logs.py:277 ../logs.py:342
 msgid "Members with the role **{role}** are no longer ignored from logging"
 msgstr ""
 
-#: ../logs.py:288
+#: ../logs.py:284
 msgid "Now ignoring the current guild"
 msgstr ""
 
-#: ../logs.py:308
+#: ../logs.py:303
 msgid "That channel isn't currently being ignored"
 msgstr ""
 
-#: ../logs.py:312
+#: ../logs.py:307
 msgid "The channel {channel} is no longer ignored from logging"
 msgstr ""
 
-#: ../logs.py:315
+#: ../logs.py:310
 msgid "The category {channel} and it's subchannels are no longer ignored from logging"
 msgstr ""
 
-#: ../logs.py:324
+#: ../logs.py:318
 msgid "That member isn't currently being ignored"
 msgstr ""
 
-#: ../logs.py:327
+#: ../logs.py:321
 msgid "Member **{member}** is no longer ignored from logging"
 msgstr ""
 
-#: ../logs.py:335 ../logs.py:347
+#: ../logs.py:328 ../logs.py:339
 msgid "That role isn't currently being ignored"
 msgstr ""
 
-#: ../logs.py:338
+#: ../logs.py:331
 msgid "The role **{role}** is no longer ignored from logging"
 msgstr ""
 
-#: ../logs.py:358
+#: ../logs.py:349
 msgid "No longer ignoring the current guild"
 msgstr ""
 
-#: ../modules/channel.py:8 ../modules/message.py:23 ../modules/message.py:34
+#: ../modules/channel.py:8 ../modules/message.py:28 ../modules/message.py:40
 msgid "Channel"
 msgstr ""
 
@@ -241,7 +248,7 @@ msgstr ""
 msgid "Channel Created"
 msgstr ""
 
-#: ../modules/channel.py:28 ../modules/channel.py:36 ../modules/channel.py:42
+#: ../modules/channel.py:28 ../modules/channel.py:37 ../modules/channel.py:43
 msgid "Channel ID: {}"
 msgstr ""
 
@@ -249,121 +256,121 @@ msgstr ""
 msgid "Channel `{}` was deleted"
 msgstr ""
 
-#: ../modules/channel.py:34
+#: ../modules/channel.py:35
 msgid "Unknown channel"
 msgstr ""
 
-#: ../modules/channel.py:35
+#: ../modules/channel.py:36
 msgid "Channel Deleted"
 msgstr ""
 
-#: ../modules/channel.py:41
+#: ../modules/channel.py:42
 msgid "Channel: {}"
 msgstr ""
 
-#: ../modules/channel.py:43
+#: ../modules/channel.py:44
 msgid "Channel Updated"
 msgstr ""
 
-#: ../modules/channel.py:49
+#: ../modules/channel.py:50
 msgid "Name"
 msgstr ""
 
-#: ../modules/channel.py:52
+#: ../modules/channel.py:53
 msgid "Category"
 msgstr ""
 
-#: ../modules/channel.py:53 ../modules/channel.py:54 ../modules/guild.py:43
-#: ../modules/guild.py:44 ../modules/member.py:59 ../modules/member.py:60
+#: ../modules/channel.py:54 ../modules/channel.py:55 ../modules/guild.py:42
+#: ../modules/guild.py:43 ../modules/member.py:59 ../modules/member.py:60
 #: ../modules/role.py:35 ../modules/role.py:76 ../modules/role.py:77
 msgid "None"
 msgstr ""
 
-#: ../modules/channel.py:58
+#: ../modules/channel.py:59
 msgid "Channel Topic"
 msgstr ""
 
-#: ../modules/channel.py:62
+#: ../modules/channel.py:63
 msgid "User Limit"
 msgstr ""
 
-#: ../modules/channel.py:66
+#: ../modules/channel.py:67
 msgid "Bitrate"
 msgstr ""
 
-#: ../modules/channel.py:71
+#: ../modules/channel.py:72
 msgid "Channel Position"
 msgstr ""
 
-#: ../modules/guild.py:13
+#: ../modules/guild.py:12
 msgid "Guild"
 msgstr ""
 
-#: ../modules/guild.py:14
+#: ../modules/guild.py:13
 msgid "Guild update logging"
 msgstr ""
 
-#: ../modules/guild.py:16
+#: ../modules/guild.py:15
 msgid "Administration two-factor authentication requirement"
 msgstr ""
 
-#: ../modules/guild.py:18
+#: ../modules/guild.py:17
 msgid "How long members can be AFK in voice"
 msgstr ""
 
-#: ../modules/guild.py:19
+#: ../modules/guild.py:18
 msgid "The voice channel AFK members will be moved to"
 msgstr ""
 
-#: ../modules/guild.py:21
+#: ../modules/guild.py:20
 msgid "Guild name"
 msgstr ""
 
-#: ../modules/guild.py:22
+#: ../modules/guild.py:21
 msgid "Guild ownership transfers"
 msgstr ""
 
-#: ../modules/guild.py:23
+#: ../modules/guild.py:22
 msgid "Voice server region"
 msgstr ""
 
-#: ../modules/guild.py:24
+#: ../modules/guild.py:23
 msgid "Explicit content filter"
 msgstr ""
 
-#: ../modules/guild.py:33
+#: ../modules/guild.py:32
 msgid "Guild Updated"
 msgstr ""
 
-#: ../modules/guild.py:34
+#: ../modules/guild.py:33
 msgid "Guild ID: {}"
 msgstr ""
 
-#: ../modules/guild.py:38
+#: ../modules/guild.py:37
 msgid "2FA Requirement"
 msgstr ""
 
-#: ../modules/guild.py:42
+#: ../modules/guild.py:41
 msgid "AFK Channel"
 msgstr ""
 
-#: ../modules/guild.py:47
+#: ../modules/guild.py:46
 msgid "AFK Timeout"
 msgstr ""
 
-#: ../modules/guild.py:52
+#: ../modules/guild.py:51
 msgid "Guild Name"
 msgstr ""
 
-#: ../modules/guild.py:55
+#: ../modules/guild.py:54
 msgid "Guild Owner"
 msgstr ""
 
-#: ../modules/guild.py:60
+#: ../modules/guild.py:59
 msgid "Voice Region"
 msgstr ""
 
-#: ../modules/guild.py:63
+#: ../modules/guild.py:62
 msgid "Content Filter"
 msgstr ""
 
@@ -443,52 +450,64 @@ msgstr ""
 msgid "Nickname"
 msgstr ""
 
-#: ../modules/message.py:10
+#: ../modules/message.py:13
 msgid "Message"
 msgstr ""
 
-#: ../modules/message.py:11
+#: ../modules/message.py:14
 msgid "Message edit and deletion logging"
 msgstr ""
 
-#: ../modules/message.py:13
+#: ../modules/message.py:16
 msgid "Message edits"
 msgstr ""
 
-#: ../modules/message.py:14
+#: ../modules/message.py:17
 msgid "Message deletions"
 msgstr ""
 
-#: ../modules/message.py:20
-msgid "Message Edited"
-msgstr ""
-
-#: ../modules/message.py:21 ../modules/message.py:31
-msgid "Message ID: {}"
-msgstr ""
-
-#: ../modules/message.py:22 ../modules/message.py:32
-msgid "Message Author"
+#: ../modules/message.py:18
+msgid "Bulk message deletions"
 msgstr ""
 
 #: ../modules/message.py:24
-msgid "Content Diff"
+msgid "Message Edited"
+msgstr ""
+
+#: ../modules/message.py:25 ../modules/message.py:37
+msgid "Message ID: {}"
+msgstr ""
+
+#: ../modules/message.py:26 ../modules/message.py:38
+msgid "Message Author"
 msgstr ""
 
 #: ../modules/message.py:30
+msgid "Content Diff"
+msgstr ""
+
+#: ../modules/message.py:36
 msgid "Message Deleted"
 msgstr ""
 
-#: ../modules/message.py:35
+#: ../modules/message.py:42
 msgid "Content"
 msgstr ""
 
-#: ../modules/message.py:35
+#: ../modules/message.py:42
 msgid "No message content"
 msgstr ""
 
-#: ../modules/message.py:37
+#: ../modules/message.py:44
 msgid "Attachments"
+msgstr ""
+
+#: ../modules/message.py:54
+msgid "{count} message(s) were deleted from channel {channel}"
+msgstr ""
+
+#: ../modules/message.py:56
+msgid "Message Bulk Deletion"
 msgstr ""
 
 #: ../modules/role.py:10

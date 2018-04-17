@@ -1,9 +1,9 @@
 import collections
-from typing import List, Dict, Any
+from typing import List, Dict
 
 from logs.core.i18n import _
 
-__all__ = ('add_descriptions',)
+__all__ = ('add_descriptions', 'replace_dict_items')
 
 
 def add_descriptions(items: List[str], descriptions: Dict[str, str] = None) -> str:
@@ -11,11 +11,14 @@ def add_descriptions(items: List[str], descriptions: Dict[str, str] = None) -> s
         descriptions = {}
     for item in items:
         index = items.index(item)
-        items[index] = f"**{item}** \N{EM DASH} {descriptions.get(item, _('No description set'))}"
+        items[index] = "**{}** \N{EM DASH} {}".format(
+            item,
+            descriptions.get(item, _('No description set'))
+        )
     return "\n".join(items)
 
 
-def replace_dict_items(dct: dict, replace_with: Any):
+def replace_dict_items(dct: dict, replace_with):
     new = []
     for key, item in dct.items():
         if isinstance(item, collections.MutableMapping):

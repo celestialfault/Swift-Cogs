@@ -1,10 +1,13 @@
 {
   "author": ["odinair"],
   "bot_version": [3, 0, 0],
-  "min_python_version": [3, 6, 0],
+  "min_python_version": [3, 5, 1],
   "description": "Log anything and everything that happens in your Discord guild.\n\nInspired by Paddo's Grenzpolizei, created for more fine-tuned control of what and how data gets logged.",
   "short": "Log anything and everything that happens in your Discord guild",
   "type": "COG",
-  "tags": ["moderation", "utility"],
-  "install_msg": "Hello!~ Thank you for installing one of my cogs.\nIf you experience any problems, please open an issue: <https://github.com/notodinair/Swift-Cogs/issues/new>\n\n~ Emma (odinair) 💜"
+  "tags": [
+    "moderation",
+    "utility"
+  ],
+  "install_msg": "Hello!~ Thank you for installing one of my cogs.\nIf you experience any problems, please open an issue: <https://github.com/notodinair/Swift-Cogs/issues/new>\n\n~ odinair 💜"
 }

@@ -12,18 +12,21 @@ from logs.core.i18n import _
 class LogEntry(discord.Embed):
     def __init__(self, **kwargs):
         self.require_fields = kwargs.pop('require_fields', True)
+        self.ignore_fields = kwargs.pop('ignore_fields', [])  # these fields are ignored when checking `require_fields`
         kwargs['timestamp'] = kwargs.pop('timestamp', datetime.utcnow())
         super().__init__(**kwargs)
-        self._differ = Differ()
 
     @property
     def is_valid(self):
-        return self.fields or (self.description and not self.require_fields)
+        return any([
+            [x for x in self.fields if x.name not in self.ignore_fields],
+            self.description and not self.require_fields
+        ])
 
-    async def send(self, channel: Union[discord.TextChannel, discord.Webhook], **kwargs):
+    async def send(self, send_to: discord.abc.Messageable, **kwargs):
         if not self.is_valid:
             return
-        await channel.send(embed=self, **kwargs)
+        await send_to.send(embed=self, **kwargs)
 
     def add_differ_field(self, *, name: str, before: Union[List[str], str], after: Union[List[str], str]):
         if isinstance(before, str):
@@ -31,7 +34,7 @@ class LogEntry(discord.Embed):
         if isinstance(after, str):
             after = after.splitlines()
 
-        changed = self._differ.compare(before, after)
+        changed = Differ().compare(before, after)
         if not changed:
             return self
         return self.add_field(name=name, value=box("\n".join(changed), lang="diff"))

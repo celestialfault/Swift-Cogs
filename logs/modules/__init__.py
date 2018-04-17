@@ -13,11 +13,11 @@ __all__ = [
     "ChannelModule", "all_modules"
 ]
 
-all_modules: Dict[str, Type[Module]] = {
+all_modules = {
     "voice": VoiceModule,
     "guild": GuildModule,
     "role": RoleModule,
     "message": MessageModule,
     "member": MemberModule,
     "channel": ChannelModule
-}
+}  # type: Dict[str, Type[Module]]
