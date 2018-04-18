@@ -28,7 +28,7 @@ class UInfo:
             msgs.append(_("\N{HAMMER AND WRENCH} **Bot Owner**"))
 
         if member.guild.owner.id == member.id:
-            msgs.append(_("\N{KEY} Guild Owner"))
+            msgs.append(_("\N{KEY} Server Owner"))
         elif await self.bot.is_admin(member):
             msgs.append(_("\N{HAMMER} Server Administrator"))
         elif await self.bot.is_mod(member):
@@ -96,16 +96,14 @@ class UInfo:
         embed.set_thumbnail(url=user.avatar_url)
         embed.set_footer(text=_("Member #{} | User ID: {}").format(member_number, user.id))
 
-        bot_roles = await self.get_bot_role(user)
-        if bot_roles is not None:
-            embed.add_field(name=_("Bot Roles"), value=bot_roles, inline=False)
+        embed.add_field(name=_("Bot Roles"), value=await self.get_bot_role(user), inline=False)
 
-        roles = reversed([escape(x.name, formatting=True) for x in user.roles if not x.is_default()])
-        if ", ".join(roles):
-            embed.add_field(name=_("Guild Roles"), value=", ".join(roles), inline=False)
+        roles = [x for x in user.roles if not x.is_default()]
+        roles = ", ".join(reversed([str(x) for x in roles] if roles else [_("None")]))
+        embed.add_field(name=_("Server Roles"), value=roles, inline=False)
 
         embed.add_field(name=_("Joined Discord"), value=since_created, inline=False)
-        embed.add_field(name=_("Joined Guild"), value=since_joined, inline=False)
+        embed.add_field(name=_("Joined Server"), value=since_joined, inline=False)
         await ctx.send(embed=embed)
 
     @commands.command(name="avatar")
