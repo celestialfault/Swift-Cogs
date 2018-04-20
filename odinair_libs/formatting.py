@@ -1,11 +1,15 @@
 import collections
-from typing import Iterable, Tuple, Dict, Union
+from typing import Iterable, Tuple, Dict, Union, List
 
-import discord
+__all__ = ("difference", "normalize", "tick", "chunks", "flatten", "trim_to", "simple_table")
 
-from redbot.core.bot import Red
 
-__all__ = ("difference", "normalize", "attempt_emoji", "tick", "chunks", "flatten", "trim_to")
+def simple_table(l1: List[str], l2: List):
+    # this is actually just two space-separated joined lists, not even a proper table lol
+    if len(l1) != len(l2):
+        raise ValueError('length of l1 and l2 are not equal')
+    max_len = max([len(x) for x in l1])
+    return ["{}{}{}".format(x, ' ' * ((max_len - len(x)) + 2), l2[l1.index(x)]) for x in l1]
 
 
 def trim_to(text: str, max_len: int):
@@ -27,34 +31,6 @@ def flatten(d, parent_key='', *, sep='_'):  # https://stackoverflow.com/a/602761
 
 def tick(text: str):
     return "\N{WHITE HEAVY CHECK MARK} {}".format(text)
-
-
-def attempt_emoji(bot: Red, fallback: str, guild: discord.Guild = None, **kwargs):
-    """Attempt to get an emoji from all guilds the bot is in or from a specific guild
-
-    Parameters
-    -----------
-    bot: Red
-        The Red bot instance
-    fallback: str
-        A fallback string to return if neither emoji_id nor emoji_id resolves
-    guild: discord.Guild
-        A guild to search instead of attempting all emojis the bot has access to
-    **kwargs
-        Any additional keyword arguments that can be used to find a specific emoji
-
-        An example would be `animated=False` to only find static emojis
-
-    Returns
-    --------
-    discord.Emoji
-        A resolved Emoji
-    str
-        The fallback string if neither ``emoji_id`` nor ``emoji_name`` resolve
-    """
-    if not kwargs.keys():
-        raise TypeError('expected at least one keyword argument, received none')
-    return discord.utils.get((guild or bot).emojis, **kwargs) or fallback
 
 
 def difference(list1: Iterable, list2: Iterable, *, check_val: bool = False, return_dict: bool = False)\

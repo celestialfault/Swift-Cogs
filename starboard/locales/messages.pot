@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2018-04-17 12:04-0600\n"
+"POT-Creation-Date: 2018-04-18 10:21-0600\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -19,45 +19,45 @@ msgstr ""
 msgid "This guild has no starboard channel setup"
 msgstr ""
 
-#: ../starboard.py:64 ../starboard.py:98 ../starboard.py:110
+#: ../starboard.py:62 ../starboard.py:96 ../starboard.py:108
 msgid "Sorry, I couldn't find that message."
 msgstr ""
 
-#: ../starboard.py:68
+#: ../starboard.py:66
 msgid "That message cannot be starred as it does not have any content or attachments"
 msgstr ""
 
-#: ../starboard.py:72 ../starboard.py:113
+#: ../starboard.py:70 ../starboard.py:111
 msgid "The author of that message has been blocked from using this guild's starboard"
 msgstr ""
 
-#: ../starboard.py:77
+#: ../starboard.py:75
 msgid ""
 "You've already starred that message\n"
 "\n"
 "(you can use `{}star remove` to remove your star)"
 msgstr ""
 
-#: ../starboard.py:84
+#: ../starboard.py:82
 msgid "You cannot star your own messages"
 msgstr ""
 
-#: ../starboard.py:86
-msgid "Failed to add star — `{}`"
+#: ../starboard.py:84
+msgid "Failed to add star"
 msgstr ""
 
-#: ../starboard.py:117
+#: ../starboard.py:115
 msgid ""
 "You haven't starred that message\n"
 "\n"
 "(you can use `{prefix}star` to star it)"
 msgstr ""
 
-#: ../starboard.py:123
+#: ../starboard.py:121
 msgid "Failed to remove star"
 msgstr ""
 
-#: ../starboard.py:137
+#: ../starboard.py:128
 msgid ""
 "Stats for member {member}:\n"
 "\n"
@@ -65,55 +65,55 @@ msgid ""
 "⮊ **{received}** stars received"
 msgstr ""
 
-#: ../starboard.py:144
+#: ../starboard.py:135
 msgid "Starboard Stats"
 msgstr ""
 
-#: ../starboard.py:163 ../starboard.py:177
+#: ../starboard.py:165 ../starboard.py:179
 msgid "That message either hasn't been starred, or it doesn't exist"
 msgstr ""
 
-#: ../starboard.py:166
+#: ../starboard.py:168
 msgid "That message is already hidden"
 msgstr ""
 
-#: ../starboard.py:169
+#: ../starboard.py:171
 msgid "The message sent by **{}** is now hidden."
 msgstr ""
 
-#: ../starboard.py:180
+#: ../starboard.py:182
 msgid "That message hasn't been hidden"
 msgstr ""
 
-#: ../starboard.py:183
+#: ../starboard.py:185
 msgid "The message sent by **{}** is no longer hidden."
 msgstr ""
 
-#: ../starboard.py:194 ../starboard.py:220
+#: ../starboard.py:196 ../starboard.py:222
 msgid "Bot accounts are always blocked from using the starboard, and cannot be manually blocked nor unblocked."
 msgstr ""
 
-#: ../starboard.py:198
+#: ../starboard.py:200
 msgid "You aren't allowed to block that member"
 msgstr ""
 
-#: ../starboard.py:209
+#: ../starboard.py:211
 msgid "That user is already blocked from using this guild's starboard"
 msgstr ""
 
-#: ../starboard.py:232
+#: ../starboard.py:234
 msgid "That user isn't blocked from using this guild's starboard"
 msgstr ""
 
-#: ../starboard.py:244
+#: ../starboard.py:246
 msgid "I couldn't find a message with that ID - has the message been deleted?"
 msgstr ""
 
-#: ../starboard.py:248
+#: ../starboard.py:250
 msgid "The starboard message for the message sent by **{}** has been updated"
 msgstr ""
 
-#: ../starboard.py:268
+#: ../starboard.py:270
 msgid ""
 "Are you sure you want to import your v2 instances data?\n"
 "\n"
@@ -124,130 +124,114 @@ msgid ""
 "Please click ✅ if you wish to continue."
 msgstr ""
 
-#: ../starboard.py:275
+#: ../starboard.py:277
 msgid "V2 Data Import"
 msgstr ""
 
-#: ../starboard.py:279
+#: ../starboard.py:281
 msgid "Import cancelled."
 msgstr ""
 
-#: ../starboard.py:281
+#: ../starboard.py:283
 msgid "Importing data... (this could take a while)"
 msgstr ""
 
-#: ../starboard.py:287
+#: ../starboard.py:289
 msgid ""
 "Motor is not installed; cannot import v2 data.\n"
 "\n"
 "Please use `{prefix}pipinstall motor` and restart your bot, and re-attempt the import."
 msgstr ""
 
-#: ../starboard.py:292
+#: ../starboard.py:294
 msgid "Successfully imported v2 data"
 msgstr ""
 
-#: ../starboard.py:306
+#: ../starboard.py:308
 msgid "Cog not loaded"
 msgstr ""
 
-#: ../starboard.py:307
+#: ../starboard.py:309
 msgid "Disabled"
 msgstr ""
 
-#: ../starboard.py:307
+#: ../starboard.py:309
 msgid "Enabled"
 msgstr ""
 
-#: ../starboard.py:310
+#: ../starboard.py:312
 msgid "None"
 msgstr ""
 
-#: ../starboard.py:310
+#: ../starboard.py:312
 msgid "Starboard channel: {}"
 msgstr ""
 
-#: ../starboard.py:311
+#: ../starboard.py:313
 msgid "Min # of stars: {}"
 msgstr ""
 
-#: ../starboard.py:312
+#: ../starboard.py:314
 msgid "RequireRole integration: {}"
 msgstr ""
 
-#: ../starboard.py:313
+#: ../starboard.py:315
 msgid "Can members self-star: {}"
 msgstr ""
 
-#: ../starboard.py:313
+#: ../starboard.py:315
 msgid "No"
 msgstr ""
 
-#: ../starboard.py:313
+#: ../starboard.py:315
 msgid "Yes"
 msgstr ""
 
-#: ../starboard.py:316
+#: ../starboard.py:318
 msgid "Starboard Settings"
 msgstr ""
 
-#: ../starboard.py:329
+#: ../starboard.py:331
 msgid "Members can now star their own messages"
 msgstr ""
 
-#: ../starboard.py:330
+#: ../starboard.py:332
 msgid "Members can no longer star their own messages"
 msgstr ""
 
-#: ../starboard.py:336
+#: ../starboard.py:338
 msgid "That channel isn't in this guild"
 msgstr ""
 
-#: ../starboard.py:340
+#: ../starboard.py:342
 msgid "Cleared the current starboard channel"
 msgstr ""
 
-#: ../starboard.py:342
+#: ../starboard.py:344
 msgid "Set the starboard channel to {}"
 msgstr ""
 
-#: ../starboard.py:348
+#: ../starboard.py:350
 msgid "The amount of stars must be a non-zero number"
 msgstr ""
 
-#: ../starboard.py:351
+#: ../starboard.py:353
 msgid "There aren't enough members in this guild to reach that amount of stars"
 msgstr ""
 
-#: ../starboard.py:365
+#: ../starboard.py:367
 msgid "That channel is already ignored from this guild's starboard"
 msgstr ""
 
-#: ../starboard.py:376
+#: ../starboard.py:378
 msgid "That channel isn't ignored from this guild's starboard"
 msgstr ""
 
-#: ../starboard.py:386
+#: ../starboard.py:388
 msgid "Now respecting RequireRole settings."
 msgstr ""
 
-#: ../starboard.py:388
+#: ../starboard.py:390
 msgid "No longer respecting RequireRole settings."
-msgstr ""
-
-#: ../starboardmessage.py:155
-msgid "The passed member already starred this message"
-msgstr ""
-
-#: ../starboardmessage.py:157 ../starboardmessage.py:174
-msgid "This messages author is blocked from this guild's starboard"
-msgstr ""
-
-#: ../starboardmessage.py:159 ../starboardmessage.py:176
-msgid "The passed member is blocked from this guild's starboard"
-msgstr ""
-
-#: ../starboardmessage.py:172
-msgid "The passed member hasn't starred this message"
 msgstr ""
 

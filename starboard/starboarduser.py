@@ -1,10 +1,11 @@
-from typing import Dict
+from typing import Tuple
 
 import discord
 
+from redbot.core.bot import Red
+
 from starboard.starboardguild import StarboardGuild
-from starboard.startype import StarType
-from starboard.base import StarboardBase
+from starboard.base import StarboardBase, get_starboard
 
 __all__ = ('StarboardUser',)
 
@@ -13,44 +14,39 @@ class StarboardUser(StarboardBase):
     def __init__(self, starboard: StarboardGuild, member: discord.Member):
         self.starboard = starboard
         self.member = member
-        self.guild = starboard.guild
 
-    @property
-    def guild_id(self):
-        return str(self.guild.id)
+    async def get_stats(self) -> Tuple[int, int]:
+        """Retrieve the current user's statistics in the current guild"""
 
-    def _stats(self, *, member: discord.Member):
-        # noinspection PyTypeChecker
-        return self.config.user(member)
+        messages = (await self.starboard.messages()).values()
 
-    async def get_stats(self, global_stats: bool = False) -> Dict[str, int]:
-        stats = await self._stats(member=self.member).all()
+        def validate_given(x):
+            # members who have given a message a star used to be stored in a 'members' variable,
+            # which may still exist instead of the current 'starrers'
+            starrers = x.get('starrers', x.get('members', []))
+            return self.member.id in starrers and not self.member.id == x.get('author_id', None)
 
-        if global_stats:
-            stats = {"given": sum([stats["given"][x] for x in stats.get("given", {})]),
-                     "received": sum([stats["received"][x] for x in stats.get("received", {})])}
-        else:
-            stats["given"] = stats["given"].get(self.guild_id, 0)
-            stats["received"] = stats["received"].get(self.guild_id, 0)
+        def validate_received(x):
+            return x.get('author_id', None) == self.member.id
 
-        return stats
+        given = len([x for x in messages if validate_given(x)])
+        received = sum([len([y for y in x.get('starrers', x.get('members', [])) if y != self.member.id])
+                        for x in messages if validate_received(x)])
 
-    async def increment(self, star_type: StarType, amount: int = 1):
-        if amount <= 0:
-            raise ValueError("amount is equal to or less than zero")
-        stats = dict(await self._stats(member=self.member).get_raw(str(star_type), default={}))
-        if self.guild_id not in stats:
-            stats[self.guild_id] = 0
-        stats[self.guild_id] += amount
-        await self._stats(member=self.member).set_raw(str(star_type), value=stats)
+        return given, received
 
-    async def decrement(self, star_type: StarType, amount: int = 1):
-        if amount <= 0:
-            raise ValueError("amount is equal to or less than zero")
-        stats = dict(await self._stats(member=self.member).get_raw(str(star_type), default={}))
-        if self.guild_id not in stats:
-            stats[self.guild_id] = 0
-        stats[self.guild_id] -= amount
-        if stats[self.guild_id] <= 0:
-            stats[self.guild_id] = 0
-        await self._stats(member=self.member).set_raw(str(star_type), value=stats)
+    @staticmethod
+    async def get_global_stats(bot: Red, user: discord.User) -> Tuple[int, int]:
+        """Retrieve the total statistics for all guilds that the current user is in"""
+        given = 0
+        received = 0
+
+        for guild in bot.guilds:
+            if user not in guild.members:
+                continue
+            guild = await get_starboard(guild)
+            guild_stats = await StarboardUser(guild, guild.get_member(user.id)).get_stats()
+            given += guild_stats[0]
+            received += guild_stats[1]
+
+        return given, received

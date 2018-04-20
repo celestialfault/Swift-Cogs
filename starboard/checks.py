@@ -12,9 +12,9 @@ def can_use_starboard():
         if not ctx.guild:
             return True
         _starboard = await base.get_starboard(ctx.guild)
-        if await _starboard.is_ignored(ctx.channel):
+        if _starboard.is_ignored(ctx.channel):
             return False
-        if await _starboard.is_ignored(ctx.author):
+        if _starboard.is_ignored(ctx.author):
             if await _starboard.bot.is_owner(ctx.author):
                 pass
             elif await _starboard.bot.is_mod(ctx.author):
@@ -28,7 +28,7 @@ def can_use_starboard():
 
 async def guild_has_starboard(ctx: RedContext):
     _starboard = await base.get_starboard(ctx.guild)
-    if await _starboard.starboard_channel() is None:
-        await ctx.send(warning(_("This guild has no starboard channel setup")))
+    if _starboard.channel is None:
+        await ctx.send(warning(_("This server has no starboard channel setup")))
         return False
     return True

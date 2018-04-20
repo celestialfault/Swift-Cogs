@@ -1,6 +1,4 @@
-checks:
-  similar-code:
-    enabled: false
+version: 2
 plugins:
   duplication:
     enabled: true
@@ -12,3 +10,14 @@ plugins:
     enabled: true
   pep8:
     enabled: true
+    config:
+      E521:
+        # > 'Okay: def foo(arg: int = 42):'
+        # > still warns about it, despite being pep8-compliant syntax
+        # > [visible confusion]
+        enabled: false
+      F401:
+        # some imports are used for type hints, and since codeclimate is still on py3.5,
+        # the py3.6 style variable type hinting isn't something that can be used, and as such
+        # other tools may see typing imports as unused
+        enabled: false

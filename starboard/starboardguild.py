@@ -13,6 +13,7 @@ from starboard.log import log
 
 from cog_shared.odinair_libs import IterQueue
 
+_janitors = {}  # type: Dict[int, asyncio.Task]
 __all__ = ('StarboardGuild',)
 
 
@@ -24,16 +25,14 @@ class StarboardGuild(StarboardBase):
         self._migration_lock = asyncio.Lock()
         self._cache = {}  # type: Dict[int, StarboardMessage]
         self._settings = None  # type: Dict[str, Any]
+        self._settings_changed = False
 
     def __repr__(self):
         return "<GuildStarboard guild={0!r} cache_size={1}>".format(self.guild, len(self._cache))
 
     async def init(self):
         log.debug("Initializing guild {}".format(self.guild.id))
-        await self.reload_settings()
-
-    async def reload_settings(self):
-        self._settings = await self.config.guild(self.guild).all()
+        await self._reload_settings()
 
     @property
     def guild_config(self) -> Group:
@@ -42,6 +41,108 @@ class StarboardGuild(StarboardBase):
     @property
     def messages(self) -> Group:
         return self.config.custom("MESSAGES", self.guild.id)
+
+    ###############################
+    #   Settings
+
+    @property
+    def min_stars(self):
+        return self._settings["min_stars"]
+
+    @min_stars.setter
+    def min_stars(self, min_stars: int):
+        if min_stars is self.min_stars:
+            return
+        self._settings["min_stars"] = min_stars
+        self._settings_changed = True
+
+    @property
+    def selfstar(self):
+        return self._settings["selfstar"]
+
+    @selfstar.setter
+    def selfstar(self, selfstar: bool):
+        self._settings["selfstar"] = selfstar
+        self._settings_changed = True
+
+    @property
+    def channel(self):
+        return self.bot.get_channel(self._settings["channel"])
+
+    @channel.setter
+    def channel(self, channel: Optional[discord.TextChannel]):
+        if channel and channel.guild.id != self.guild.id:
+            raise ValueError("The passed TextChannel is not in the current Guild")
+        self._settings["channel"] = getattr(channel, "id", None)
+        self._settings_changed = True
+        self.setup_janitor(overwrite=False)
+
+    @property
+    def ignored(self):
+        return self._settings["ignored"].copy()
+
+    async def _reload_settings(self):
+        self._settings = await self.config.guild(self.guild).all()
+
+    async def _save_settings(self):
+        if self._settings_changed:
+            await self.guild_config.set(self._settings)
+            self._settings_changed = False
+
+    ###############################
+    #   Janitor
+
+    @property
+    def janitor_task(self):
+        task = _janitors.get(self.guild.id, None)
+        if task and task.done():
+            try:
+                # noinspection PyArgumentList
+                exc = task.exception()
+                if exc:
+                    log.exception("Encountered exception in guild {} janitor task".format(self.guild.id), exc_info=exc)
+            except (asyncio.CancelledError, asyncio.InvalidStateError):
+                pass
+            del _janitors[self.guild.id]
+        return _janitors.get(self.guild.id, None)
+
+    def setup_janitor(self, overwrite: bool = False):
+        if self.janitor_task:
+            if overwrite is False:
+                return
+            _janitors.pop(self.guild.id).cancel()
+        log.debug("Setting up janitor task for guild {}".format(self.guild.id))
+        _janitors[self.guild.id] = self.bot.loop.create_task(self._janitor())
+
+    async def _janitor(self):
+        try:
+            while True:
+                await self.handle_queue()
+                await self.purge_cache()
+                await self._save_settings()
+                await asyncio.sleep(8)
+        except asyncio.CancelledError:
+            log.debug("Janitor for guild {} was cancelled; finishing message update queue & exiting"
+                      "".format(self.guild.id))
+            await self.handle_queue()
+            await self._save_settings()
+
+    ###############################
+    #   Queue management
+
+    async def handle_queue(self) -> None:
+        for item in self.update_queue:
+            if not isinstance(item, StarboardMessage):
+                continue
+            if not item.in_queue:
+                # Avoid re-updating messages if they've been updated before we got to them,
+                # or if they were in the Queue more than once
+                continue
+            await item.update_starboard_message()
+            await asyncio.sleep(0.5)
+
+    ###############################
+    #   Caching
 
     def is_cached(self, message: discord.Message) -> bool:
         return message.id in self._cache
@@ -69,16 +170,12 @@ class StarboardGuild(StarboardBase):
                 purged += 1
         return purged
 
-    async def handle_queue(self) -> None:
-        for item in self.update_queue:
-            if not isinstance(item, StarboardMessage):
-                continue
-            if not item.in_queue:
-                # Avoid re-updating messages if they've been updated before we got to them,
-                # or if they were in the Queue more than once
-                continue
-            await item.update_starboard_message()
-            await asyncio.sleep(0.5)
+    ###############################
+    #   Messages
+
+    @property
+    def message_cache(self):
+        return list(self._cache.values())
 
     async def get_message(self, *, message: discord.Message = None, message_id: int = None,
                           channel: discord.TextChannel = None, auto_create: bool = False,
@@ -116,87 +213,28 @@ class StarboardGuild(StarboardBase):
             return self._cache[message.id]
         return None
 
-    async def starboard_channel(self, channel: Optional[discord.TextChannel]=False) -> Optional[discord.TextChannel]:
-        if channel is not False:
-            if channel and channel.guild.id != self.guild.id:
-                raise ValueError("The passed TextChannel is not in the current Guild")
-            self._settings["channel"] = getattr(channel, "id", None)
-            await self.guild_config.channel.set(getattr(channel, "id", None))
-            await self.bot.get_cog("Starboard").create_janitor(self.guild, overwrite=False)
-        return self.bot.get_channel(self._settings["channel"])
+    ###############################
+    #   Ignores
 
-    async def requirerole(self, toggle: bool = None) -> bool:
-        if toggle is not None:
-            toggle = bool(toggle)
-            await self.guild_config.requirerole.set(toggle)
-            self._settings["requirerole"] = toggle
-        return self._settings["requirerole"]
-
-    async def selfstar(self, toggle: bool = None) -> bool:
-        if toggle is not None:
-            toggle = bool(toggle)
-            await self.guild_config.selfstar.set(toggle)
-            self._settings["selfstar"] = toggle
-        return self._settings["selfstar"]
-
-    async def min_stars(self, amount: int = None) -> Optional[int]:
-        if amount is not None:
-            if amount < 1:
-                raise ValueError("Amount must be at least one or greater")
-            await self.guild_config.min_stars.set(amount)
-            self._settings["min_stars"] = amount
-        return self._settings["min_stars"]
-
-    async def is_ignored(self, obj: Union[discord.TextChannel, discord.Member], *, check_reqrole: bool = False) -> bool:
+    def is_ignored(self, obj: Union[discord.TextChannel, discord.Member]) -> bool:
         if isinstance(obj, discord.Member):
             if obj.bot:  # implicitly block bots from using the starboard
                 return True
-            require_role = self.bot.get_cog("RequireRole")
-            if require_role:
-                if self._settings["requirerole"] and not await require_role.check(obj) and check_reqrole:
-                    return True
             return obj.id in self._settings["ignored"]["members"]
-        return obj.id in self._settings["ignored"]["channels"] or obj.id == getattr(await self.starboard_channel(),
-                                                                                    "id", None)
+        return obj.id in self._settings["ignored"]["channels"] or obj == self.channel
 
-    async def _append_list(self, *fields: str, value):
-        c = self.guild_config
-        for field in fields:
-            c = c.get_attr(field)
-        async with c() as lst:
-            if value in lst:
-                return
-            lst.append(value)
-        await self.reload_settings()
-
-    async def _rm_list(self, *fields: str, value):
-        c = self.guild_config
-        for field in fields:
-            c = c.get_attr(field)
-        async with c() as lst:
-            if value in lst:
-                return
-            lst.remove(value)
-        await self.reload_settings()
-
-    async def ignore(self, obj: Union[discord.TextChannel, discord.Member]):
-        if await self.is_ignored(obj, check_reqrole=False):
+    def ignore(self, obj: Union[discord.TextChannel, discord.Member]):
+        if self.is_ignored(obj):
             return False
-        if isinstance(obj, discord.TextChannel):
-            await self._append_list("ignored", "channels", value=obj.id)
-            return True
-        if isinstance(obj, discord.Member):
-            await self._append_list("ignored", "members", value=obj.id)
-            return True
-        return False
+        ignore_type = "members" if isinstance(obj, discord.Member) else "channels"
+        self._settings["ignored"][ignore_type].append(obj.id)
+        self._settings_changed = True
+        return True
 
-    async def unignore(self, obj: Union[discord.TextChannel, discord.Member]):
-        if not await self.is_ignored(obj, check_reqrole=False):
+    def unignore(self, obj: Union[discord.TextChannel, discord.Member]):
+        if not self.is_ignored(obj):
             return False
-        if isinstance(obj, discord.TextChannel):
-            await self._rm_list("ignored", "channels", value=obj.id)
-            return True
-        if isinstance(obj, discord.Member):
-            await self._rm_list("ignored", "members", value=obj.id)
-            return True
-        return False
+        ignore_type = "members" if isinstance(obj, discord.Member) else "channels"
+        self._settings["ignored"][ignore_type].remove(obj.id)
+        self._settings_changed = True
+        return True
