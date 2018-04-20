@@ -20,24 +20,24 @@ class VoiceModule(Module):
     }
 
     async def update(self, before: discord.VoiceState, after: discord.VoiceState, member: discord.Member):
-        embed = LogEntry(colour=discord.Colour.greyple())
+        embed = LogEntry(self, colour=discord.Colour.greyple())
         embed.set_author(name="Member Voice State Updated", icon_url=self.icon_uri(member))
         embed.description = _("Member: {}").format(member.mention)
         embed.set_footer(text=_("Member ID: {}").format(member.id))
 
-        if before.channel != after.channel and await self.is_opt_enabled("channel"):
-            embed.add_diff_field(name=_("Channel Changed"), before=str(before.channel), after=str(after.channel))
+        await embed.add_if_changed(name=_("Channel"), before=before.channel, after=after.channel,
+                                   config_opt=('channel',))
 
-        if before.self_mute != after.self_mute and await self.is_opt_enabled("mute", "self"):
-            embed.add_diff_field(name=_("Self Mute Status"), before=str(before.self_mute), after=str(after.self_mute))
+        await embed.add_if_changed(name=_("Self Mute"), before=before.self_mute, after=after.self_mute,
+                                   config_opt=('mute', 'self'))
 
-        if before.mute != after.mute and await self.is_opt_enabled("mute", "server"):
-            embed.add_diff_field(name=_("Server Mute Status"), before=str(before.mute), after=str(after.mute))
+        await embed.add_if_changed(name=_("Server Mute"), before=before.mute, after=after.mute,
+                                   config_opt=('mute', 'server'))
 
-        if before.self_deaf != after.self_deaf and await self.is_opt_enabled("deaf", "self"):
-            embed.add_diff_field(name=_("Self Deaf Status"), before=str(before.self_deaf), after=str(after.self_deaf))
+        await embed.add_if_changed(name=_("Self Deaf"), before=before.self_deaf, after=after.self_deaf,
+                                   config_opt=('deaf', 'self'))
 
-        if before.deaf != after.deaf and await self.is_opt_enabled("deaf", "server"):
-            embed.add_diff_field(name=_("Server Deaf Status"), before=str(before.deaf), after=str(after.deaf))
+        await embed.add_if_changed(name=_("Server Deaf"), before=before.deaf, after=after.deaf,
+                                   config_opt=('deaf', 'server'))
 
         return embed

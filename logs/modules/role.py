@@ -26,10 +26,10 @@ class RoleModule(Module):
         if not await self.is_opt_enabled("create"):
             return None
 
-        embed = LogEntry(colour=discord.Colour.green(), require_fields=False)
+        embed = LogEntry(self, colour=discord.Colour.green(), require_fields=False,
+                         description=_("Role: {}").format(role.mention))
         embed.set_author(name=_("Role Created"), icon_url=self.icon_uri())
         embed.set_footer(text=_("Role ID: {}").format(role.id))
-        embed.description = _("Role: {}").format(role.mention)
 
         embed.add_field(name=_("Colour"),
                         value=str(role.colour) if role.colour != discord.Colour.default() else _("None"), inline=True)
@@ -46,42 +46,34 @@ class RoleModule(Module):
         if not await self.is_opt_enabled("delete"):
             return None
 
-        embed = LogEntry(colour=discord.Colour.red(), require_fields=False)
+        embed = LogEntry(self, colour=discord.Colour.red(), require_fields=False,
+                         description=_("Role `{}` was deleted").format(role.name))
         embed.set_author(name=_("Role Deleted"), icon_url=self.icon_uri())
         embed.set_footer(text=_("Role ID: {}").format(role.id))
-        embed.description = _("Role `{}` was deleted").format(role.name)
         return embed
 
     async def update(self, before: discord.Role, after: discord.Role):
-        embed = LogEntry(colour=discord.Colour.blurple())
+        embed = LogEntry(self, colour=discord.Colour.blurple(), description=_("Role: {}").format(after.mention))
         embed.set_author(name=_("Role Updated"), icon_url=self.icon_uri())
         embed.set_footer(text=_("Role ID: {}").format(after.id))
-        embed.description = _("Role: {}").format(after.mention)
 
-        if before.name != after.name and await self.is_opt_enabled("update", "name"):
-            embed.add_diff_field(name=_("Role Name"), before=before.name, after=after.name)
+        await embed.add_if_changed(name=_("Name"), before=before.name, after=after.name, config_opt=('update', 'name'))
 
-        if before.mentionable != after.mentionable and await self.is_opt_enabled("update", "mentionable"):
-            embed.add_diff_field(name=_("Mentionable"),
-                                 before=_("Yes") if before.mentionable else _("No"),
-                                 after=_("Yes") if after.mentionable else _("No"))
+        await embed.add_if_changed(name=_("Mentionable"), before=before.mentionable, after=after.mentionable,
+                                   config_opt=('update', 'mentionable'))
 
-        if before.hoist != after.hoist and await self.is_opt_enabled("update", "hoist"):
-            embed.add_diff_field(name=_("Hoist"),
-                                 before=_("Yes") if before.hoist else _("No"),
-                                 after=_("Yes") if after.hoist else _("No"))
+        await embed.add_if_changed(name=_("Hoist"), before=before.hoist, after=after.hoist,
+                                   config_opt=('update', 'hoist'))
 
-        if before.colour != after.colour and await self.is_opt_enabled("update", "colour"):
-            embed.add_diff_field(name=_("Colour"),
-                                 before=str(before.colour) if before.colour != discord.Colour.default() else _("None"),
-                                 after=str(after.colour) if after.colour != discord.Colour.default() else _("None"))
+        await embed.add_if_changed(name=_("Colour"), before=before.colour, after=after.colour,
+                                   config_opt=('update', 'colour'),
+                                   converter=lambda x: str(x) if x != discord.Colour.default() else _("None"))
 
-        if before.permissions.value != after.permissions.value and await self.is_opt_enabled("update", "permissions"):
-            embed.add_differ_field(name=_("Permissions"),
+        await embed.add_if_changed(name=_("Permissions"), diff=True, config_opt=('update', 'permissions'),
                                    before=[normalize(x, guild="server") for x, y in before.permissions if y],
                                    after=[normalize(x, guild="server") for x, y in after.permissions if y])
 
-        if before.position != after.position and await self.is_opt_enabled("update", "position"):
-            embed.add_diff_field(name=_("Position"), before=before.position, after=after.position)
+        await embed.add_if_changed(name=_("Position"), before=before.position, after=after.position,
+                                   config_opt=('update', 'position'))
 
         return embed

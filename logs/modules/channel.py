@@ -22,7 +22,7 @@ class ChannelModule(Module):
 
     async def create(self, channel: discord.abc.GuildChannel):
         return (
-            LogEntry(colour=discord.Color.green(), require_fields=False,
+            LogEntry(self, colour=discord.Color.green(), require_fields=False,
                      description=_("Channel {} was created").format(channel.mention))
             .set_author(name=_("Channel Created"), icon_url=self.icon_uri())
             .set_footer(text=_("Channel ID: {}").format(channel.id))
@@ -30,7 +30,7 @@ class ChannelModule(Module):
 
     async def delete(self, channel: discord.abc.GuildChannel):
         return (
-            LogEntry(colour=discord.Color.red(), require_fields=False,
+            LogEntry(self, colour=discord.Color.red(), require_fields=False,
                      description=_("Channel `{}` was deleted").format(
                          getattr(channel, "name", _("Unknown channel"))))
             .set_author(name=_("Channel Deleted"), icon_url=self.icon_uri())
@@ -38,37 +38,30 @@ class ChannelModule(Module):
         ) if await self.is_opt_enabled("delete") else None
 
     async def update(self, before: discord.abc.GuildChannel, after: discord.abc.GuildChannel):
-        embed = (
-            LogEntry(colour=discord.Color.blurple(), description=_("Channel: {}").format(after.mention))
-            .set_footer(text=_("Channel ID: {}").format(after.id))
-            .set_author(name=_("Channel Updated"), icon_url=self.icon_uri())
-        )
+        embed = LogEntry(self, colour=discord.Color.blurple(), description=_("Channel: {}").format(after.mention))
+        embed.set_footer(text=_("Channel ID: {}").format(after.id))
+        embed.set_author(name=_("Channel Updated"), icon_url=self.icon_uri())
 
         # noinspection PyUnresolvedReferences
-        if before.name != after.name and await self.is_opt_enabled("update", "name"):
-            # noinspection PyUnresolvedReferences
-            embed.add_diff_field(name=_("Name"), before=before.name, after=after.name)
+        await embed.add_if_changed(name=_("Name"), before=before.name, after=after.name, config_opt=('update', 'name'))
 
-        if before.category != after.category and await self.is_opt_enabled("update", "category"):
-            embed.add_diff_field(name=_("Category"),
-                                 before=getattr(before.category, "mention", _("None")),
-                                 after=getattr(after.category, "mention", _("None")))
+        await embed.add_if_changed(name=_("Category"), before=before.category, after=after.category,
+                                   converter=lambda x: getattr(x, "mention", _("None")),
+                                   config_opt=('update', 'category'))
+
+        await embed.add_if_changed(name=_("Position"), before=before.position, after=after.position,
+                                   config_opt=('update', 'position'))
 
         if isinstance(before, discord.TextChannel) and isinstance(after, discord.TextChannel):
-            if before.topic != after.topic and await self.is_opt_enabled("update", "topic"):
-                embed.add_differ_field(name=_("Channel Topic"), before=before.topic, after=after.topic)
+            await embed.add_if_changed(name=_("Channel Topic"), before=before.topic, after=after.topic, diff=True,
+                                       config_opt=('update', 'topic'))
 
         elif isinstance(before, discord.VoiceChannel) and isinstance(after, discord.VoiceChannel):
-            if before.user_limit != after.user_limit and await self.is_opt_enabled("update", "userlimit"):
-                embed.add_diff_field(name=_("User Limit"), before=before.user_limit, after=after.user_limit)
+            await embed.add_if_changed(name=_("User Limit"), before=before.user_limit, after=after.user_limit,
+                                       config_opt=('update', 'userlimit'))
 
-            if before.bitrate != after.bitrate and await self.is_opt_enabled("update", "bitrate"):
-                # noinspection PyUnresolvedReferences
-                embed.add_diff_field(name=_("Bitrate"),
-                                     before=str(before.bitrate)[:4] + " kbps",
-                                     after=str(after.bitrate)[:4] + " kbps")
-
-        if before.position != after.position and await self.is_opt_enabled("update", "position"):
-            embed.add_diff_field(name=_("Channel Position"), before=before.position, after=after.position)
+            await embed.add_if_changed(name=_("Bitrate"), before=before.bitrate, after=after.bitrate,
+                                       converter=lambda x: "{} kbps".format(x[:4]),
+                                       config_opt=('update', 'bitrate'))
 
         return embed

@@ -26,7 +26,7 @@ class MemberModule(Module):
 
     async def join(self, member: discord.Member):
         return (
-            LogEntry(colour=discord.Color.green(), require_fields=False,
+            LogEntry(self, colour=discord.Color.green(), require_fields=False,
                      description=_("Member {} joined\n\nAccount was created {}").format(
                          member.mention, td_format(member.created_at - datetime.utcnow(), append_str=True)))
             .set_author(name=_("Member Joined"), icon_url=self.icon_uri(member))
@@ -35,32 +35,27 @@ class MemberModule(Module):
 
     async def leave(self, member: discord.Member):
         return (
-            LogEntry(colour=discord.Color.red(), require_fields=False,
+            LogEntry(self, colour=discord.Color.red(), require_fields=False,
                      description=_("Member {} left").format(member.mention))
             .set_author(name=_("Member Left"), icon_url=self.icon_uri(member))
             .set_footer(text=_("Member ID: {}").format(member.id))
         ) if await self.is_opt_enabled("leave") else None
 
     async def update(self, before: discord.Member, after: discord.Member):
-        embed = (
-            LogEntry(colour=discord.Color.blurple(), description=_("Member: {}").format(after.mention))
-            .set_author(name=_("Member Updated"), icon_url=self.icon_uri(after))
-            .set_footer(text=_("Member ID: {}").format(after.id))
-        )
+        embed = LogEntry(self, colour=discord.Color.blurple(), description=_("Member: {}").format(after.mention))
+        embed.set_author(name=_("Member Updated"), icon_url=self.icon_uri(after))
+        embed.set_footer(text=_("Member ID: {}").format(after.id))
 
-        if await self.has_changed(before.name, after.name, conf_setting=('update', 'name')):
-            embed.add_diff_field(name=_("Username"), before=before.name, after=after.name)
+        await embed.add_if_changed(name=_("Username"), before=before.name, after=after.name,
+                                   config_opt=('update', 'name'))
 
-        if await self.has_changed(before.discriminator, after.discriminator, conf_setting=('update', 'discriminator')):
-            embed.add_diff_field(name=_("Discriminator"), before=before.discriminator, after=after.discriminator)
+        await embed.add_if_changed(name=_("Discriminator"), before=before.discriminator, after=after.discriminator,
+                                   config_opt=('update', 'discriminator'))
 
-        if await self.has_changed(before.nick, after.nick, conf_setting=('update', 'nickname')):
-            embed.add_diff_field(name=_("Nickname"),
-                                 before=before.nick or inline(_("None")),
-                                 after=after.nick or inline(_("None")))
+        await embed.add_if_changed(name=_("Nickname"), before=before.nick, after=after.nick,
+                                   config_opt=('update', 'nickname'), converter=lambda x: x or inline(_("None")))
 
-        if await self.has_changed(before.roles, after.roles, conf_setting=('update', 'roles')):
-            embed.add_differ_field(name="Roles",
+        await embed.add_if_changed(name=_("Roles"), diff=True, config_opt=('update', 'roles'),
                                    before=[str(x) for x in before.roles if not x.is_default()],
                                    after=[str(x) for x in after.roles if not x.is_default()])
 

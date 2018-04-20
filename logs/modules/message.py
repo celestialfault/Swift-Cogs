@@ -1,7 +1,6 @@
 from typing import List
 
 import discord
-from discord.raw_models import RawBulkMessageDeleteEvent
 
 from redbot.core.utils.chat_formatting import inline
 
@@ -19,20 +18,24 @@ class MessageModule(Module):
     }
 
     async def edit(self, before: discord.Message, after: discord.Message):
-        return (
-            LogEntry(colour=discord.Colour.blurple(), ignore_fields=['Message Author', 'Channel'])
-            .set_author(name=_("Message Edited"), icon_url=self.icon_uri(after.author))
-            .set_footer(text=_("Message ID: {}").format(after.id))
-            .add_field(name=_("Message Author"), inline=True,
-                       value="{after.author.mention} ({after.author.id})".format(after=after))
-            .add_field(name=_("Channel"), inline=True,
-                       value="{after.channel.mention} ({after.channel.id})".format(after=after))
-            .add_differ_field(name=_("Content Diff"), before=before.content, after=after.content)
-        ) if all([await self.is_opt_enabled("edit"), before.content != after.content, not after.author.bot]) else None
+        if not await self.is_opt_enabled("edit"):
+            return None
+        if after.author.bot:
+            return None
+
+        embed = LogEntry(self, colour=discord.Colour.blurple(), ignore_fields=['Message Author', 'Channel'])
+        embed.set_author(name=_("Message Edited"), icon_url=self.icon_uri(after.author))
+        embed.set_footer(text=_("Message ID: {}").format(after.id))
+        embed.add_field(name=_("Message Author"), inline=True,
+                        value="{after.author.mention} ({after.author.id})".format(after=after))
+        embed.add_field(name=_("Channel"), inline=True,
+                        value="{after.channel.mention} ({after.channel.id})".format(after=after))
+        await embed.add_if_changed(name=_("Content Diff"), before=before.content, after=after.content, diff=True)
+        return embed
 
     async def delete(self, message: discord.Message):
         return (
-            LogEntry(colour=discord.Colour.red(), ignore_fields=['Message Author', 'Channel'])
+            LogEntry(self, colour=discord.Colour.red(), ignore_fields=['Message Author', 'Channel'])
             .set_author(name=_("Message Deleted"), icon_url=self.icon_uri(message.author))
             .set_footer(text=_("Message ID: {}").format(message.id))
             .add_field(name=_("Message Author"), inline=True,
@@ -50,7 +53,7 @@ class MessageModule(Module):
         if not message_ids:
             return None
         return (
-            LogEntry(colour=discord.Colour.dark_red(),
+            LogEntry(self, colour=discord.Colour.dark_red(),
                      description=_("{count} message(s) were deleted from channel {channel}").format(
                          count=len(message_ids), channel=channel.mention), require_fields=False)
             .set_author(name=_("Message Bulk Deletion"), icon_url=self.icon_uri())

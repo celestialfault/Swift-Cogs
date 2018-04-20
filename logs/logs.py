@@ -21,13 +21,29 @@ class Logs:
 
     __author__ = "odinair <odinair@odinair.xyz>"
 
-    defaults_guild = {
+    defaults_global = {
         **{
-            all_modules[x].name: {
+            x.name: {
                 "_log_channel": None,
                 "_webhook": None,
-                **all_modules[x](guild=None).defaults
-            } for x in all_modules
+                **x(guild=None).defaults
+            } for x in all_modules.values() if x(guild=None).is_global is True
+        },
+        "ignore": {
+            "channels": [],
+            "members": [],
+            "roles": [],
+            "member_roles": []
+        }
+    }
+
+    defaults_guild = {
+        **{
+            x.name: {
+                "_log_channel": None,
+                "_webhook": None,
+                **x(guild=None).defaults
+            } for x in all_modules.values() if x(guild=None).is_global is not True
         },
         "ignore": {
             "channels": [],
@@ -42,6 +58,7 @@ class Logs:
         self.bot = bot
         self.config = Config.get_conf(self, identifier=2401248235421, force_registration=False)
         self.config.register_guild(**self.defaults_guild)
+        self.config.register_global(**self.defaults_global)
         Module.config = self.config
         Module.bot = self.bot
         Module.session = ClientSession()
@@ -61,6 +78,8 @@ class Logs:
         """Quick-start for logging settings"""
         for module_name in all_modules.keys():
             module = get_module(module_id=module_name, guild=ctx.guild)
+            if not await module.can_modify_settings(ctx.author):
+                continue
             async with ConfirmMenu(ctx, message=_("Would you like to enable the **{}** module?").format(
                     module.friendly_name)) as result:
                 await module.module_config.clear()
@@ -112,6 +131,10 @@ class Logs:
             await ctx.send(warning(_("That module could not be found")))
             return
 
+        if not await module.can_modify_settings(ctx.author):
+            await ctx.send(error(_("You aren't authorized to modify this module's settings")))
+            return
+
         await module.module_config.set_raw("_log_channel", value=None)
         if channel is None:
             await module.module_config.set_raw("_webhook", value=None)
@@ -152,6 +175,9 @@ class Logs:
         if module is None:
             await ctx.send(warning(_("That module could not be found")))
             return
+        if not await module.can_modify_settings(ctx.author):
+            await ctx.send(error(_("You aren't authorized to modify this module's settings")))
+            return
         if channel and not channel.permissions_for(ctx.guild.me).send_messages:
             await ctx.send(warning(_("I'm not able to send messages in that channel")))
             return
@@ -168,8 +194,9 @@ class Logs:
     async def logset_modules(self, ctx: RedContext):
         """List all available modules"""
         modules = []
-        for module in all_modules:
-            module = all_modules[module]
+        for module in all_modules.values():
+            if not await module(ctx.guild).can_modify_settings(ctx.author):
+                continue
             # > expected type str, got type property instead
             # > ???????
             # noinspection PyTypeChecker
@@ -183,6 +210,9 @@ class Logs:
         module = get_module(module, guild=ctx.guild)
         if module is None:
             await ctx.send(warning(_("That module could not be found")))
+            return
+        if not await module.can_modify_settings(ctx.author):
+            await ctx.send(error(_("You aren't authorized to modify this module's settings")))
             return
         if not settings:
             await ctx.send(embed=await module.config_embed())

@@ -20,9 +20,9 @@ from cog_shared.odinair_libs import flatten
 log = logging.getLogger("red.odinair.logs")
 
 
-def get_module(module_id: str, guild: discord.Guild, *args, **kwargs) -> "Module":
+def get_module(module_id: str, *args, **kwargs) -> "Module":
     from logs.modules import all_modules
-    return all_modules[module_id.lower()](guild, *args, **kwargs)
+    return all_modules[module_id.lower()](*args, **kwargs)
 
 
 class Module(ABC):
@@ -65,6 +65,10 @@ class Module(ABC):
         raise NotImplementedError
 
     @property
+    def is_global(self) -> bool:
+        return False
+
+    @property
     def opt_keys(self) -> Iterable[str]:
         """Available config option keys. Sub-dicts are denoted by `:` separator characters."""
         return list(flatten(self.defaults, sep=":"))
@@ -81,14 +85,10 @@ class Module(ABC):
             "options": flatten(self.settings, sep=":")
         }
 
-    async def has_changed(self, *items, conf_setting: Tuple[str, ...] = None):
-        changed = False
-        for item in items:
-            for compare in items:
-                if item != compare:
-                    changed = True
-                    break
-        return changed and (await self.is_opt_enabled(*conf_setting) if conf_setting else True)
+    # noinspection PyMethodMayBeStatic
+    async def can_modify_settings(self, member: discord.Member):
+        """Return a boolean value if the given member can change the current module's settings"""
+        return member.guild.owner == member or member.guild_permissions.administrator
 
     async def is_opt_enabled(self, *opts: str):
         return await self.get_config_value(*opts)()
@@ -102,11 +102,13 @@ class Module(ABC):
     @property
     def module_config(self) -> Group:
         """Retrieve the current guilds module config group"""
-        return self.guild_config.get_attr(self.name)
+        return self.root_config.get_attr(self.name)
 
     @property
-    def guild_config(self):
+    def root_config(self):
         """Retrieve the current guilds scoped config group"""
+        if self.is_global is True:
+            return self.config
         return self.config.guild(self.guild)
 
     async def log_destination(self) -> Optional[Union[discord.TextChannel, discord.Webhook]]:
@@ -127,6 +129,8 @@ class Module(ABC):
     def icon_uri(self, member: discord.Member = None):
         """Helper function for embed icon_url fields"""
         if member is None:
+            if self.is_global:
+                return self.bot.user.avatar_url_as(format="png")
             return self.guild.icon_url_as(format="png")
         return member.avatar_url_as(format="png")
 
@@ -139,6 +143,7 @@ class Module(ABC):
         keys = {}  # type: Dict[Tuple[str, ...], Optional[bool]]
         for x in opts:
             # This could probably be done in a better way without regex, but this was the cleaner method
+            # as opposed to heavily using .split(s)[i]
             match = self._TOGGLE_REGEX.match(x)
             val = match.group('VALUE')
             if val is not None:
@@ -212,6 +217,8 @@ class Module(ABC):
             raise ValueError('fn_name is not a valid identifier')
 
         dest = await self.log_destination()
+        log.debug("log exec: {}.log({!r})  # destination={!r}".format(self.__class__.__name__, fn_name, dest))
+
         if dest is None or await self.is_ignored(*args, **kwargs):
             return
 
@@ -224,9 +231,9 @@ class Module(ABC):
             if not embed:
                 continue
             try:
-                await embed.send(dest, **({"avatar_url": self.bot.user.avatar_url_as(format="png"),
-                                           "username": self.bot.user.name}
-                                          if isinstance(dest, discord.Webhook) else {}))
+                kwargs = {"avatar_url": self.bot.user.avatar_url_as(format="png"), "username": self.bot.user.name}\
+                    if isinstance(dest, discord.Webhook) else {}
+                await embed.send(dest, **kwargs)
             except discord.HTTPException as e:
                 if e.status == 400:
                     # don't ignore bad request exceptions, as this can indicate
@@ -249,28 +256,27 @@ class Module(ABC):
         If the current guild is ignored, then only the module's guild is returned, and not the items passed
         """
         args = args + tuple(kwargs.values())
-        check = [*args, self.guild]
-        if await self.guild_config.ignore.guild():
+        if not self.is_global and await self.root_config.ignore.guild():
             return [self.guild]
 
         ignored = []
-        for x in check:
+        for x in args:
             if await self._check(x):
                 ignored.append(x)
         return ignored
 
     async def _check(self, item) -> bool:
         if isinstance(item, discord.Member):
-            ignore_roles = await self.guild_config.ignore.member_roles()
-            return any([item.bot, item.id in await self.guild_config.ignore.members(),
+            ignore_roles = await self.root_config.ignore.member_roles()
+            return any([item.bot, item.id in await self.root_config.ignore.members(),
                         *[x.id in ignore_roles for x in item.roles]])
         elif isinstance(item, discord.abc.GuildChannel):
-            ignore = await self.guild_config.ignore.channels()
+            ignore = await self.root_config.ignore.channels()
             return any([item.id in ignore, getattr(item.category, "id", None) in ignore])
         elif isinstance(item, discord.Role):
-            return item.id in await self.guild_config.ignore.roles()
+            return item.id in await self.root_config.ignore.roles()
         elif isinstance(item, discord.VoiceState):
-            return getattr(item.channel, "id", None) in await self.guild_config.ignore.channels()
+            return getattr(item.channel, "id", None) in await self.root_config.ignore.channels()
         elif isinstance(item, discord.Message):
             return any([await self._check(item.author), await self._check(item.channel)])
 
