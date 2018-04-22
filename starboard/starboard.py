@@ -147,6 +147,27 @@ class Starboard(StarboardBase):
         """Retrieve your or the specified member's statistics across *all* guilds"""
         await self._send_stats(ctx, await StarboardUser.get_global_stats(self.bot, member or ctx.author), member)
 
+    @star.command(name="leaderboard")
+    async def star_leaderboard(self, ctx: RedContext):
+        """Retrieve the star leaderboard for the current guild"""
+        given, received = await StarboardUser.leaderboard(ctx.guild)
+        given, received = (list(given.items())[:10], list(received.items())[:10])
+
+        if not given or not received:
+            await ctx.send(warning(_("No one has any recorded stars yet! Go star some messages first!")))
+            return
+
+        fmt_str = "{member} \N{EM DASH} **{stars}** \N{WHITE MEDIUM STAR}"
+
+        given = "\n".join([fmt_str.format(member=x.mention, stars=y) for x, y in given])
+        received = "\n".join([fmt_str.format(member=x.mention, stars=y) for x, y in received])
+
+        embed = discord.Embed(colour=ctx.me.colour)
+        embed.set_author(name=_("Leaderboard"), icon_url=ctx.guild.icon_url)
+        embed.add_field(name=_("Stars Given"), value=given)
+        embed.add_field(name=_("Stars Received"), value=received)
+        await ctx.send(embed=embed)
+
     ####################
     #   [p]stars
 
@@ -192,8 +213,7 @@ class Starboard(StarboardBase):
 
         Bot accounts are always blocked from using the starboard, and cannot be manually blocked.
 
-        For ignoring a channel from the starboard, see `[p]starboard ignore`
-        """
+        For ignoring a channel from the starboard, see `[p]starboard ignore`"""
         if member.bot:
             await ctx.send(warning(_("Bot accounts are always blocked from using the starboard, "
                                      "and cannot be manually blocked nor unblocked.")))
@@ -218,8 +238,7 @@ class Starboard(StarboardBase):
 
         Bot accounts are always blocked from using the starboard, and cannot be manually unblocked.
 
-        For unignoring a channel from the starboard, see `[p]starboard unignore`
-        """
+        For unignoring a channel from the starboard, see `[p]starboard unignore`"""
         if member.bot:
             await ctx.send(warning(_("Bot accounts are always blocked from using the starboard, "
                                      "and cannot be manually blocked nor unblocked.")))
@@ -240,8 +259,7 @@ class Starboard(StarboardBase):
         """Forcefully update a starboard message
 
         `message_id` should be the corresponding message that the starboard message
-        is for, and not the starboard message itself.
-        """
+        is for, and not the starboard message itself."""
         starboard = await get_starboard(ctx.guild)  # type: StarboardGuild
         star = await starboard.get_message(message_id=message_id)
         if star is None:
@@ -270,8 +288,7 @@ class Starboard(StarboardBase):
         and must be setup again.
 
         In most cases, `mongodb://localhost:27017` will work just fine
-        if you're importing a local v2 instance.
-        """
+        if you're importing a local v2 instance."""
         disclaimer = _(
             "Are you sure you want to import your v2 instances data?\n\n"
             "Guild settings will not be imported and must be setup again.\n\n"
@@ -345,8 +362,7 @@ class Starboard(StarboardBase):
         """Toggles if members can star their own messages
 
         Please note that user statistics are not updated if a member stars their own messages,
-        regardless of if this setting is enabled or not.
-        """
+        regardless of if this setting is enabled or not."""
         starboard = await get_starboard(ctx.guild)  # type: StarboardGuild
         toggle = (not starboard.selfstar) if toggle is None else toggle
         starboard.selfstar = toggle
@@ -383,8 +399,7 @@ class Starboard(StarboardBase):
     async def starboard_ignore(self, ctx: RedContext, *, channel: discord.TextChannel):
         """Ignore a channel, preventing any stars from occurring in it
 
-        For ignoring a member from the starboard, see `[p]stars block`
-        """
+        For ignoring a member from the starboard, see `[p]stars block`"""
         if (await get_starboard(ctx.guild)).ignore(channel):
             await ctx.tick()
         else:
@@ -394,8 +409,7 @@ class Starboard(StarboardBase):
     async def starboard_unignore(self, ctx: RedContext, *, channel: discord.TextChannel):
         """Unignore a channel, allowing stars to occur
 
-        For unignoring a member from the starboard, see `[p]stars unblock`
-        """
+        For unignoring a member from the starboard, see `[p]stars unblock`"""
         if (await get_starboard(ctx.guild)).unignore(channel):
             await ctx.tick()
         else:
