@@ -15,7 +15,7 @@ class StarboardUser(StarboardBase):
         self.starboard = starboard
         self.member = member
 
-    async def get_stats(self, *, messages: Iterable = None) -> Tuple[int, int]:
+    async def get_stats(self, *, messages: Iterable = None) -> Tuple[int, int, int]:
         """Retrieve the current user's statistics in the current guild"""
 
         if messages is None:
@@ -36,26 +36,36 @@ class StarboardUser(StarboardBase):
         received = sum([len([y for y in x.get('starrers', x.get('members', [])) if y != self.member.id])
                         for x in messages if validate_received(x)])
 
-        return given, received
+        return given, received, await self.total_messages(messages=messages)
+
+    async def total_messages(self, *, messages: Iterable = None):
+        if messages is None:
+            messages = (await self.starboard.messages()).values()
+
+        def validate(x):
+            return all([
+                x.get("hidden", False) is False,
+                len(x.get("starrers", x.get("members", []))) >= self.starboard.min_stars,
+                x.get("author_id", None) == self.member.id
+            ])
+
+        return len([x for x in messages if validate(x)])
 
     @staticmethod
-    async def get_global_stats(bot: Red, user: discord.User) -> Tuple[int, int]:
+    async def get_global_stats(bot: Red, user: discord.User) -> Tuple[int, int, int]:
         """Retrieve the total statistics for all guilds that the current user is in"""
-        given = 0
-        received = 0
+        data = tuple()  # type: Tuple[int, int, int]
 
         for guild in bot.guilds:
             if user not in guild.members:
                 continue
             starboard = await get_starboard(guild)  # type: StarboardGuild
-            guild_stats = await StarboardUser(starboard, guild.get_member(user.id)).get_stats()
-            given += guild_stats[0]
-            received += guild_stats[1]
+            data += await StarboardUser(starboard, guild.get_member(user.id)).get_stats()
 
-        return given, received
+        return data
 
     @classmethod
-    async def _get_all_members(cls, guild: discord.Guild) -> Dict[str, Tuple[int, int]]:
+    async def _get_all_members(cls, guild: discord.Guild) -> Dict[str, Tuple[int, int, int]]:
         starboard = await get_starboard(guild)  # type: StarboardGuild
         messages = (await starboard.messages()).values()
 
@@ -67,11 +77,14 @@ class StarboardUser(StarboardBase):
         return members
 
     @classmethod
-    async def leaderboard(cls, guild: discord.Guild) -> Tuple[Dict[discord.Member, int], Dict[discord.Member, int]]:
+    async def leaderboard(cls, guild: discord.Guild) -> Tuple[Dict[discord.Member, int], Dict[discord.Member, int],
+                                                              Dict[discord.Member, int]]:
         member_data = (await cls._get_all_members(guild)).items()
         given = {x: y[0] for x, y in member_data}
         received = {x: y[1] for x, y in member_data}
+        messages = {x: y[2] for x, y in member_data}
         given = {x: y for x, y in reversed(sorted(given.items(), key=lambda x: x[1])) if y}
         received = {x: y for x, y in reversed(sorted(received.items(), key=lambda x: x[1])) if y}
+        messages = {x: y for x, y in reversed(sorted(messages.items(), key=lambda x: x[1])) if y}
 
-        return given, received
+        return given, received, messages

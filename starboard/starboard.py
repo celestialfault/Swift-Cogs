@@ -1,5 +1,5 @@
 import asyncio
-from typing import Tuple
+from typing import Tuple, Union
 
 import discord
 from discord.ext import commands
@@ -18,7 +18,7 @@ from starboard.base import StarboardBase, get_starboard, setup, get_starboard_ca
 from starboard.v2_migration import v2_import, NoMotorException
 from starboard.i18n import _
 
-from cog_shared.odinair_libs import cmd_help, fmt, tick, hierarchy_allows, ConfirmMenu, simple_table
+from cog_shared.odinair_libs import cmd_help, fmt, tick, hierarchy_allows, ConfirmMenu, simple_table, chunks
 
 
 class Starboard(StarboardBase):
@@ -122,12 +122,13 @@ class Starboard(StarboardBase):
             await ctx.tick()
 
     @staticmethod
-    async def _send_stats(ctx: RedContext, stats: Tuple[int, int], member: discord.Member = None):
+    async def _send_stats(ctx: RedContext, stats: Tuple[int, int, int], member: discord.Member = None):
         member = member or ctx.author
         desc = _("Stats for member {member}:\n\n"
                  "\N{RIGHTWARDS BLACK CIRCLED WHITE ARROW} **{given}** stars given\n"
-                 "\N{RIGHTWARDS BLACK CIRCLED WHITE ARROW} **{received}** stars received") \
-            .format(member="{member}", given=stats[0], received=stats[1])
+                 "\N{RIGHTWARDS BLACK CIRCLED WHITE ARROW} **{received}** stars received\n"
+                 "\N{RIGHTWARDS BLACK CIRCLED WHITE ARROW} **{msgs}** starboard messages") \
+            .format(member="{member}", given=stats[0], received=stats[1], msgs=stats[2])
         if await ctx.embed_requested():
             embed = discord.Embed(colour=getattr(ctx.me, "colour", discord.Colour.blurple()),
                                   description=desc.format(member=member.mention))
@@ -150,22 +151,52 @@ class Starboard(StarboardBase):
     @star.command(name="leaderboard")
     async def star_leaderboard(self, ctx: RedContext):
         """Retrieve the star leaderboard for the current guild"""
-        given, received = await StarboardUser.leaderboard(ctx.guild)
+        given, received, messages = await StarboardUser.leaderboard(ctx.guild)
         given, received = (list(given.items())[:10], list(received.items())[:10])
+
+        messages_ = list(chunks(list(messages.items())[:20], 2))
+        keys = list(messages.keys())
+        messages_1 = [x[0] for x in messages_]
+        messages_2 = [x[1] for x in messages_ if len(x) == 2]
 
         if not given or not received:
             await ctx.send(warning(_("No one has any recorded stars yet! Go star some messages first!")))
             return
 
-        fmt_str = "{member} \N{EM DASH} **{stars}** \N{WHITE MEDIUM STAR}"
+        def index(seq: Union[list, dict], item):
+            if isinstance(seq, dict):
+                seq = list(seq.items())
+            item = seq.index(item) + 1
+            total_len = len(str(len(seq)))
+            padding = "0" * (total_len - len(str(item)))
+            return "{}{}".format(padding, item)
 
-        given = "\n".join([fmt_str.format(member=x.mention, stars=y) for x, y in given])
-        received = "\n".join([fmt_str.format(member=x.mention, stars=y) for x, y in received])
+        fmt_str = "**`{index}.`** {member} \N{EM DASH} **{stars}** \N{WHITE MEDIUM STAR}"
+        given = "\n".join([fmt_str.format(index=index(given, (x, y)), member=x.mention, stars=y)
+                           for x, y in given])
+        received = "\n".join([fmt_str.format(index=index(received, (x, y)), member=x.mention, stars=y)
+                              for x, y in received])
+
+        msg_fmt = "**`{index}.`** {member} \N{EM DASH} **{messages}**"
+        messages = [
+            "\n".join([
+                msg_fmt.format(index=index(keys, x), member=x.mention, messages=y) for x, y in messages_1
+            ]),
+            "\n".join([
+                msg_fmt.format(index=index(keys, x), member=x.mention, messages=y) for x, y in messages_2
+            ])
+        ]
 
         embed = discord.Embed(colour=ctx.me.colour)
         embed.set_author(name=_("Leaderboard"), icon_url=ctx.guild.icon_url)
         embed.add_field(name=_("Stars Given"), value=given)
         embed.add_field(name=_("Stars Received"), value=received)
+
+        embed.add_field(name="\N{ZERO WIDTH JOINER}", value="\N{ZERO WIDTH JOINER}", inline=False)
+
+        embed.add_field(name=_("Starboard Messages"), value=messages[0])
+        embed.add_field(name="\N{ZERO WIDTH JOINER}", value=messages[1])
+
         await ctx.send(embed=embed)
 
     ####################
