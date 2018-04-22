@@ -54,13 +54,15 @@ class StarboardUser(StarboardBase):
     @staticmethod
     async def get_global_stats(bot: Red, user: discord.User) -> Tuple[int, int, int]:
         """Retrieve the total statistics for all guilds that the current user is in"""
-        data = tuple()  # type: Tuple[int, int, int]
+        data = [0, 0, 0]  # type: Tuple[int, int, int]
 
         for guild in bot.guilds:
             if user not in guild.members:
                 continue
             starboard = await get_starboard(guild)  # type: StarboardGuild
-            data += await StarboardUser(starboard, guild.get_member(user.id)).get_stats()
+            d = await StarboardUser(starboard, guild.get_member(user.id)).get_stats()
+            for i in d:
+                data[d.index(i)] += i
 
         return data
 

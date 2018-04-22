@@ -154,7 +154,7 @@ class Starboard(StarboardBase):
         given, received, messages = await StarboardUser.leaderboard(ctx.guild)
         given, received = (list(given.items())[:10], list(received.items())[:10])
 
-        messages_ = list(chunks(list(messages.items())[:20], 2))
+        messages_ = list(chunks(list(messages.items())[:10], 2))
         keys = list(messages.keys())
         messages_1 = [x[0] for x in messages_]
         messages_2 = [x[1] for x in messages_ if len(x) == 2]
