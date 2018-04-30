@@ -10,12 +10,20 @@
 
 set -e
 
+# ensure we're in the repo root directory
+cd $(dirname ${0})/../..
+
 cogs=(cogwhitelist logs misctools quotes requirerole rndactivity rolemention starboard timedmute timedrole uinfo)
+
+if ! where redgettext; then
+    echo Installing redgettext...
+    pip install -U redgettext
+fi
 
 for cog in ${cogs[*]}
 do
   cd ${cog}/locales
   echo "Generating locales for cog ${cog}"
-  pygettext $@ -k i18n -n ../**/*.py
+  redgettext $@ -k i18n -n ../**/*.py
   cd ../..
 done

@@ -5,7 +5,7 @@ from compileall import compile_dir
 from pathlib import Path
 import sys
 
-root_path = Path(__file__).parent.parent
+root_path = Path(__file__).parent.parent.parent
 cogs = [
     'botmonitor',
     'cogwhitelist',
