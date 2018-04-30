@@ -43,11 +43,19 @@ def td_format(td_object: timedelta, milliseconds: bool = False, append_str: bool
 
     seconds = td_object.total_seconds()
     past = False
-    if seconds < 0:
+    if seconds < 0.0:
         past = True
         seconds = float(re.sub(r"^-+", "", str(seconds)))
-    elif seconds == 0:
-        return "0 seconds"
+
+    if seconds < 1:
+        ms = round(td_object.microseconds / 1000)
+        if ms > 0:
+            if milliseconds is False:
+                prepend = (("in " if past is False else "") if append_str else "")
+                append = ((" ago" if past is True else "") if append_str else "")
+                return prepend + "less than a second" + append
+        else:
+            return "just now"
 
     strs = []
 

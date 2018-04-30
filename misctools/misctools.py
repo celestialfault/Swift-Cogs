@@ -1,3 +1,4 @@
+import asyncio
 import unicodedata
 from datetime import datetime
 
@@ -6,12 +7,13 @@ from inspect import getsource
 
 import discord
 from discord.ext import commands
+from redbot.core import checks
 
 from redbot.core.bot import Red, RedContext
-from redbot.core.utils.chat_formatting import warning, pagify
+from redbot.core.utils.chat_formatting import warning, pagify, info
 from redbot.core.i18n import CogI18n
 
-from cog_shared.odinair_libs import td_format
+from cog_shared.odinair_libs import td_format, ConfirmMenu
 
 _ = CogI18n("MiscTools", __file__)
 
@@ -51,6 +53,63 @@ class MiscTools:
 
         await ctx.send("\n".join(map(convert, characters)))
 
+    @commands.command(hidden=True)
+    @checks.is_owner()
+    async def updatered(self, ctx: RedContext, dev: bool = False, audio: bool = False, mongo: bool = False):
+        """Update Red to the latest version
+
+        If `dev` is True, then the latest version from GitHub will be used,
+        with any possibly breaking changes included. Otherwise,
+        Red will be updated to the latest PyPI release.
+        """
+        disclaimer = _(
+            "**This command has not been extensively tested, and as such may have the potential to break "
+            "your Red install** (regardless of how unlikely it may be.)\n\nAll responsibility for any broken "
+            "installs beyond this point is passed onto the bot owner.\nIf you'd prefer to play it safe, "
+            "please cancel this operation and perform an update manually, either through the Red launcher, "
+            "or by manually running pip.\n\n"
+            "**Please confirm that you wish to continue by clicking \N{WHITE HEAVY CHECK MARK} or \N{CROSS MARK}.**"
+        )
+
+        if not await ConfirmMenu(ctx, message=warning(disclaimer)):
+            await ctx.send(info("Update cancelled."))
+            return
+
+        import sys
+        interpreter = sys.executable
+
+        # The following is mostly ripped from the Red launcher update function
+        eggs = []
+        if audio:
+            eggs.append("audio")
+        if mongo:
+            eggs.append("mongo")
+
+        if dev:
+            package = "git+https://github.com/Cog-Creators/Red-DiscordBot@V3/develop"
+            if eggs:
+                package += "#egg=Red-DiscordBot[{}]".format(", ".join(eggs))
+        else:
+            package = "Red-DiscordBot"
+            if eggs:
+                package += "[{}]".format(", ".join(eggs))
+
+        tmp = await ctx.send(info("Updating Red...\n\nThis may take a while, so go get yourself a cup of coffee, tea, "
+                                  "or whatever other beverage you may prefer."))
+
+        async with ctx.typing():
+            p = await asyncio.create_subprocess_exec(interpreter, "-m", "pip", "install",
+                                                     "-U", "--process-dependency-links", package,
+                                                     stdin=None, loop=self.bot.loop)
+            await p.wait()
+
+        await tmp.delete()
+
+        if p.returncode == 0:
+            await ctx.send("Red has been updated. Please restart the bot for any updates to take affect.")
+        else:
+            await ctx.send("Something went wrong while updating. Please attempt an update manually.")
+
     @commands.command(aliases=["pingt"])
     async def pingtime(self, ctx: RedContext):
         """Get the time it takes the bot to respond to a command
@@ -70,7 +129,7 @@ class MiscTools:
                          "Typing indicator: {}\n\n"
                          "Full round trip: {}").format(time_to_execution, time_to_typing, full_round_trip))
 
-    @commands.command(aliases=["snowflake"])
+    @commands.group(aliases=["snowflake"], invoke_without_command=True)
     async def snowflaketime(self, ctx: RedContext, *snowflakes: int):
         """Retrieve when one or more snowflake IDs were created at"""
         if not snowflakes:
@@ -83,3 +142,21 @@ class MiscTools:
                         .format(snowflake, snowflake_time.strftime('%A %B %d, %Y at %X UTC'),
                                 td_format(snowflake_time - datetime.utcnow(), append_str=True)))
         await ctx.send_interactive(pagify("\n".join(strs)))
+
+    @snowflaketime.command(name="delta")
+    async def snowflake_delta(self, ctx: RedContext, start: int, end: int):
+        """Get the time difference between two snowflake IDs"""
+        start, end = (discord.utils.snowflake_time(start), discord.utils.snowflake_time(end))
+        now = datetime.utcnow()
+
+        await ctx.send(
+            _(
+                "**Starting snowflake:** {start[0]} \N{EM DASH} `{start[1]}`\n"
+                "**Ending snowflake:** {end[0]} \N{EM DASH} `{end[1]}`\n\n"
+                "**Time difference:** {difference}"
+            ).format(
+                start=[td_format(start - now, append_str=True), start.strftime('%A %B %d, %Y at %X UTC')],
+                end=[td_format(end - now, append_str=True), end.strftime('%A %B %d, %Y at %X UTC')],
+                difference=td_format(end - start)
+            )
+        )

@@ -1,7 +1,7 @@
 from asyncio import TimeoutError
 
 from enum import Enum
-from typing import Union, Any, Dict, Sequence, Optional, Tuple
+from typing import Union, Any, Dict, Sequence, Optional, Tuple, Awaitable
 from types import GeneratorType
 
 import discord
@@ -92,7 +92,7 @@ async def prompt(ctx: RedContext, *, content: str = None, embed: discord.Embed =
         return message_recv
 
 
-class ReactMenu:
+class ReactMenu(Awaitable):
     def __init__(self, ctx: RedContext, actions: Dict[Any, Union[discord.Emoji, discord.Reaction, str]],
                  **kwargs):
         """Create a new reaction menu.
@@ -189,6 +189,9 @@ class ReactMenu:
         self.post_action_check = kwargs.get("post_action_check", None)
         self.member = kwargs.get("member", ctx.author)
         self._reactions_task = None
+
+    def __await__(self):
+        return self.prompt().__await__()
 
     def __repr__(self):
         return (
