@@ -11,7 +11,7 @@ __all__ = ('StarboardMessage',)
 
 
 class StarboardMessage(StarboardBase):
-    STARBOARD_FORMAT = "\N{WHITE MEDIUM STAR} **{self.stars}** {self.channel.mention} \N{EM DASH} ID: {self.message.id}"
+    STARBOARD_FORMAT = "\N{WHITE MEDIUM STAR} **{stars}** {channel} \N{EM DASH} ID: {id}"
 
     def __init__(self, starboard, message: discord.Message):
         from starboard.starboardguild import StarboardGuild
@@ -27,8 +27,8 @@ class StarboardMessage(StarboardBase):
 
     def __repr__(self):
         return (
-            "<Star stars={self.stars} hidden={self.hidden} message={self.message!r} update_queued={self.in_queue}>"
-            "".format(self=self)
+            "<StarboardMessage stars={self.stars} hidden={self.hidden} message={self.message!r}"
+            " update_queued={self.in_queue}>".format(self=self)
         )
 
     async def load_data(self, *, auto_create: bool = False) -> None:
@@ -41,7 +41,7 @@ class StarboardMessage(StarboardBase):
             self._hidden = entry.get("hidden", False)
 
             if entry.get("starboard_message", None) is not None:
-                channel = self.starboard.channel
+                channel = await self.starboard.channel()
                 if channel is None:
                     self.starboard_message = None
                     return await self._save()
@@ -122,13 +122,19 @@ class StarboardMessage(StarboardBase):
             embed.set_image(url=self.attachment_url)
 
         return {
-            "content": self.STARBOARD_FORMAT.format(self=self),
+            "content": self.STARBOARD_FORMAT.format(
+                stars=self.stars,
+                channel=self.channel.mention,
+                id=self.message.id
+            ),
             "embed": embed
         }
 
     @property
     def is_message_valid(self) -> bool:
-        return self.message.content or self.attachments
+        if not self.message:
+            return False
+        return bool(self.message.content or self.attachments)
 
     async def update_cached_message(self):
         self.message = await self.channel.get_message(self.message.id)
@@ -146,11 +152,11 @@ class StarboardMessage(StarboardBase):
     async def update_starboard_message(self) -> None:
         self.in_queue = False
 
-        channel = self.starboard.channel
+        channel = await self.starboard.channel()
         if channel is None:
             return
 
-        if self.stars >= self.starboard.min_stars and not self.hidden and self.is_message_valid:
+        if self.stars >= await self.starboard.min_stars() and not self.hidden and self.is_message_valid:
             if self.starboard_message is not None:
                 try:
                     await self.starboard_message.edit(**self.starboard_message_contents)
@@ -183,12 +189,12 @@ class StarboardMessage(StarboardBase):
     def has_starred(self, member: discord.Member) -> bool:
         return member.id in self.starrers
 
-    def add_star(self, member: discord.Member) -> None:
+    async def add_star(self, member: discord.Member) -> None:
         if not self.is_message_valid or member.id in self.starrers:
             raise StarException
-        if self.starboard.is_ignored(self.author):
+        if await self.starboard.is_ignored(self.author):
             raise BlockedAuthorException
-        if self.starboard.is_ignored(member):
+        if await self.starboard.is_ignored(member):
             raise BlockedException
 
         if member == self.author and not self.starboard.selfstar:
@@ -197,12 +203,12 @@ class StarboardMessage(StarboardBase):
         self.starrers.append(member.id)
         self.queue_for_update()
 
-    def remove_star(self, member: discord.Member) -> None:
+    async def remove_star(self, member: discord.Member) -> None:
         if member.id not in self.starrers:
             raise StarException
-        if self.starboard.is_ignored(self.author):
+        if await self.starboard.is_ignored(self.author):
             raise BlockedAuthorException
-        if self.starboard.is_ignored(member):
+        if await self.starboard.is_ignored(member):
             raise BlockedException
 
         self.starrers.remove(member.id)

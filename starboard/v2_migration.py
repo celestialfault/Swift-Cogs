@@ -14,11 +14,11 @@ except ImportError:
     motor = False
 
 migrate_lock = asyncio.Lock()
-__all__ = ('dump_caches', 'v2_import')
+__all__ = ('dump_caches', 'v2_import', 'NoMotorException')
 
 
 r"""
-'emma wtf is this and why does this exist'
+'alright wtf is this and why does this exist'
 
   My v2 starboard cog ( which can be found at https://github.com/notodinair/Red-Cogs ) used MongoDB
   instead of flat-file JSON storage.
@@ -26,9 +26,14 @@ r"""
   This resulted in the awkward situation of not being able to import config data / starred messages via
   Red's data converter, as it was designed to handle flat-file JSON storage, and not MongoDB.
 
-'why tf did you use mongodb anyway?'
+'why did you use mongodb anyway'
 
   ¯\_(ツ)_/¯
+
+  It was definitely a better decision than to store every message in a giant JSON file.
+
+  I think.
+  I'll get back to you on that.
 """
 
 
@@ -61,7 +66,7 @@ async def v2_import(bot: Red, mongo_uri: str):
             guild = getattr(channel, "guild", None)  # type: discord.Guild
             if guild is None:
                 continue
-            starboard = await get_starboard(guild)  # type: StarboardGuild
+            starboard = get_starboard(guild)  # type: StarboardGuild
             await starboard.messages.set_raw(str(message_id), value={
                 "channel_id": channel.id,
                 "author_id": None,

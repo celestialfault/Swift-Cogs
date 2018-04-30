@@ -2,9 +2,10 @@
   "author": ["odinair"],
   "bot_version": [3, 0, 0],
   "min_python_version": [3, 5, 1],
-  "description": "It's almost like channel pins, but with stars",
+  "description": "It's almost like channels pins, but with stars, and more democracy (democracy not guaranteed)\n\nThis cog may use a fair amount of memory, due to the various internal caches.\n\nRequires the `tabulate` library to function.",
   "short": "It's almost like channel pins, but with stars",
   "type": "COG",
+  "requirements": ["tabulate"],
   "tags": [
     "fun"
   ],

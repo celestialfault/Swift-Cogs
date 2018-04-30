@@ -4,17 +4,17 @@ from redbot.core import RedContext
 from redbot.core.utils.chat_formatting import warning
 
 from starboard import base
-from starboard.i18n import _
+from starboard.i18n import i18n
 
 
 def can_use_starboard():
     async def predicate(ctx):
         if not ctx.guild:
             return True
-        _starboard = await base.get_starboard(ctx.guild)
-        if _starboard.is_ignored(ctx.channel):
+        _starboard = base.get_starboard(ctx.guild)
+        if await _starboard.is_ignored(ctx.channel):
             return False
-        if _starboard.is_ignored(ctx.author):
+        if await _starboard.is_ignored(ctx.author):
             if await _starboard.bot.is_owner(ctx.author):
                 pass
             elif await _starboard.bot.is_mod(ctx.author):
@@ -27,8 +27,8 @@ def can_use_starboard():
 
 
 async def guild_has_starboard(ctx: RedContext):
-    _starboard = await base.get_starboard(ctx.guild)
-    if _starboard.channel is None:
-        await ctx.send(warning(_("This server has no starboard channel setup")))
+    _starboard = base.get_starboard(ctx.guild)
+    if await _starboard.channel() is None:
+        await ctx.send(warning(i18n("This server has no starboard channel setup")))
         return False
     return True
