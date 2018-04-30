@@ -6,16 +6,16 @@ import discord
 
 from redbot.core.utils.chat_formatting import box
 
-from logs.core.i18n import _
+from logs.core.i18n import i18n
 
 
 def translate_common_types(var):
     if var is None:
-        return _("None")
+        return i18n("None")
     elif var is False:
-        return _("False")
+        return i18n("False")
     elif var is True:
-        return _("True")
+        return i18n("True")
     else:
         return str(var)
 
@@ -71,8 +71,8 @@ class LogEntry(discord.Embed):
             before = box(before, lang=box_lang)
             after = box(after, lang=box_lang)
         return self.add_field(name=name, inline=inline,
-                              value=_("**Before:** {before}\n"
-                                      "**After:** {after}").format(before=before, after=after))
+                              value=i18n("**Before:** {before}\n"
+                                         "**After:** {after}").format(before=before, after=after))
 
     def add_field(self, *, name, value, inline: bool = False):
         if not all([name, value]):

@@ -1,9 +1,10 @@
 from typing import Optional
 
+from discord.ext import commands
 from redbot.core import RedContext
 from redbot.core.utils.chat_formatting import pagify
 
-__all__ = ('fmt', 'cmd_help')
+__all__ = ('fmt', 'cmd_help', 'cmd_group')
 
 
 async def fmt(ctx: RedContext, text: str, *args, delete_after: Optional[float] = None, **kwargs) -> None:
@@ -17,3 +18,11 @@ async def cmd_help(ctx: RedContext, cmd: str = "") -> None:
     # so this is mostly what I'd consider "good enough"
     if not ctx.invoked_subcommand or ctx.invoked_subcommand.name == cmd:
         await ctx.send_help()
+
+
+def cmd_group(name: str, *, parent=commands, **kwargs):
+    # noinspection PyUnusedLocal
+    async def _cmd(self, ctx: RedContext):
+        await cmd_help(ctx, name)
+
+    return parent.group(name=name, **kwargs)(_cmd)

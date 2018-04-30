@@ -12,7 +12,7 @@ from redbot.core.bot import Red
 from redbot.core.config import Group, Value
 
 from logs.core.logentry import LogEntry
-from logs.core.i18n import _
+from logs.core.i18n import i18n
 from logs.core.utils import add_descriptions, replace_dict_items
 
 from cog_shared.odinair_libs import flatten
@@ -170,22 +170,22 @@ class Module(ABC):
 
         log_destination = await self.log_destination()
 
-        dest = _("Logging is disabled")
+        dest = i18n("Logging is disabled")
         if isinstance(log_destination, discord.Webhook):
-            dest = _("Logging via webhook")
+            dest = i18n("Logging via webhook")
         elif isinstance(log_destination, discord.TextChannel):
-            dest = _("Logging to channel {channel}").format(channel=log_destination.mention)
+            dest = i18n("Logging to channel {channel}").format(channel=log_destination.mention)
 
         return (
             discord.Embed(colour=discord.Colour.blurple(),
                           description="{}\n\n{}".format(self.descriptions['module'], dest))
-            .set_author(name=_("{friendly_name} Logging Module").format(friendly_name=self.friendly_name),
+            .set_author(name=i18n("{friendly_name} Logging Module").format(friendly_name=self.friendly_name),
                         icon_url=self.icon_uri())
-            .add_field(name=_("Enabled"),
-                       value=enabled or _("**None** \N{EM DASH} All of this module's options are disabled"),
+            .add_field(name=i18n("Enabled"),
+                       value=enabled or i18n("**None** \N{EM DASH} All of this module's options are disabled"),
                        inline=False)
-            .add_field(name=_("Disabled"),
-                       value=disabled or _("**None** \N{EM DASH} All of this module's options are enabled"),
+            .add_field(name=i18n("Disabled"),
+                       value=disabled or i18n("**None** \N{EM DASH} All of this module's options are enabled"),
                        inline=False)
         )
 
@@ -217,8 +217,6 @@ class Module(ABC):
             raise ValueError('fn_name is not a valid identifier')
 
         dest = await self.log_destination()
-        log.debug("log exec: {}.log({!r})  # destination={!r}".format(self.__class__.__name__, fn_name, dest))
-
         if dest is None or await self.is_ignored(*args, **kwargs):
             return
 
@@ -272,6 +270,7 @@ class Module(ABC):
                         *[x.id in ignore_roles for x in item.roles]])
         elif isinstance(item, discord.abc.GuildChannel):
             ignore = await self.root_config.ignore.channels()
+            # noinspection PyUnresolvedReferences
             return any([item.id in ignore, getattr(item.category, "id", None) in ignore])
         elif isinstance(item, discord.Role):
             return item.id in await self.root_config.ignore.roles()

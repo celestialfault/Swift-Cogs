@@ -1,5 +1,7 @@
+import contextlib
+
 from aiohttp import ClientSession
-from typing import List, Optional
+from typing import List, Optional, Type
 
 import discord
 from discord.ext import commands
@@ -7,12 +9,56 @@ from discord.raw_models import RawBulkMessageDeleteEvent
 
 from redbot.core import checks, Config
 from redbot.core.bot import Red, RedContext
-from redbot.core.utils.chat_formatting import warning, info, error, escape, inline, bold
+from redbot.core.utils.chat_formatting import warning, info, error, inline, bold
 
-from logs.core import Module, get_module, _
+from logs.core import Module, get_module, i18n
+from logs.core.module import log
 from logs.modules import all_modules
 
-from cog_shared.odinair_libs import tick, cmd_help, fmt, ConfirmMenu, prompt
+from cog_shared.odinair_libs import tick, cmd_help, fmt, ConfirmMenu, prompt, cmd_group
+
+
+def ignore_handler(*, parent=commands, converters: List[Type[commands.Converter]],
+                   conf_opt: str, remove: bool = False, **kwargs):
+    # Yes: This is probably the worst idea that's been implemented yet in this entire cog to date.
+    # But I mean, hey; it sure beats the dozen+ commands with functionally the exact same code
+    # that was here before.
+    name = kwargs.pop('name', 'add' if remove is False else 'remove')
+
+    # noinspection PyUnusedLocal
+    async def _command(self, ctx: RedContext, *, item):
+        new_item = ...
+        for converter in converters:
+            with contextlib.suppress(commands.BadArgument):
+                new_item = await converter().convert(ctx, item)
+                break
+        if new_item is ...:
+            raise commands.BadArgument
+        item = getattr(item, "id", item)
+        async with Module.config.guild(ctx.guild).ignore.get_attr(conf_opt)() as ignored:
+            if remove is False:
+                if item in ignored:
+                    await ctx.send(warning(i18n("That item is already currently being ignored")))
+                    return
+                ignored.append(item)
+            else:
+                if item not in ignored:
+                    await ctx.send(warning(i18n("That item is not currently being ignored")))
+                    return
+                ignored.remove(item)
+            log.debug('{} {!r} to/from {!r} {} ignore list'.format(name, new_item, ctx.guild, conf_opt))
+            await ctx.tick()
+
+    if conf_opt == 'guild':
+        # noinspection PyUnusedLocal
+        async def _command(self, ctx: RedContext, toggle: bool = None):  # noqa
+            if toggle is None:
+                toggle = not await Module.config.guild(ctx.guild).ignore.guild()
+            await Module.config.guild(ctx.guild).ignore.guild.set(toggle)
+            await ctx.send(tick(i18n("Now ignoring the current server") if toggle else
+                                i18n("No longer ignoring the current server")))
+
+    return parent.command(name=name, **kwargs)(_command)
 
 
 # noinspection PyMethodMayBeStatic
@@ -80,14 +126,14 @@ class Logs:
             module = get_module(module_id=module_name, guild=ctx.guild)
             if not await module.can_modify_settings(ctx.author):
                 continue
-            async with ConfirmMenu(ctx, message=_("Would you like to enable the **{}** module?").format(
+            async with ConfirmMenu(ctx, message=i18n("Would you like to enable the **{}** module?").format(
                     module.friendly_name)) as result:
                 await module.module_config.clear()
                 if not result:
                     continue
                 channel = None  # type: Optional[discord.TextChannel]
                 while channel is None:
-                    given = await prompt(ctx, content=_("What channel would you like to log to?"), timeout=90,
+                    given = await prompt(ctx, content=i18n("What channel would you like to log to?"), timeout=90,
                                          delete_messages=True)
                     if given is None:
                         break
@@ -101,20 +147,21 @@ class Logs:
                     continue
                 await module.module_config.set_raw("_log_channel", value=getattr(channel, "id", None))
                 async with ConfirmMenu(ctx, colour=discord.Color.blurple(),
-                                       message=_("Would you like to setup logging options for module **{}**?")
+                                       message=i18n("Would you like to setup logging options for module **{}**?")
                                        .format(module.friendly_name))\
                         as setup_opts:
                     if setup_opts:
                         tmp = await ctx.send(embed=await module.config_embed())
-                        resp = await prompt(ctx, content=_("Please respond with a space-separated list of options you "
-                                                           "would like to enable"), delete_messages=True, timeout=90)
+                        resp = await prompt(ctx, content=i18n("Please respond with a space-separated list of options "
+                                                              "you would like to enable"),
+                                            delete_messages=True, timeout=90)
                         if resp:
                             await module.toggle_options(*str(resp.content).split(" "))
                         await tmp.delete()
-                    await fmt(ctx, info(_("You can setup the options for this module later with "
-                                          "`{prefix}logset module {module}`.")),
+                    await fmt(ctx, info(i18n("You can setup the options for this module later with "
+                                             "`{prefix}logset module {module}`.")),
                               module=module_name, delete_after=15.0)
-        await ctx.send(tick(_("You're all done!")))
+        await ctx.send(tick(i18n("You're all done!")))
 
     @logset.command(name="webhook")
     @commands.bot_has_permissions(manage_webhooks=True)
@@ -128,24 +175,24 @@ class Logs:
         """
         module = get_module(module, guild=ctx.guild)
         if module is None:
-            await ctx.send(warning(_("That module could not be found")))
+            await ctx.send(warning(i18n("That module could not be found")))
             return
 
         if not await module.can_modify_settings(ctx.author):
-            await ctx.send(error(_("You aren't authorized to modify this module's settings")))
+            await ctx.send(error(i18n("You aren't authorized to modify this module's settings")))
             return
 
         await module.module_config.set_raw("_log_channel", value=None)
         if channel is None:
             await module.module_config.set_raw("_webhook", value=None)
-            await ctx.send(tick(_("Any previously set webhook for module **{module}** has been cleared.")
+            await ctx.send(tick(i18n("Any previously set webhook for module **{module}** has been cleared.")
                                 .format(module=module.friendly_name)))
             return
 
         try:
             webhooks = await channel.webhooks()  # type: List[discord.Webhook]
         except discord.Forbidden:
-            await ctx.send(error(_("I'm not authorized to manage webhooks in that channel")))
+            await ctx.send(error(i18n("I'm not authorized to manage webhooks in that channel")))
             return
 
         webhook = None
@@ -162,7 +209,7 @@ class Logs:
             webhook = await channel.create_webhook(name=ctx.me.name)
 
         await module.module_config.set_raw("_webhook", value=webhook.url)
-        await ctx.send(tick(_("Module **{module}** will now log to {channel} via webhook.")
+        await ctx.send(tick(i18n("Module **{module}** will now log to {channel} via webhook.")
                             .format(module=module.friendly_name, channel=channel.mention)))
 
     @logset.command(name="channel")
@@ -173,21 +220,21 @@ class Logs:
         """
         module = get_module(module, guild=ctx.guild)
         if module is None:
-            await ctx.send(warning(_("That module could not be found")))
+            await ctx.send(warning(i18n("That module could not be found")))
             return
         if not await module.can_modify_settings(ctx.author):
-            await ctx.send(error(_("You aren't authorized to modify this module's settings")))
+            await ctx.send(error(i18n("You aren't authorized to modify this module's settings")))
             return
         if channel and not channel.permissions_for(ctx.guild.me).send_messages:
-            await ctx.send(warning(_("I'm not able to send messages in that channel")))
+            await ctx.send(warning(i18n("I'm not able to send messages in that channel")))
             return
         await module.module_config.set_raw("_log_channel", value=getattr(channel, "id", None))
         await module.module_config.set_raw("_webhook", value=None)
         if channel:
-            await ctx.send(tick(_("Module **{module}** will now log to {channel}")
+            await ctx.send(tick(i18n("Module **{module}** will now log to {channel}")
                                 .format(module=module.friendly_name, channel=channel.mention)))
         else:
-            await ctx.send(tick(_("The log channel for module **{module}** has been cleared")
+            await ctx.send(tick(i18n("The log channel for module **{module}** has been cleared")
                                 .format(module=module.friendly_name)))
 
     @logset.command(name="modules", aliases=["list"])
@@ -202,181 +249,80 @@ class Logs:
             # noinspection PyTypeChecker
             modules.append("{} \N{EM DASH} {}".format(bold(module.friendly_name), inline(str(module.name))))
 
-        await ctx.send(info(_("Available modules:\n\n{modules}").format(modules="\n".join(modules))))
+        await ctx.send(info(i18n("Available modules:\n\n{modules}").format(modules="\n".join(modules))))
 
     @logset.command(name="module")
     async def logset_module(self, ctx: RedContext, module: str, *settings: str):
         """Get or set a module's settings"""
         module = get_module(module, guild=ctx.guild)
         if module is None:
-            await ctx.send(warning(_("That module could not be found")))
+            await ctx.send(warning(i18n("That module could not be found")))
             return
         if not await module.can_modify_settings(ctx.author):
-            await ctx.send(error(_("You aren't authorized to modify this module's settings")))
+            await ctx.send(error(i18n("You aren't authorized to modify this module's settings")))
             return
         if not settings:
             await ctx.send(embed=await module.config_embed())
         else:
             await module.toggle_options(*settings)
-            await ctx.send(content=tick(_("Updated settings for module **{}**").format(module.friendly_name)),
+            await ctx.send(content=tick(i18n("Updated settings for module **{}**").format(module.friendly_name)),
                            embed=await module.config_embed())
 
     @logset.command(name="reset")
     async def logset_reset(self, ctx: RedContext):
-        """Reset the guild's log settings"""
-        if await ConfirmMenu(ctx, _("Are you sure you want to reset this guild's log settings?"),
-                             colour=discord.Colour.red()).prompt():
+        """Reset the server's log settings"""
+        if await ConfirmMenu(ctx, i18n("Are you sure you want to reset this server's log settings?"),
+                             colour=discord.Colour.red()):
             await self.config.guild(ctx.guild).set(self.defaults_guild)
             await ctx.send(embed=discord.Embed(
-                description=_("Guild log settings have been reset."),
+                description=i18n("Server log settings have been reset."),
                 colour=discord.Colour.green()))
         else:
-            await ctx.send(embed=discord.Embed(description=_("Okay then."), colour=discord.Colour.gold()))
+            await ctx.send(embed=discord.Embed(description=i18n("Okay then."), colour=discord.Colour.gold()))
 
-    ###################
-    #   Ignore Cmd    #
-    ###################
+    ####################
+    #   Ignore Mgnt    #
+    ####################
 
-    @logset.group(name="ignore")
-    async def logset_ignore(self, ctx: RedContext):
-        """Add items to the guild logging ignore list"""
-        await cmd_help(ctx, "ignore")
+    # Welcome to the Sea of Bad Ideas™, please enjoy your stay.
 
-    @logset_ignore.command(name="channel")
-    async def ignore_channel(self, ctx: RedContext, *,
-                             channel: discord.TextChannel or discord.VoiceChannel or discord.CategoryChannel = None):
-        """Add a channel or category to the guild ignore list
+    logset_ignore = cmd_group('ignore', parent=logset, help=i18n("Manage the servers ignore lists"))
 
-        Any channels in a category that is ignored are also implicitly ignored
+    ignore_guild = ignore_handler(name='server', aliases=['guild'], parent=logset_ignore, converters=[],
+                                  conf_opt='guild', help=i18n("Toggle the current server's ignore status"))
 
-        `channel` defaults to the current channel
-        """
-        if channel is None:
-            channel = ctx.channel
-        async with self.config.guild(ctx.guild).ignore.channels() as ignored:
-            if channel.id in ignored:
-                await ctx.send(warning(_("That channel is already being ignored")))
-                return
-            ignored.append(channel.id)
-            if not isinstance(channel, discord.CategoryChannel):
-                await ctx.send(tick(_("The channel {channel} is now ignored from logging")
-                                    .format(channel=channel.mention)))
-            else:
-                await ctx.send(tick(_("The category {channel} and it's subchannels are now ignored from logging")
-                                    .format(channel=channel.mention)))
+    # Channels
+    ignore_channel = cmd_group('channel', parent=logset_ignore, help=i18n("Manage the channel ignore list"))
+    ignore_channel_add = ignore_handler(parent=ignore_channel, help=i18n("Ignore a given channel"),
+                                        conf_opt="channels",
+                                        converters=[commands.TextChannelConverter, commands.VoiceChannelConverter,
+                                                    commands.CategoryChannelConverter])
+    ignore_channel_remove = ignore_handler(parent=ignore_channel, help=i18n("Unignore a given channel"),
+                                           conf_opt="channels", remove=True,
+                                           converters=[commands.TextChannelConverter, commands.VoiceChannelConverter,
+                                                       commands.CategoryChannelConverter])
 
-    @logset_ignore.command(name="member")
-    async def ignore_member(self, ctx: RedContext, *, member: discord.Member):
-        """Add a member to the guild ignore list"""
-        async with self.config.guild(ctx.guild).ignore.members() as ignored:
-            if member.id in ignored:
-                await ctx.send(warning(_("That member is already being ignored")))
-                return
-            ignored.append(member.id)
-            await ctx.send(tick(_("Member **{member}** is now ignored from logging").format(member=member)))
+    # Members
+    ignore_member = cmd_group('member', parent=logset_ignore, help=i18n("Manage the member ignore list"))
+    ignore_member_add = ignore_handler(conf_opt='members', parent=ignore_member, help=i18n("Ignore a given member"),
+                                       converters=[commands.MemberConverter])
+    ignore_member_remove = ignore_handler(conf_opt='members', parent=ignore_member, remove=True,
+                                          help=i18n("Unignore a given member"), converters=[commands.MemberConverter])
 
-    @logset_ignore.command(name="role")
-    async def ignore_role(self, ctx: RedContext, *, role: discord.Role):
-        """Add a role to the guild ignore list
+    # Roles
+    ignore_role = cmd_group('role', parent=logset_ignore, help=i18n("Manage the role ignore list"))
+    ignore_role_add = ignore_handler(conf_opt='roles', parent=ignore_role, help=i18n("Ignore a given role"),
+                                     converters=[commands.RoleConverter])
+    ignore_role_remove = ignore_handler(conf_opt='roles', parent=ignore_role, help=i18n("Unignore a given role"),
+                                        converters=[commands.RoleConverter], remove=True)
 
-        This only ignores roles themselves from being logged with the Role module,
-        and not members with the role, nor members being given / having the role revoked.
-        To ignore members with a given role, please see `[p]help logset ignore memberrole`
-        """
-        async with self.config.guild(ctx.guild).ignore.roles() as ignored:
-            if role.id in ignored:
-                await ctx.send(warning(_("That role is already being ignored")))
-                return
-            ignored.append(role.id)
-            await ctx.send(tick(_("The role **{role}** is now ignored from logging")
-                                .format(role=escape(str(role), mass_mentions=True, formatting=True))))
-
-    @logset_ignore.command(name="memberrole")
-    async def ignore_memberrole(self, ctx: RedContext, *, role: discord.Role):
-        """Add a member role to the guild ignore list
-
-        This is not the same as regular role ignoring, as this ignores members
-        who have the given role, instead of ignoring the role from logging via
-        the role module.
-        """
-        async with self.config.guild(ctx.guild).ignore.member_roles() as ignored:
-            if role.id in ignored:
-                await ctx.send(warning(_("That role is already being ignored")))
-                return
-            ignored.remove(role.id)
-            await ctx.send(tick(_("Members with the role **{role}** are no longer ignored from logging")
-                                .format(role=escape(str(role), mass_mentions=True, formatting=True))))
-
-    @logset_ignore.command(name="guild")
-    async def ignore_guild(self, ctx: RedContext):
-        """Ignore the current guild entirely"""
-        await self.config.guild(ctx.guild).ignore.guild.set(True)
-        await ctx.send(tick(_("Now ignoring the current guild")))
-
-    ###################
-    #  Unignore Cmd   #
-    ###################
-
-    @logset.group(name="unignore")
-    async def logset_unignore(self, ctx: RedContext):
-        """Remove items from the guild logging ignore list"""
-        await cmd_help(ctx, "unignore")
-
-    @logset_unignore.command(name="channel")
-    async def unignore_channel(self, ctx: RedContext, *,
-                               channel: discord.TextChannel or discord.VoiceChannel or discord.CategoryChannel = None):
-        """Remove a channel or category from the guild ignore list"""
-        if channel is None:
-            channel = ctx.channel
-        async with self.config.guild(ctx.guild).ignore.channels() as ignored:
-            if channel.id not in ignored:
-                await ctx.send(warning(_("That channel isn't currently being ignored")))
-                return
-            ignored.remove(channel.id)
-            if not isinstance(channel, discord.CategoryChannel):
-                await ctx.send(tick(_("The channel {channel} is no longer ignored from logging")
-                                    .format(channel=channel.mention)))
-            else:
-                await ctx.send(tick(_("The category {channel} and it's subchannels are no longer ignored from logging")
-                                    .format(channel=channel.mention)))
-
-    @logset_unignore.command(name="member")
-    async def unignore_member(self, ctx: RedContext, *, member: discord.Member):
-        """Remove a member from the guild ignore list"""
-        async with self.config.guild(ctx.guild).ignore.members() as ignored:
-            if member.id not in ignored:
-                await ctx.send(warning(_("That member isn't currently being ignored")))
-                return
-            ignored.remove(member.id)
-            await ctx.send(tick(_("Member **{member}** is no longer ignored from logging").format(member=member)))
-
-    @logset_unignore.command(name="role")
-    async def unignore_role(self, ctx: RedContext, *, role: discord.Role):
-        """Remove a role from the guild ignore list"""
-        async with self.config.guild(ctx.guild).ignore.roles() as ignored:
-            if role.id not in ignored:
-                await ctx.send(warning(_("That role isn't currently being ignored")))
-                return
-            ignored.remove(role.id)
-            await ctx.send(tick(_("The role **{role}** is no longer ignored from logging")
-                                .format(role=escape(str(role), mass_mentions=True, formatting=True))))
-
-    @logset_unignore.command(name="memberrole")
-    async def unignore_memberrole(self, ctx: RedContext, *, role: discord.Role):
-        """Remove a member role from the guild ignore list"""
-        async with self.config.guild(ctx.guild).ignore.member_roles() as ignored:
-            if role.id not in ignored:
-                await ctx.send(warning(_("That role isn't currently being ignored")))
-                return
-            ignored.remove(role.id)
-            await ctx.send(tick(_("Members with the role **{role}** are no longer ignored from logging")
-                                .format(role=escape(str(role), mass_mentions=True, formatting=True))))
-
-    @logset_unignore.command(name="guild")
-    async def unignore_guild(self, ctx: RedContext):
-        """Stop ignoring the current guild entirely"""
-        await self.config.guild(ctx.guild).ignore.guild.set(False)
-        await ctx.send(tick(_("No longer ignoring the current guild")))
+    # Member Roles
+    ignore_mrole = cmd_group('memberrole', aliases=['mrole'], help=i18n("Manage the member role ignore list"),
+                             parent=logset_ignore)
+    ignore_mrole_add = ignore_handler(conf_opt='member_roles', converters=[commands.RoleConverter],
+                                      parent=ignore_mrole, help=i18n("Add a member role to the ignore list"))
+    ignore_mrole_remove = ignore_handler(conf_opt='member_roles', converters=[commands.RoleConverter], remove=True,
+                                         parent=ignore_mrole, help=i18n("Add a member role to the ignore list"))
 
     ###################
     #    Listeners    #
