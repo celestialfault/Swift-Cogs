@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2018-04-29 22:18-0600\n"
+"POT-Creation-Date: 2018-04-30 18:19-0600\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -15,21 +15,43 @@ msgstr ""
 "Generated-By: redgettext 1.0\n"
 
 
-#: ../misctools.py:37
+#: ../misctools.py:43
 msgid "That command doesn't exist"
 msgstr ""
 
-#: ../misctools.py:68
+#: ../misctools.py:117
 msgid ""
-"**This command has not been extensively tested, and as such may have the potential to break your Red install** (regardless of how unlikely it may be.)\n"
+"By continuing with this action, this I will execute the following command on your host machine:\n"
+"```\n"
+"{}\n"
+"```\n"
+"**Please note that this command has not been extensively tested, has not been reviewed by the core Red development team, and may have the potential to break your install of Red, no matter how unlikely it may be.**\n"
 "\n"
-"All responsibility for any broken installs beyond this point is passed onto the bot owner.\n"
-"If you'd prefer to play it safe, please cancel this operation and perform an update manually, either through the Red launcher, or by manually running pip.\n"
+"If you'd prefer to play it safe, cancel this action and perform the update manually, either through the Red launcher, or by executing the above command manually.\n"
 "\n"
-"**Please confirm that you wish to continue by clicking ✅ or ❌.**"
+"**Please confirm that you wish to continue with this action.**"
 msgstr ""
 
-#: ../misctools.py:125
+#: ../misctools.py:134
+msgid "Update aborted."
+msgstr ""
+
+#: ../misctools.py:139
+msgid ""
+"Updating Red...\n"
+"\n"
+"This may take a while, so go get yourself a cup of coffee, tea, or whatever other choice of beverage you may prefer."
+msgstr ""
+
+#: ../misctools.py:153
+msgid "Red has been updated. Please restart the bot for any updates to take affect."
+msgstr ""
+
+#: ../misctools.py:157
+msgid "Something went wrong while updating. Please attempt an update manually."
+msgstr ""
+
+#: ../misctools.py:175
 msgid ""
 "🏓 Pong!\n"
 "Time to command execution: {}\n"
@@ -38,11 +60,31 @@ msgid ""
 "Full round trip: {}"
 msgstr ""
 
-#: ../misctools.py:151
+#: ../misctools.py:210
 msgid ""
 "**Starting snowflake:** {start[0]} — `{start[1]}`\n"
 "**Ending snowflake:** {end[0]} — `{end[1]}`\n"
 "\n"
 "**Time difference:** {difference}"
+msgstr ""
+
+#: ../misctools.py:246
+msgid "granted by default role"
+msgstr ""
+
+#: ../misctools.py:248
+msgid "not granted by any role"
+msgstr ""
+
+#: ../misctools.py:258 ../misctools.py:264
+msgid "Permission Breakdown"
+msgstr ""
+
+#: ../misctools.py:265
+msgid "Granted By"
+msgstr ""
+
+#: ../misctools.py:265
+msgid "Permission"
 msgstr ""
 

@@ -1,0 +1,129 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR ORGANIZATION
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2018-04-30 18:19-0600\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 1.0\n"
+
+
+#: ../formatting.py:20
+msgid "Add Reactions"
+msgstr ""
+
+#: ../formatting.py:21
+msgid "Administrator"
+msgstr ""
+
+#: ../formatting.py:22
+msgid "Attach Files"
+msgstr ""
+
+#: ../formatting.py:23
+msgid "Ban Members"
+msgstr ""
+
+#: ../formatting.py:24
+msgid "Change Nickname"
+msgstr ""
+
+#: ../formatting.py:25
+msgid "Connect"
+msgstr ""
+
+#: ../formatting.py:26
+msgid "Create Instant Invite"
+msgstr ""
+
+#: ../formatting.py:27
+msgid "Deafen Members"
+msgstr ""
+
+#: ../formatting.py:28
+msgid "Embed Links"
+msgstr ""
+
+#: ../formatting.py:29
+msgid "External Emojis"
+msgstr ""
+
+#: ../formatting.py:30
+msgid "Kick Members"
+msgstr ""
+
+#: ../formatting.py:31
+msgid "Manage Channels"
+msgstr ""
+
+#: ../formatting.py:32
+msgid "Manage Emojis"
+msgstr ""
+
+#: ../formatting.py:33
+msgid "Manage Server"
+msgstr ""
+
+#: ../formatting.py:34
+msgid "Manage Messages"
+msgstr ""
+
+#: ../formatting.py:35
+msgid "Manage Nicknames"
+msgstr ""
+
+#: ../formatting.py:36
+msgid "Manage Roles"
+msgstr ""
+
+#: ../formatting.py:37
+msgid "Manage Webhooks"
+msgstr ""
+
+#: ../formatting.py:38
+msgid "Mention Everyone"
+msgstr ""
+
+#: ../formatting.py:39
+msgid "Move Members"
+msgstr ""
+
+#: ../formatting.py:40
+msgid "Mute Members"
+msgstr ""
+
+#: ../formatting.py:41
+msgid "Read Message History"
+msgstr ""
+
+#: ../formatting.py:42
+msgid "Read Messages"
+msgstr ""
+
+#: ../formatting.py:43
+msgid "Send Messages"
+msgstr ""
+
+#: ../formatting.py:44
+msgid "Send TTS Messages"
+msgstr ""
+
+#: ../formatting.py:45
+msgid "Speak"
+msgstr ""
+
+#: ../formatting.py:46
+msgid "Use Voice Activation"
+msgstr ""
+
+#: ../formatting.py:47
+msgid "View Audit Log"
+msgstr ""
+

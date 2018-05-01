@@ -1,28 +1,34 @@
+import argparse
 import asyncio
+import shlex
+import sys
 import unicodedata
 from datetime import datetime
-
-from textwrap import dedent
 from inspect import getsource
+from textwrap import dedent
+from typing import Dict, List
+from tabulate import tabulate
 
 import discord
 from discord.ext import commands
 from redbot.core import checks
-
 from redbot.core.bot import Red, RedContext
-from redbot.core.utils.chat_formatting import warning, pagify, info
 from redbot.core.i18n import CogI18n
+from redbot.core.utils.chat_formatting import warning, pagify, info
 
-from cog_shared.odinair_libs import td_format, ConfirmMenu
+from cog_shared.odinair_libs import td_format, ConfirmMenu, formatting
 
 _ = CogI18n("MiscTools", __file__)
 
 
-class MiscTools:
-    """A somewhat basic collection quick & dirty utilities
+class Arguments(argparse.ArgumentParser):
 
-    This is mostly only useful for making cogs, or working with the Discord API.
-    """
+    def error(self, message):
+        raise RuntimeError(message)
+
+
+class MiscTools:
+    """A collection of small utilities that don't fit in any other cog"""
 
     __author__ = "odinair <odinair@odinair.xyz>"
 
@@ -36,7 +42,9 @@ class MiscTools:
         if command is None:
             await ctx.send(warning(_("That command doesn't exist")))
             return
-        await ctx.send_interactive(pagify(dedent(getsource(command.callback)), shorten_by=10), box_lang="py")
+        await ctx.send_interactive(
+            pagify(dedent(getsource(command.callback)), shorten_by=10), box_lang="py"
+        )
 
     @commands.command()
     async def charinfo(self, ctx: RedContext, *, characters: str):
@@ -49,43 +57,53 @@ class MiscTools:
             return
 
         def convert(c):
-            return "{} \N{EM DASH} {}".format(c, unicodedata.name(c, 'Name not found'))
+            return "{} \N{EM DASH} {}".format(c, unicodedata.name(c, "Name not found"))
 
         await ctx.send("\n".join(map(convert, characters)))
 
     @commands.command(hidden=True)
     @checks.is_owner()
-    async def updatered(self, ctx: RedContext, dev: bool = False, audio: bool = False, mongo: bool = False):
+    async def updatered(self, ctx: RedContext, *, args: str):
         """Update Red to the latest version
 
-        If `dev` is True, then the latest version from GitHub will be used,
-        with any possibly breaking changes included. Otherwise,
-        Red will be updated to the latest PyPI release.
-        """
-        disclaimer = _(
-            "**This command has not been extensively tested, and as such may have the potential to break "
-            "your Red install** (regardless of how unlikely it may be.)\n\nAll responsibility for any broken "
-            "installs beyond this point is passed onto the bot owner.\nIf you'd prefer to play it safe, "
-            "please cancel this operation and perform an update manually, either through the Red launcher, "
-            "or by manually running pip.\n\n"
-            "**Please confirm that you wish to continue by clicking \N{WHITE HEAVY CHECK MARK} or \N{CROSS MARK}.**"
-        )
+        This command uses CLI-like flags to determine how to update Red.
 
-        if not await ConfirmMenu(ctx, message=warning(disclaimer)):
-            await ctx.send(info("Update cancelled."))
+        Available flags:
+        ```
+        --dev     Pulls the latest changes from GitHub
+        --audio   Installs optional audio packages
+        --mongo   Installs optional MongoDB packages
+        ```
+
+        **Please note that if you choose to update using `--dev`, you are
+        acknowledging that you are using software in active development,
+        which means you may encounter more issues than when using
+        a regular release of Red.**
+
+        These flags can also be used in shorthand fashion, meaning `-da`
+        is effectively the same as passing `--dev --audio`.
+        """
+        parser = Arguments(add_help=False, allow_abbrev=False)
+        parser.add_argument("-d", "--dev", action="store_true")
+        parser.add_argument("-a", "--audio", action="store_true")
+        parser.add_argument("-m", "--mongo", action="store_true")
+
+        try:
+            args = parser.parse_args(shlex.split(args))
+        except RuntimeError as e:
+            await ctx.send(warning(str(e)))
             return
 
-        import sys
         interpreter = sys.executable
 
         # The following is mostly ripped from the Red launcher update function
         eggs = []
-        if audio:
+        if args.audio:
             eggs.append("audio")
-        if mongo:
+        if args.mongo:
             eggs.append("mongo")
 
-        if dev:
+        if args.dev:
             package = "git+https://github.com/Cog-Creators/Red-DiscordBot@V3/develop"
             if eggs:
                 package += "#egg=Red-DiscordBot[{}]".format(", ".join(eggs))
@@ -94,21 +112,50 @@ class MiscTools:
             if eggs:
                 package += "[{}]".format(", ".join(eggs))
 
-        tmp = await ctx.send(info("Updating Red...\n\nThis may take a while, so go get yourself a cup of coffee, tea, "
-                                  "or whatever other beverage you may prefer."))
+        args = [interpreter, "-m", "pip", "install", "-U", "--process-dependency-links", package]
 
+        confirm_str = _(
+            "By continuing with this action, this I will execute the following command "
+            "on your host machine:\n```\n{}\n```\n"
+            "**Please note that this command has not been extensively tested, has not been "
+            "reviewed by the core Red development team, and may have the potential to break your "
+            "install of Red, no matter how unlikely it may be.**\n\n"
+            "If you'd prefer to play it safe, cancel this action and perform the update manually, "
+            "either through the Red launcher, or by executing the above command manually.\n\n"
+            "**Please confirm that you wish to continue with this action.**"
+        ).format(
+            # the full executable path is masked to hide the root directory,
+            # since some users may use a venv in a directory that they wouldn't
+            # want to reveal through an update command
+            " ".join(["python"] + args[1:])
+        )
+
+        if not await ConfirmMenu(ctx, message=warning(confirm_str)):
+            await ctx.send(info(_("Update aborted.")))
+            return
+
+        tmp = await ctx.send(
+            info(
+                _(
+                    "Updating Red...\n\nThis may take a while, so go get yourself a cup of coffee, "
+                    "tea, or whatever other choice of beverage you may prefer."
+                )
+            )
+        )
         async with ctx.typing():
-            p = await asyncio.create_subprocess_exec(interpreter, "-m", "pip", "install",
-                                                     "-U", "--process-dependency-links", package,
-                                                     stdin=None, loop=self.bot.loop)
+            p = await asyncio.create_subprocess_exec(*args, stdin=None, loop=self.bot.loop)
             await p.wait()
 
         await tmp.delete()
 
         if p.returncode == 0:
-            await ctx.send("Red has been updated. Please restart the bot for any updates to take affect.")
+            await ctx.send(
+                _("Red has been updated. Please restart the bot for any updates to take affect.")
+            )
         else:
-            await ctx.send("Something went wrong while updating. Please attempt an update manually.")
+            await ctx.send(
+                _("Something went wrong while updating. Please attempt an update manually.")
+            )
 
     @commands.command(aliases=["pingt"])
     async def pingtime(self, ctx: RedContext):
@@ -124,10 +171,16 @@ class MiscTools:
         await ctx.trigger_typing()
         time_to_typing = td_format(datetime.utcnow() - now, milliseconds=True)
         full_round_trip = td_format(datetime.utcnow() - ctx.message.created_at, milliseconds=True)
-        await ctx.send(_("\N{TABLE TENNIS PADDLE AND BALL} Pong!\n"
-                         "Time to command execution: {}\n"
-                         "Typing indicator: {}\n\n"
-                         "Full round trip: {}").format(time_to_execution, time_to_typing, full_round_trip))
+        await ctx.send(
+            _(
+                "\N{TABLE TENNIS PADDLE AND BALL} Pong!\n"
+                "Time to command execution: {}\n"
+                "Typing indicator: {}\n\n"
+                "Full round trip: {}"
+            ).format(
+                time_to_execution, time_to_typing, full_round_trip
+            )
+        )
 
     @commands.group(aliases=["snowflake"], invoke_without_command=True)
     async def snowflaketime(self, ctx: RedContext, *snowflakes: int):
@@ -138,9 +191,13 @@ class MiscTools:
         strs = []
         for snowflake in snowflakes:
             snowflake_time = discord.utils.snowflake_time(snowflake)
-            strs.append("{}: `{}` \N{EM DASH} {}"
-                        .format(snowflake, snowflake_time.strftime('%A %B %d, %Y at %X UTC'),
-                                td_format(snowflake_time - datetime.utcnow(), append_str=True)))
+            strs.append(
+                "{}: `{}` \N{EM DASH} {}".format(
+                    snowflake,
+                    snowflake_time.strftime("%A %B %d, %Y at %X UTC"),
+                    td_format(snowflake_time - datetime.utcnow(), append_str=True),
+                )
+            )
         await ctx.send_interactive(pagify("\n".join(strs)))
 
     @snowflaketime.command(name="delta")
@@ -155,8 +212,63 @@ class MiscTools:
                 "**Ending snowflake:** {end[0]} \N{EM DASH} `{end[1]}`\n\n"
                 "**Time difference:** {difference}"
             ).format(
-                start=[td_format(start - now, append_str=True), start.strftime('%A %B %d, %Y at %X UTC')],
-                end=[td_format(end - now, append_str=True), end.strftime('%A %B %d, %Y at %X UTC')],
-                difference=td_format(end - start)
+                start=[
+                    td_format(start - now, append_str=True),
+                    start.strftime("%A %B %d, %Y at %X UTC"),
+                ],
+                end=[td_format(end - now, append_str=True), end.strftime("%A %B %d, %Y at %X UTC")],
+                difference=td_format(end - start),
             )
         )
+
+    @commands.command(aliases=["permbd"])
+    @commands.guild_only()
+    async def permissionbreakdown(self, ctx: RedContext, *, member: discord.Member = None):
+        """Break down the permissions for a given member
+
+        This command does not take channel overrides into account, and only
+        checks for server role permissions.
+
+        If more than three roles grant a single permission, only the first three are shown
+        for each permission.
+        """
+        member = member or ctx.author
+        permissions = {
+            x: [] for x, y in discord.Permissions()
+        }  # type: Dict[str, List[discord.Role]]
+        for role in reversed(member.roles):
+            for perm, value in role.permissions:
+                if value is False:
+                    continue
+                permissions[perm].append(role)
+
+        friendly = {formatting.permissions[x](): y for x, y in permissions.items()}
+        friendly = [
+            [
+                x,
+                _("Granted by default role")
+                if ctx.guild.default_role in y
+                else ", ".join(str(v) for v in y[:3]) or _("Not granted by any role"),
+            ]
+            for x, y in friendly.items()
+        ]
+
+        if await ctx.embed_requested():
+            embed = discord.Embed(
+                colour=ctx.me.colour,
+                description="\n".join(["**{}** \N{EM DASH} {}".format(x, y) for x, y in friendly]),
+            )
+            embed.set_author(name=_("Permission Breakdown"), icon_url=member.avatar_url)
+            await ctx.send(embed=embed)
+        else:
+            await ctx.send_interactive(
+                pagify(
+                    "{}\n\n{}".format(
+                        _("Permission Breakdown").center(50),
+                        tabulate(
+                            friendly, headers=[_("Permission"), _("Granted By")], tablefmt="psql"
+                        ),
+                    )
+                ),
+                box_lang="",
+            )

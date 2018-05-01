@@ -2,9 +2,10 @@
   "author": ["odinair"],
   "bot_version": [3, 0, 0],
   "min_python_version": [3, 5, 1],
-  "description": "A somewhat basic collection of quick & dirty utilities. This is really only helpful for making cogs, or working with the Discord API.",
-  "short": "A somewhat basic collection of quick & dirty utilities",
+  "description": "A collection of small utilities that don't fit in any other cog, and don't necessarily warrant their own specialized cog.",
+  "short": "A collection of small utilities that don't fit in any other specific cog",
   "type": "COG",
+  "requirements": ["tabulate"],
   "tags": [
     "utility"
   ],

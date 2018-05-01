@@ -1,16 +1,59 @@
 import collections
-from typing import List, Any, Sequence
+from typing import List, Any, Sequence, Callable, Dict
 
-__all__ = ("normalize", "tick", "chunks", "flatten", "trim_to",
-           "simple_table", "format_int", "slice_dict", "index")
+from .i18n import i18n
+
+__all__ = (
+    "normalize",
+    "tick",
+    "chunks",
+    "flatten",
+    "trim_to",
+    "simple_table",
+    "format_int",
+    "slice_dict",
+    "index",
+    "permissions",
+)
+
+permissions = {
+    "add_reactions": i18n("Add Reactions"),
+    "administrator": i18n("Administrator"),
+    "attach_files": i18n("Attach Files"),
+    "ban_members": i18n("Ban Members"),
+    "change_nickname": i18n("Change Nickname"),
+    "connect": i18n("Connect"),
+    "create_instant_invite": i18n("Create Instant Invite"),
+    "deafen_members": i18n("Deafen Members"),
+    "embed_links": i18n("Embed Links"),
+    "external_emojis": i18n("External Emojis"),
+    "kick_members": i18n("Kick Members"),
+    "manage_channels": i18n("Manage Channels"),
+    "manage_emojis": i18n("Manage Emojis"),
+    "manage_guild": i18n("Manage Server"),
+    "manage_messages": i18n("Manage Messages"),
+    "manage_nicknames": i18n("Manage Nicknames"),
+    "manage_roles": i18n("Manage Roles"),
+    "manage_webhooks": i18n("Manage Webhooks"),
+    "mention_everyone": i18n("Mention Everyone"),
+    "move_members": i18n("Move Members"),
+    "mute_members": i18n("Mute Members"),
+    "read_message_history": i18n("Read Message History"),
+    "read_messages": i18n("Read Messages"),
+    "send_messages": i18n("Send Messages"),
+    "send_tts_messages": i18n("Send TTS Messages"),
+    "speak": i18n("Speak"),
+    "use_voice_activation": i18n("Use Voice Activation"),
+    "view_audit_log": i18n("View Audit Log"),
+}  # type: Dict[str, Callable[..., str]]
 
 
 def simple_table(l1: List[str], l2: List[Any]):
     # this is actually just two space-separated joined lists, not even a proper table lol
     if len(l1) != len(l2):
-        raise ValueError('length of l1 and l2 are not equal')
+        raise ValueError("length of l1 and l2 are not equal")
     max_len = max([len(x) for x in l1])
-    return ["{}{}{}".format(x, ' ' * ((max_len - len(x)) + 2), l2[l1.index(x)]) for x in l1]
+    return ["{}{}{}".format(x, " " * ((max_len - len(x)) + 2), l2[l1.index(x)]) for x in l1]
 
 
 def trim_to(text: str, max_len: int):
@@ -21,7 +64,8 @@ def trim_to(text: str, max_len: int):
     text = text.split()
     built = []
     for s in text:
-        # If the first string is already over the max length, just fall back to the naive way of trimming strings,
+        # If the first string is already over the max length, just fall back to the naive way of
+        # trimming strings,
         # and split on the last possible character without regard for if it's actually possible
         # without breaking language semantics
         if len(s) >= max_len and not built:
@@ -45,7 +89,9 @@ def index(seq: Sequence, item):
     return "{}{}".format(padding, item)
 
 
-def slice_dict(dct: dict, *, max_len: int = 0, chunk_amnt: int = 2, reorder: bool = True) -> List[dict]:
+def slice_dict(
+    dct: dict, *, max_len: int = 0, chunk_amnt: int = 2, reorder: bool = True
+) -> List[dict]:
     """Slices a given dict into several dicts
 
     If reorder is False, this acts similarly to the following:
@@ -54,7 +100,8 @@ def slice_dict(dct: dict, *, max_len: int = 0, chunk_amnt: int = 2, reorder: boo
     Otherwise, this moves all the items in each chunked dict into a new dict based on their index
     in the aforementioned chunked dict.
 
-    This means that a dict similar to {a: a, b: b, c: c, d: d} is turned into [{a: a, c: c}, {b: b, d: d}].
+    This means that a dict similar to {a: a, b: b, c: c, d: d} is turned into
+    [{a: a, c: c}, {b: b, d: d}].
 
     Example usage
     --------------
@@ -67,7 +114,8 @@ def slice_dict(dct: dict, *, max_len: int = 0, chunk_amnt: int = 2, reorder: boo
     >>> from random import randint
     >>> dct = dict((str(randint(0, 10000)), randint(0, 10000)) for x in range(100))
     >>> slice_dict(dct, max_len=20, chunk_amnt=3)
-    >>> # => [{'4479': 1195, '5424': 2422, ...}, {'9532': 424, '6269': 2464, ...}, {'7239': 2050, '4747': 5212, ...}]
+    >>> # => [{'4479': 1195, '5424': 2422, ...}, {'9532': 424, '6269': 2464, ...},
+    >>> #    {'7239': 2050, '4747': 5212, ...}]
 
     Parameters
     ----------
@@ -102,11 +150,12 @@ def format_int(i: int):
     return "".join(reversed(",".join(chunks("".join(reversed(str(i))), 3))))
 
 
-def flatten(d, parent_key='', *, sep='_'):  # https://stackoverflow.com/a/6027615
+def flatten(d, parent_key="", *, sep="_"):  # https://stackoverflow.com/a/6027615
     items = []
     for k, v in d.items():
         new_key = parent_key + sep + k if parent_key else k
         if isinstance(v, collections.MutableMapping):
+            # noinspection PyUnresolvedReferences
             items.extend(flatten(v, new_key, sep=sep).items())
         else:
             items.append((new_key, v))
@@ -126,8 +175,8 @@ def normalize(text, *, title_case: bool = True, underscores: bool = True, **kwar
     text: Any
         The string or object to attempt to normalize
     title_case: bool
-        Returns the formatted string as a Title Case string. Any substitutions specified as keyword arguments are done
-        before the string is title cased.
+        Returns the formatted string as a Title Case string. Any substitutions specified as
+        keyword arguments are done before the string is converted to title case.
     underscores: bool
         Whether or not underscores are replaced with spaces
     """
