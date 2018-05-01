@@ -10,12 +10,11 @@
 
 set -e
 
-# ensure we're in the repo root directory
-cd $(dirname ${0})/../..
+cd $(dirname ${0})
+source ./cogs.sh
+cd ../..
 
-cogs=(cogwhitelist logs misctools quotes requirerole rndactivity rolemention starboard timedmute timedrole uinfo)
-
-if ! where redgettext; then
+if ! where redgettext &>/dev/null; then
     echo Installing redgettext...
     pip install -U redgettext
 fi

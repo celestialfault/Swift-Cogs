@@ -7,27 +7,24 @@ to propose changes to this document in a pull request.
 
 # Code style guidelines
 
-Aside from enforced pep8 compliance (with the exception of allowing up to 120 character long lines),
-there's not much in terms of guidelines as to how you should style your code.
+These cogs follow the [Black](https://github.com/ambv/black) code style; it's recommended that you setup `pre-commit`
+to format your changes to conform to the style before committing:
 
-#### Do the following
+```bash
+pip install -r requirements-dev.txt
+pre-commit install
+```
 
-- Ensure all Python features used exist and properly work in 3.6 and above
-
-#### Please avoid the following
-
-**Do note:** Pull requests that include any of these criteria won't necessarily be immediately closed,
-but I'll usually ask you to fix it, unless it has a valid technical reason for being included.
-
-- `*` imports
-- Unnecessary and/or excessive code duplication
-- Lines that are over 120 characters long
-- Practically unreadable code
-
-#### Any pull requests including the following will be closed
-
-- Pull requests that only change whitespace in a cosmetic way
-- Use of any blocking methods / libraries (e.g. `requests`)
+- Please do the following:
+    - Ensure your changes work on at least Windows, Mac OSX, and Linux
+    - Ensure that all Python features used exist and function properly on 3.5 and above
+- Avoid the following:
+    - Submit purely cosmetic whitespace change pull requests
+    - Unnecessary code duplication
+    - Lines with a character length of over 100 characters
+    - `*` imports
+- Don't do any of the following:
+    - Use of any blocking functions, methods, and/or libraries (e.g. `requests`)
 
 # Submitting a pull request
 

@@ -1,17 +1,20 @@
 <h1 align="center">Swift Cogs</h1>
-<p align="center">A somewhat bland collection of moderation, bot management, and utility cogs.</p>
+<p align="center">A varied collection of moderation and utility cogs for Red v3</p>
 <p align="center">
-  <a href="https://circleci.com/gh/notodinair/Swift-Cogs"><img src="https://circleci.com/gh/notodinair/Swift-Cogs.svg?style=svg" /></a>
-  <a href="https://codeclimate.com/github/notodinair/Swift-Cogs/maintainability"><img src="https://api.codeclimate.com/v1/badges/78a9d2290e62c90c524f/maintainability" /></a>
-  <a href="https://python.org/"><img src="https://img.shields.io/badge/Python-3.5-blue.svg?style=flat-square" /></a>
-  <a href="https://github.com/Cog-Creators/Red-DiscordBot"><img src="https://img.shields.io/badge/Red--DiscordBot-3.0.0-red.svg?style=flat-square" /></a>
-  <a href="http://makeapullrequest.com"><img src="https://img.shields.io/badge/PRs-welcome-green.svg?style=flat-square" /></a>
+  <a href="https://circleci.com/gh/notodinair/Swift-Cogs"><img alt="Build Status" src="https://img.shields.io/circleci/project/github/notodinair/Swift-Cogs.svg?style=flat-square" /></a>
+  <a href="https://codeclimate.com/github/notodinair/Swift-Cogs/maintainability"><img alt="Maintainability Rating" src="https://api.codeclimate.com/v1/badges/78a9d2290e62c90c524f/maintainability" /></a>
+  <a href="https://python.org/"><img alt="Python 3.5" src="https://img.shields.io/badge/python-3.5-blue.svg?style=flat-square" /></a>
+  <a href="https://github.com/Cog-Creators/Red-DiscordBot"><img alt="Red-DiscordBot: 3.0.0" src="https://img.shields.io/badge/red--discordbot-3.0.0-red.svg?style=flat-square" /></a>
+  <a href="https://github.com/ambv/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg?style=flat-square"></a>
 </p>
 
 # Installation
 
 **Until Red v3 is considered stable, these cogs should be considered beta software, with no guarantee of stability.**
 Breaking changes can and will be made, with or without warning, with backward compatibility not always implemented.
+
+These cogs also expect that you're running on the v3 develop branch, instead of a tagged release,
+as there may be uses of new features not present in any currently tagged release.
 
 ```
 [p]repo add swift-cogs https://github.com/notodinair/Swift-Cogs.git
@@ -39,11 +42,11 @@ and regenerate this cog list afterwards
 
 Require a per-server whitelist from the bot owner to use specified cogs
 
-#### Tags
+### Requirements
 
-🏷 **utility**  
+This cog has no requirements.
 
-#### Install Cog
+### Install Cog
 
 ```
 [p]cog install swift-cogs cogwhitelist
@@ -58,12 +61,11 @@ Log anything and everything that happens in your Discord guild.
 
 Inspired by Paddo's Grenzpolizei, created for more fine-tuned control of what and how data gets logged.
 
-#### Tags
+### Requirements
 
-🏷 **moderation**  
-🏷 **utility**  
+This cog has no requirements.
 
-#### Install Cog
+### Install Cog
 
 ```
 [p]cog install swift-cogs logs
@@ -74,13 +76,13 @@ Inspired by Paddo's Grenzpolizei, created for more fine-tuned control of what an
 <details>
 <summary>Misc Tools</summary>
 
-A somewhat basic collection of quick & dirty utilities. This is really only helpful for making cogs, or working with the Discord API.
+A collection of small utilities that don't fit in any other cog, and don't necessarily warrant their own specialized cog.
 
-#### Tags
+### Requirements
 
-🏷 **utility**  
+- `tabulate` library
 
-#### Install Cog
+### Install Cog
 
 ```
 [p]cog install swift-cogs misctools
@@ -93,11 +95,11 @@ A somewhat basic collection of quick & dirty utilities. This is really only help
 
 Save and retrieve quotes
 
-#### Tags
+### Requirements
 
-🏷 **fun**  
+This cog has no requirements.
 
-#### Install Cog
+### Install Cog
 
 ```
 [p]cog install swift-cogs quotes
@@ -110,12 +112,11 @@ Save and retrieve quotes
 
 Allow and disallow users to use a bot's commands based on per-guild roles
 
-#### Tags
+### Requirements
 
-🏷 **utility**  
-🏷 **roles**  
+This cog has no requirements.
 
-#### Install Cog
+### Install Cog
 
 ```
 [p]cog install swift-cogs requirerole
@@ -130,11 +131,11 @@ Random bot playing statuses.
 
 Due to how this cog works, manually set activity statuses and statuses set by other cogs are not respected, and will be overwritten
 
-#### Tags
+### Requirements
 
-🏷 **misc**  
+This cog has no requirements.
 
-#### Install Cog
+### Install Cog
 
 ```
 [p]cog install swift-cogs rndactivity
@@ -147,13 +148,11 @@ Due to how this cog works, manually set activity statuses and statuses set by ot
 
 Quickly mention a role, without allowing your average Joe to mention it.
 
-#### Tags
+### Requirements
 
-🏷 **utility**  
-🏷 **moderation**  
-🏷 **roles**  
+This cog has no requirements.
 
-#### Install Cog
+### Install Cog
 
 ```
 [p]cog install swift-cogs rolemention
@@ -168,13 +167,11 @@ It's almost like channel pins, but with stars, and more democracy. (democracy no
 
 This cog may use a fair amount of memory, due to the various internal caches.
 
-Requires the `tabulate` library to function.
+### Requirements
 
-#### Tags
+- `tabulate` library
 
-🏷 **fun**  
-
-#### Install Cog
+### Install Cog
 
 ```
 [p]cog install swift-cogs starboard
@@ -186,15 +183,13 @@ Requires the `tabulate` library to function.
 <summary>Timed Mute</summary>
 
 Mute users for a set amount of time.
-**This cog requires my Timed Role cog.
+This cog requires my Timed Role cog.
 
-#### Tags
+### Requirements
 
-🏷 **utility**  
-🏷 **moderation**  
-🏷 **roles**  
+- [timedrole](https://github.com/notodinair/Swift-Cogs)
 
-#### Install Cog
+### Install Cog
 
 ```
 [p]cog install swift-cogs timedmute
@@ -207,13 +202,11 @@ Mute users for a set amount of time.
 
 Add timed roles to users
 
-#### Tags
+### Requirements
 
-🏷 **utility**  
-🏷 **moderation**  
-🏷 **roles**  
+This cog has no requirements.
 
-#### Install Cog
+### Install Cog
 
 ```
 [p]cog install swift-cogs timedrole
@@ -226,12 +219,11 @@ Add timed roles to users
 
 Yet another [p]userinfo variation
 
-#### Tags
+### Requirements
 
-🏷 **utility**  
-🏷 **misc**  
+This cog has no requirements.
 
-#### Install Cog
+### Install Cog
 
 ```
 [p]cog install swift-cogs uinfo
