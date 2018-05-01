@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2018-04-30 18:19-0600\n"
+"POT-Creation-Date: 2018-04-30 19:11-0600\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -15,11 +15,11 @@ msgstr ""
 "Generated-By: redgettext 1.0\n"
 
 
-#: ../misctools.py:43
+#: ../misctools.py:44
 msgid "That command doesn't exist"
 msgstr ""
 
-#: ../misctools.py:117
+#: ../misctools.py:118
 msgid ""
 "By continuing with this action, this I will execute the following command on your host machine:\n"
 "```\n"
@@ -32,26 +32,26 @@ msgid ""
 "**Please confirm that you wish to continue with this action.**"
 msgstr ""
 
-#: ../misctools.py:134
+#: ../misctools.py:135
 msgid "Update aborted."
 msgstr ""
 
-#: ../misctools.py:139
+#: ../misctools.py:140
 msgid ""
 "Updating Red...\n"
 "\n"
 "This may take a while, so go get yourself a cup of coffee, tea, or whatever other choice of beverage you may prefer."
 msgstr ""
 
-#: ../misctools.py:153
+#: ../misctools.py:154
 msgid "Red has been updated. Please restart the bot for any updates to take affect."
 msgstr ""
 
-#: ../misctools.py:157
+#: ../misctools.py:158
 msgid "Something went wrong while updating. Please attempt an update manually."
 msgstr ""
 
-#: ../misctools.py:175
+#: ../misctools.py:176
 msgid ""
 "🏓 Pong!\n"
 "Time to command execution: {}\n"
@@ -60,7 +60,7 @@ msgid ""
 "Full round trip: {}"
 msgstr ""
 
-#: ../misctools.py:210
+#: ../misctools.py:211
 msgid ""
 "**Starting snowflake:** {start[0]} — `{start[1]}`\n"
 "**Ending snowflake:** {end[0]} — `{end[1]}`\n"
@@ -68,23 +68,23 @@ msgid ""
 "**Time difference:** {difference}"
 msgstr ""
 
-#: ../misctools.py:246
-msgid "granted by default role"
-msgstr ""
-
-#: ../misctools.py:248
-msgid "not granted by any role"
-msgstr ""
-
-#: ../misctools.py:258 ../misctools.py:264
+#: ../misctools.py:247
 msgid "Permission Breakdown"
 msgstr ""
 
-#: ../misctools.py:265
+#: ../misctools.py:252
+msgid "Granted by default role"
+msgstr ""
+
+#: ../misctools.py:255
+msgid "Not granted by any role"
+msgstr ""
+
+#: ../misctools.py:261
 msgid "Granted By"
 msgstr ""
 
-#: ../misctools.py:265
+#: ../misctools.py:261
 msgid "Permission"
 msgstr ""
 

@@ -233,42 +233,35 @@ class MiscTools:
         for each permission.
         """
         member = member or ctx.author
-        permissions = {
-            x: [] for x, y in discord.Permissions()
-        }  # type: Dict[str, List[discord.Role]]
+        perms = {x: [] for x, y in discord.Permissions()}  # type: Dict[str, List[discord.Role]]
         for role in reversed(member.roles):
             for perm, value in role.permissions:
                 if value is False:
                     continue
-                permissions[perm].append(role)
+                perms[perm].append(role)
 
-        friendly = {formatting.permissions[x](): y for x, y in permissions.items()}
-        friendly = [
-            [
-                x,
-                _("Granted by default role")
-                if ctx.guild.default_role in y
-                else ", ".join(str(v) for v in y[:3]) or _("Not granted by any role"),
-            ]
-            for x, y in friendly.items()
-        ]
-
-        if await ctx.embed_requested():
-            embed = discord.Embed(
-                colour=ctx.me.colour,
-                description="\n".join(["**{}** \N{EM DASH} {}".format(x, y) for x, y in friendly]),
-            )
-            embed.set_author(name=_("Permission Breakdown"), icon_url=member.avatar_url)
-            await ctx.send(embed=embed)
-        else:
-            await ctx.send_interactive(
-                pagify(
-                    "{}\n\n{}".format(
-                        _("Permission Breakdown").center(50),
-                        tabulate(
-                            friendly, headers=[_("Permission"), _("Granted By")], tablefmt="psql"
-                        ),
-                    )
-                ),
-                box_lang="",
-            )
+        await ctx.send_interactive(
+            pagify(
+                "{}\n\n{}".format(
+                    _("Permission Breakdown").center(50),
+                    tabulate(
+                        [
+                            [
+                                x,
+                                _("Granted by default role")
+                                if ctx.guild.default_role in y
+                                else ", ".join(str(v) for v in y[:3])
+                                or _("Not granted by any role"),
+                            ]
+                            for x, y in {
+                                formatting.permissions.get(x, lambda: x)(): y
+                                for x, y in perms.items()
+                            }.items()
+                        ],
+                        headers=[_("Permission"), _("Granted By")],
+                        tablefmt="psql",
+                    ),
+                )
+            ),
+            box_lang="",
+        )
