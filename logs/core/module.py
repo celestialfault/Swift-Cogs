@@ -1,28 +1,45 @@
 import logging
 import re
 from abc import ABC, abstractmethod
-from typing import Iterable, Optional, Union, Tuple, Dict
-from aiohttp import ClientSession
 from keyword import iskeyword
+from typing import Dict, Iterable, Optional, Tuple, Union
 
 import discord
-
+from aiohttp import ClientSession
 from redbot.core import Config
 from redbot.core.bot import Red
 from redbot.core.config import Group, Value
 
-from logs.core.logentry import LogEntry
-from logs.core.i18n import i18n
-from logs.core.utils import add_descriptions, replace_dict_items
-
 from cog_shared.odinair_libs import flatten
+from logs.core.i18n import i18n
+from logs.core.logentry import LogEntry
+from logs.core.utils import add_descriptions, replace_dict_items
 
 log = logging.getLogger("red.odinair.logs")
 
 
 def get_module(module_id: str, *args, **kwargs) -> "Module":
     from logs.modules import all_modules
+
     return all_modules[module_id.lower()](*args, **kwargs)
+
+
+async def log_event(module: str, event: str, *args, use_guild: discord.Guild = None, **kwargs):
+    arguments = args + tuple(kwargs.values())
+    guild = use_guild
+    if guild is None:
+        for arg in arguments:
+            if isinstance(arg, discord.Guild):
+                guild = arg
+            else:
+                try:
+                    guild = getattr(arg, "guild")
+                except AttributeError:
+                    continue
+            break
+        if guild is None:
+            raise RuntimeError("could not extract a guild object from any of the arguments passed")
+    return await get_module(module, guild).log(event, *args, **kwargs)
 
 
 class Module(ABC):
@@ -80,10 +97,7 @@ class Module(ABC):
 
     @property
     def descriptions(self):
-        return {
-            "module": self.description,
-            "options": flatten(self.settings, sep=":")
-        }
+        return {"module": self.description, "options": flatten(self.settings, sep=":")}
 
     # noinspection PyMethodMayBeStatic
     async def can_modify_settings(self, member: discord.Member):
@@ -112,14 +126,18 @@ class Module(ABC):
         return self.config.guild(self.guild)
 
     async def log_destination(self) -> Optional[Union[discord.TextChannel, discord.Webhook]]:
-        """Retrieve the log channel or webhook that should be used for logging with the current module"""
+        """Retrieve the log channel or webhook that should be used for logging the current module"""
         webhook = await self.get_config_value("_webhook")()
         channel_id = await self.get_config_value("_log_channel")()
         if webhook:
-            return discord.Webhook.from_url(webhook, adapter=discord.AsyncWebhookAdapter(self.session))
+            return discord.Webhook.from_url(
+                webhook, adapter=discord.AsyncWebhookAdapter(self.session)
+            )
         return self.bot.get_channel(channel_id)
 
-    async def set_destination(self, destination: Union[discord.TextChannel, discord.Webhook] = None):
+    async def set_destination(
+        self, destination: Union[discord.TextChannel, discord.Webhook] = None
+    ):
         if destination is None:
             await self.get_config_value("_log_channel").set(None)
             await self.get_config_value("_webhook").set(None)
@@ -142,13 +160,13 @@ class Module(ABC):
         """
         keys = {}  # type: Dict[Tuple[str, ...], Optional[bool]]
         for x in opts:
-            # This could probably be done in a better way without regex, but this was the cleaner method
-            # as opposed to heavily using .split(s)[i]
+            # This could probably be done in a better way without regex, but this was
+            # the cleaner method as opposed to heavily using .split(s)[i]
             match = self._TOGGLE_REGEX.match(x)
-            val = match.group('VALUE')
+            val = match.group("VALUE")
             if val is not None:
-                val = val in ('true', 'on')
-            keys[tuple(match.group('KEY').split(':'))] = val
+                val = val in ("true", "on")
+            keys[tuple(match.group("KEY").split(":"))] = val
 
         for key, val in keys.items():
             opt = self.get_config_value(*key)
@@ -162,11 +180,18 @@ class Module(ABC):
 
     async def config_embed(self):
         """Get the current module's settings embed"""
-        module_opts = {x: y for x, y in flatten(await self.module_config.all(), sep=":").items()
-                       if x in self.opt_keys}
+        module_opts = {
+            x: y
+            for x, y in flatten(await self.module_config.all(), sep=":").items()
+            if x in self.opt_keys
+        }
 
-        enabled = add_descriptions([x for x, y in module_opts.items() if y], self.descriptions["options"])
-        disabled = add_descriptions([x for x, y in module_opts.items() if not y], self.descriptions["options"])
+        enabled = add_descriptions(
+            [x for x, y in module_opts.items() if y], self.descriptions["options"]
+        )
+        disabled = add_descriptions(
+            [x for x, y in module_opts.items() if not y], self.descriptions["options"]
+        )
 
         log_destination = await self.log_destination()
 
@@ -177,16 +202,25 @@ class Module(ABC):
             dest = i18n("Logging to channel {channel}").format(channel=log_destination.mention)
 
         return (
-            discord.Embed(colour=discord.Colour.blurple(),
-                          description="{}\n\n{}".format(self.descriptions['module'], dest))
-            .set_author(name=i18n("{friendly_name} Logging Module").format(friendly_name=self.friendly_name),
-                        icon_url=self.icon_uri())
-            .add_field(name=i18n("Enabled"),
-                       value=enabled or i18n("**None** \N{EM DASH} All of this module's options are disabled"),
-                       inline=False)
-            .add_field(name=i18n("Disabled"),
-                       value=disabled or i18n("**None** \N{EM DASH} All of this module's options are enabled"),
-                       inline=False)
+            discord.Embed(
+                colour=discord.Colour.blurple(),
+                description="{}\n\n{}".format(self.descriptions["module"], dest),
+            ).set_author(
+                name=i18n("{friendly_name} Logging Module").format(
+                    friendly_name=self.friendly_name
+                ),
+                icon_url=self.icon_uri(),
+            ).add_field(
+                name=i18n("Enabled"),
+                value=enabled
+                or i18n("**None** \N{EM DASH} All of this module's options are disabled"),
+                inline=False,
+            ).add_field(
+                name=i18n("Disabled"),
+                value=disabled
+                or i18n("**None** \N{EM DASH} All of this module's options are enabled"),
+                inline=False,
+            )
         )
 
     async def log(self, fn_name: str, *args, **kwargs):
@@ -214,14 +248,16 @@ class Module(ABC):
         # they've either mucked up their log() call, or the module
         # would raise a SyntaxError when trying to load it regardless
         if not fn_name.isidentifier() or iskeyword(fn_name):
-            raise ValueError('fn_name is not a valid identifier')
+            raise ValueError("fn_name is not a valid identifier")
 
         dest = await self.log_destination()
         if dest is None or await self.is_ignored(*args, **kwargs):
             return
 
         fn = getattr(self, fn_name)
-        data = await discord.utils.maybe_coroutine(fn, *args, **kwargs)  # type: Union[LogEntry, Iterable]
+        data = await discord.utils.maybe_coroutine(
+            fn, *args, **kwargs
+        )  # type: Union[LogEntry, Iterable]
         if not isinstance(data, Iterable):
             data = [data]  # type: Iterable[LogEntry]
 
@@ -229,8 +265,12 @@ class Module(ABC):
             if not embed:
                 continue
             try:
-                kwargs = {"avatar_url": self.bot.user.avatar_url_as(format="png"), "username": self.bot.user.name}\
-                    if isinstance(dest, discord.Webhook) else {}
+                kwargs = {
+                    "avatar_url": self.bot.user.avatar_url_as(format="png"),
+                    "username": self.bot.user.name,
+                } if isinstance(
+                    dest, discord.Webhook
+                ) else {}
                 await embed.send(dest, **kwargs)
             except discord.HTTPException as e:
                 if e.status == 400:
@@ -238,20 +278,32 @@ class Module(ABC):
                     # that something was overlooked or improperly done by the parser function
                     raise
 
-                if isinstance(dest, discord.Webhook) and isinstance(e, (discord.Forbidden, discord.NotFound)):
-                    log.warning("Clearing errored webhook for guild {self.guild.id} {self.name} module"
-                                .format(self=self))
+                if (
+                    isinstance(dest, discord.Webhook)
+                    and isinstance(e, (discord.Forbidden, discord.NotFound))
+                ):
+                    log.warning(
+                        (
+                            "Clearing errored webhook for guild {self.guild.id} "
+                            "{self.name} module"
+                        ).format(
+                            self=self
+                        )
+                    )
                     await self.get_config_value("_webhook").set(None)
                 elif isinstance(e, discord.Forbidden):
-                    log.warning("Encountered forbidden error while logging result of "
-                                "{}.{} to {}: {}".format(self.__class__.__name__, fn_name, dest, e.text))
+                    log.warning(
+                        "Encountered forbidden error while logging result of "
+                        "{}.{} to {}: {}".format(self.__class__.__name__, fn_name, dest, e.text)
+                    )
 
     async def is_ignored(self, *args, **kwargs) -> list:
         """Checks if the current guild, or any arguments passed, are set to be ignored from logging.
 
         Any items that are ignored are returned in a list; any items not ignored are skipped.
 
-        If the current guild is ignored, then only the module's guild is returned, and not the items passed
+        If the current guild is ignored, then only the module's guild is returned,
+        and not the items passed.
         """
         args = args + tuple(kwargs.values())
         if not self.is_global and await self.root_config.ignore.guild():
@@ -266,8 +318,13 @@ class Module(ABC):
     async def _check(self, item) -> bool:
         if isinstance(item, discord.Member):
             ignore_roles = await self.root_config.ignore.member_roles()
-            return any([item.bot, item.id in await self.root_config.ignore.members(),
-                        *[x.id in ignore_roles for x in item.roles]])
+            return any(
+                [
+                    item.bot,
+                    item.id in await self.root_config.ignore.members(),
+                    *[x.id in ignore_roles for x in item.roles],
+                ]
+            )
         elif isinstance(item, discord.abc.GuildChannel):
             ignore = await self.root_config.ignore.channels()
             # noinspection PyUnresolvedReferences

@@ -12,15 +12,15 @@ class LazyI18n(CogI18n):
     >>> _ = CogI18n(...)
     >>> _("Test String")  # => Translated String
 
-    Should be turned into the following:
+    Would be turned into the following:
 
     >>> _ = LazyI18n(...)
     >>> _("Lazy String")()  # => Translated String
     """
 
     def __call__(self, untranslated: str) -> Callable[..., str]:
-        parent = super()
-        return lambda: parent.__call__(untranslated)
+        supr = super()
+        return lambda: supr.__call__(untranslated)
 
 
 i18n = LazyI18n("odinair_libs", __file__)

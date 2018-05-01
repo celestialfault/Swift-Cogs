@@ -8,10 +8,16 @@ from .message import MessageModule
 from .member import MemberModule
 from .channel import ChannelModule
 
-__all__ = [
-    "Module", "VoiceModule", "GuildModule", "RoleModule", "MessageModule", "MemberModule",
-    "ChannelModule", "all_modules"
-]
+__all__ = (
+    "Module",
+    "VoiceModule",
+    "GuildModule",
+    "RoleModule",
+    "MessageModule",
+    "MemberModule",
+    "ChannelModule",
+    "all_modules",
+)
 
 all_modules = {
     "voice": VoiceModule,
@@ -19,5 +25,5 @@ all_modules = {
     "role": RoleModule,
     "message": MessageModule,
     "member": MemberModule,
-    "channel": ChannelModule
+    "channel": ChannelModule,
 }  # type: Dict[str, Type[Module]]

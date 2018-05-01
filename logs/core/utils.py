@@ -3,7 +3,7 @@ from typing import List, Dict
 
 from logs.core.i18n import i18n
 
-__all__ = ('add_descriptions', 'replace_dict_items')
+__all__ = ("add_descriptions", "replace_dict_items")
 
 
 def add_descriptions(items: List[str], descriptions: Dict[str, str] = None) -> str:
@@ -12,8 +12,7 @@ def add_descriptions(items: List[str], descriptions: Dict[str, str] = None) -> s
     for item in items:
         index = items.index(item)
         items[index] = "**{}** \N{EM DASH} {}".format(
-            item,
-            descriptions.get(item, i18n('No description set'))
+            item, descriptions.get(item, i18n("No description set"))
         )
     return "\n".join(items)
 
