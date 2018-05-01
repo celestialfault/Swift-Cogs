@@ -17,7 +17,7 @@ from logs.modules import all_modules
 
 def ignore_handler(
     *,
-    parent=commands,
+    parent: commands.Group = commands,
     converters: List[Type[commands.Converter]],
     conf_opt: str,
     remove: bool = False,
@@ -456,7 +456,7 @@ class Logs:
         await log_event("member", "leave", member)
 
     async def on_member_update(self, before: discord.Member, after: discord.Member):
-        await log_event("channel", "update", before, after)
+        await log_event("member", "update", before, after)
 
     async def on_guild_channel_create(self, channel: discord.abc.GuildChannel):
         await log_event("channel", "create", channel)
