@@ -14,10 +14,11 @@ from starboard.log import log
 from cog_shared.odinair_libs import IterQueue
 
 _janitors = {}  # type: Dict[int, asyncio.Task]
-__all__ = ('StarboardGuild',)
+__all__ = ("StarboardGuild",)
 
 
 class StarboardGuild(StarboardBase):
+
     def __init__(self, guild: discord.Guild):
         self.guild = guild
         self.update_queue = IterQueue()
@@ -45,11 +46,12 @@ class StarboardGuild(StarboardBase):
     def selfstar(self) -> Value:
         return self.guild_config.selfstar
 
-    async def channel(self) -> Optional[discord.TextChannel]:
-        return self.bot.get_channel(await self.guild_config.channel())
+    @property
+    def channel(self):
+        return self.guild_config.channel
 
-    async def set_channel(self, channel: Optional[discord.TextChannel]):
-        await self.guild_config.channel.set(getattr(channel, "id", None))
+    async def get_channel(self) -> Optional[discord.TextChannel]:
+        return self.bot.get_channel(await self.channel())
 
     @property
     def ignored(self) -> Group:
@@ -66,7 +68,10 @@ class StarboardGuild(StarboardBase):
                 # noinspection PyArgumentList
                 exc = task.exception()
                 if exc:
-                    log.exception("Encountered exception in guild {} janitor task".format(self.guild.id), exc_info=exc)
+                    log.exception(
+                        "Encountered exception in guild {} janitor task".format(self.guild.id),
+                        exc_info=exc,
+                    )
             except (asyncio.CancelledError, asyncio.InvalidStateError):
                 pass
             del _janitors[self.guild.id]
@@ -78,7 +83,7 @@ class StarboardGuild(StarboardBase):
             if overwrite is False:
                 return
             _janitors.pop(self.guild.id).cancel()
-        if await self.channel() is None:
+        if await self.get_channel() is None:
             return
         log.debug("Setting up janitor task for guild {}".format(self.guild.id))
         _janitors[self.guild.id] = self.bot.loop.create_task(self._janitor())
@@ -91,8 +96,10 @@ class StarboardGuild(StarboardBase):
                 await self.purge_cache()
                 await asyncio.sleep(8)
         except asyncio.CancelledError:
-            log.debug("Janitor for guild {} was cancelled; finishing message update queue & exiting"
-                      "".format(self.guild.id))
+            log.debug(
+                "Janitor for guild {} was cancelled; finishing message update queue & exiting"
+                "".format(self.guild.id)
+            )
             await self.handle_queue()
 
     ###############################
@@ -130,8 +137,13 @@ class StarboardGuild(StarboardBase):
         self._cache.pop(message.id)
         return True
 
-    async def purge_cache(self, seconds_since_update: int = 30 * 60, *, dry_run: bool = False,
-                          update_items: bool = True) -> int:
+    async def purge_cache(
+        self,
+        seconds_since_update: int = 30 * 60,
+        *,
+        dry_run: bool = False,
+        update_items: bool = True
+    ) -> int:
         """Purge the message cache of stale items
 
         A stale item is defined as an item that hasn't had an update in X amount of seconds.
@@ -171,9 +183,15 @@ class StarboardGuild(StarboardBase):
         """Returns the current cached messages"""
         return list(self._cache.values())
 
-    async def get_message(self, *, message: discord.Message = None, message_id: int = None,
-                          channel: discord.TextChannel = None, auto_create: bool = False,
-                          cache_only: bool = False) -> Optional[StarboardMessage]:
+    async def get_message(
+        self,
+        *,
+        message: discord.Message = None,
+        message_id: int = None,
+        channel: discord.TextChannel = None,
+        auto_create: bool = False,
+        cache_only: bool = False
+    ) -> Optional[StarboardMessage]:
         """Get a starboard message for the given message
 
         If `message_id` is given and `channel` is None, then the message
@@ -237,7 +255,9 @@ class StarboardGuild(StarboardBase):
     ###############################
     #   Ignores
 
-    async def is_ignored(self, obj: Union[discord.TextChannel, discord.Member, discord.Message]) -> bool:
+    async def is_ignored(
+        self, obj: Union[discord.TextChannel, discord.Member, discord.Message]
+    ) -> bool:
         """Check if a member or channel is ignored from the starboard"""
         if isinstance(obj, discord.Message):
             return any([await self.is_ignored(obj.author), await self.is_ignored(obj.channel)])
@@ -246,7 +266,7 @@ class StarboardGuild(StarboardBase):
             if obj.bot:  # implicitly block bots from using the starboard
                 return True
             return obj.id in await self.ignored.members()
-        return obj.id in await self.ignored.channels() or obj == await self.channel()
+        return obj.id in await self.ignored.channels() or obj == await self.get_channel()
 
     async def ignore(self, obj: Union[discord.TextChannel, discord.Member]):
         """Ignore a member or channel"""

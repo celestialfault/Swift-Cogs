@@ -4,10 +4,15 @@ from typing import Optional, List, Union
 import discord
 
 from starboard.log import log
-from starboard.exceptions import StarException, BlockedException, BlockedAuthorException, SelfStarException
+from starboard.exceptions import (
+    StarException,
+    BlockedException,
+    BlockedAuthorException,
+    SelfStarException,
+)
 from starboard.base import StarboardBase
 
-__all__ = ('StarboardMessage',)
+__all__ = ("StarboardMessage",)
 
 
 class StarboardMessage(StarboardBase):
@@ -41,26 +46,31 @@ class StarboardMessage(StarboardBase):
             self._hidden = entry.get("hidden", False)
 
             if entry.get("starboard_message", None) is not None:
-                channel = await self.starboard.channel()
+                channel = await self.starboard.get_channel()
                 if channel is None:
                     self.starboard_message = None
                     return await self._save()
 
                 try:
-                    self.starboard_message = await channel.get_message(entry.get("starboard_message"))
+                    self.starboard_message = await channel.get_message(
+                        entry.get("starboard_message")
+                    )
                 except discord.NotFound:
                     self.starboard_message = None
                     self.queue_for_update()
 
     async def _save(self) -> None:
         log.debug("Saving data for message {}".format(self.message.id))
-        await self.starboard.messages.set_raw(str(self.message.id), value={
-            "channel_id": self.channel.id,
-            "author_id": self.author.id,
-            "starrers": self.starrers,
-            "starboard_message": getattr(self.starboard_message, "id", None),
-            "hidden": self.hidden
-        })
+        await self.starboard.messages.set_raw(
+            str(self.message.id),
+            value={
+                "channel_id": self.channel.id,
+                "author_id": self.author.id,
+                "starrers": self.starrers,
+                "starboard_message": getattr(self.starboard_message, "id", None),
+                "hidden": self.hidden,
+            },
+        )
         self.last_update = datetime.utcnow()
 
     #################################
@@ -113,9 +123,13 @@ class StarboardMessage(StarboardBase):
             return None
 
         embed = (
-            discord.Embed(colour=discord.Colour.gold(), timestamp=self.message.created_at,
-                          description=self.message.content or discord.Embed.Empty)
-            .set_author(name=self.author.display_name, icon_url=self.author.avatar_url_as(format="png"))
+            discord.Embed(
+                colour=discord.Colour.gold(),
+                timestamp=self.message.created_at,
+                description=self.message.content or discord.Embed.Empty,
+            ).set_author(
+                name=self.author.display_name, icon_url=self.author.avatar_url_as(format="png")
+            )
         )
 
         if self.attachment_url:
@@ -123,11 +137,9 @@ class StarboardMessage(StarboardBase):
 
         return {
             "content": self.STARBOARD_FORMAT.format(
-                stars=self.stars,
-                channel=self.channel.mention,
-                id=self.message.id
+                stars=self.stars, channel=self.channel.mention, id=self.message.id
             ),
-            "embed": embed
+            "embed": embed,
         }
 
     @property
@@ -152,11 +164,15 @@ class StarboardMessage(StarboardBase):
     async def update_starboard_message(self) -> None:
         self.in_queue = False
 
-        channel = await self.starboard.channel()
+        channel = await self.starboard.get_channel()
         if channel is None:
             return
 
-        if self.stars >= await self.starboard.min_stars() and not self.hidden and self.is_message_valid:
+        if (
+            self.stars >= await self.starboard.min_stars()
+            and not self.hidden
+            and self.is_message_valid
+        ):
             if self.starboard_message is not None:
                 try:
                     await self.starboard_message.edit(**self.starboard_message_contents)

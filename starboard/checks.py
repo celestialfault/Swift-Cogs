@@ -8,11 +8,12 @@ from starboard.i18n import i18n
 
 
 def can_use_starboard():
+
     async def predicate(ctx):
         if not ctx.guild:
             return True
         _starboard = base.get_starboard(ctx.guild)
-        if await _starboard.is_ignored(ctx.channel):
+        if await _starboard.is_ignored(ctx.get_channel):
             return False
         if await _starboard.is_ignored(ctx.author):
             if await _starboard.bot.is_owner(ctx.author):
@@ -28,7 +29,7 @@ def can_use_starboard():
 
 async def guild_has_starboard(ctx: RedContext):
     _starboard = base.get_starboard(ctx.guild)
-    if await _starboard.channel() is None:
+    if await _starboard.get_channel() is None:
         await ctx.send(warning(i18n("This server has no starboard channel setup")))
         return False
     return True

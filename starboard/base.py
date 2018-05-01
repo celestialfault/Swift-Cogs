@@ -19,6 +19,7 @@ def setup(bot_: Red, config_: Config):
 
 def get_starboard(guild: discord.Guild):
     from starboard.starboardguild import StarboardGuild
+
     if guild.id not in _guild_cache:
         sb = StarboardGuild(guild)
         _guild_cache[guild.id] = sb
@@ -30,6 +31,7 @@ def get_starboard_cache():
 
 
 class StarboardBase:
+
     @property
     def config(self):
         return config

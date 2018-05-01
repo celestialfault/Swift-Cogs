@@ -14,7 +14,7 @@ except ImportError:
     motor = False
 
 migrate_lock = asyncio.Lock()
-__all__ = ('dump_caches', 'v2_import', 'NoMotorException')
+__all__ = ("dump_caches", "v2_import", "NoMotorException")
 
 
 r"""
@@ -23,8 +23,8 @@ r"""
   My v2 starboard cog ( which can be found at https://github.com/notodinair/Red-Cogs ) used MongoDB
   instead of flat-file JSON storage.
 
-  This resulted in the awkward situation of not being able to import config data / starred messages via
-  Red's data converter, as it was designed to handle flat-file JSON storage, and not MongoDB.
+  This resulted in the awkward situation of not being able to import config data / starred messages
+  via Red's data converter, as it was designed to handle flat-file JSON storage, and not MongoDB.
 
 'why did you use mongodb anyway'
 
@@ -67,12 +67,15 @@ async def v2_import(bot: Red, mongo_uri: str):
             if guild is None:
                 continue
             starboard = get_starboard(guild)  # type: StarboardGuild
-            await starboard.messages.set_raw(str(message_id), value={
-                "channel_id": channel.id,
-                "author_id": None,
-                "starrers": [item.get("starrers", [])],
-                "starboard_message": item.get("starboard_message", None),
-                "hidden": item.get("removed", False)
-            })
+            await starboard.messages.set_raw(
+                str(message_id),
+                value={
+                    "channel_id": channel.id,
+                    "author_id": None,
+                    "starrers": [item.get("starrers", [])],
+                    "starboard_message": item.get("starboard_message", None),
+                    "hidden": item.get("removed", False),
+                },
+            )
     await dump_caches()
     log.info("v2 data migration complete.")

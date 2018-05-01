@@ -11,7 +11,7 @@ plugins:
   pep8:
     enabled: true
     config:
-      E521:
+      E251:
         # > 'Okay: def foo(arg: int = 42):'
         # > still warns about it, despite being pep8-compliant syntax
         # > [visible confusion]
