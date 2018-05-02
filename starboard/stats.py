@@ -1,4 +1,4 @@
-from typing import Iterable, Sequence, Dict
+from typing import Iterable, Sequence, Dict, Optional
 
 import discord
 
@@ -15,6 +15,13 @@ def _get_starrers(x: dict) -> Sequence[int]:
     return x.get("starrers", x.get("members", []))
 
 
+def _is_author(x: dict, member: discord.Member) -> Optional[bool]:
+    author = x.get("author_id", None)
+    if author is None:
+        return None
+    return member.id == x.get("author_id", None)
+
+
 async def user_stats(member: discord.Member, *, messages: Iterable = None) -> Dict[str, int]:
     starboard = get_starboard(member.guild)
     if messages is None:
@@ -23,25 +30,22 @@ async def user_stats(member: discord.Member, *, messages: Iterable = None) -> Di
     messages = list(filter(lambda x: x.get("hidden", False) is False, messages))
 
     given = len(
-        [
-            x
-            for x in messages
-            if member.id in _get_starrers(x) and member.id != x.get("author_id", None)
-        ]
+        [x for x in messages if member.id in _get_starrers(x) and _is_author(x, member) is False]
     )
+
     received = sum(
         [
-            len([y for y in x.get("starrers", x.get("members", [])) if y != member.id])
+            len([y for y in _get_starrers(x) if y != member.id])
             for x in messages
-            if x.get("author_id", None) == member.id
+            if _is_author(x, member) is True
         ]
     )
+
     messages = len(
         [
             x
             for x in messages
-            if x.get("author_id", None) == member.id
-            and x.get("starboard_message", None) is not None
+            if _is_author(x, member) is True and x.get("starboard_message", None) is not None
         ]
     )
 
