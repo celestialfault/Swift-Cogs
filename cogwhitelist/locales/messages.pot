@@ -5,61 +5,61 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2018-04-17 05:10-0600\n"
+"POT-Creation-Date: 2018-05-11 14:12-0600\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: pygettext.py 1.5\n"
+"Generated-By: redgettext 1.0\n"
 
 
-#: ../cogwhitelist.py:55
+#: cogwhitelist.py:65
 msgid "No cog with that name is currently loaded"
 msgstr ""
 
-#: ../cogwhitelist.py:61
+#: cogwhitelist.py:71
 msgid "**{cog}** now requires a whitelist to use"
 msgstr ""
 
-#: ../cogwhitelist.py:63
+#: cogwhitelist.py:75
 msgid "**{cog}** already requires a whitelist to use"
 msgstr ""
 
-#: ../cogwhitelist.py:67
-msgid "I couldn't find a guild with that ID"
+#: cogwhitelist.py:81
+msgid "I couldn't find a server with that ID"
 msgstr ""
 
-#: ../cogwhitelist.py:69
-msgid "That guild is already allowed to use **{cog}**"
+#: cogwhitelist.py:85
+msgid "That server is already allowed to use **{cog}**"
 msgstr ""
 
-#: ../cogwhitelist.py:71
+#: cogwhitelist.py:91
 msgid "**{guild_name}** is now allowed to use **{cog}**"
 msgstr ""
 
-#: ../cogwhitelist.py:85
+#: cogwhitelist.py:108
 msgid "**{cog}** doesn't currently require a whitelist to use"
 msgstr ""
 
-#: ../cogwhitelist.py:89
+#: cogwhitelist.py:115
 msgid "That guild isn't allowed to use **{cog}**"
 msgstr ""
 
-#: ../cogwhitelist.py:91
+#: cogwhitelist.py:121
 msgid "That guild is no longer allowed to use **{cog}**."
 msgstr ""
 
-#: ../cogwhitelist.py:94
+#: cogwhitelist.py:127
 msgid "**{cog}** no longer requires a whitelist to use"
 msgstr ""
 
-#: ../cogwhitelist.py:101
+#: cogwhitelist.py:138
 msgid "No cogs are currently setup to require a whitelist to use, and as such you cannot reset any cog whitelist settings."
 msgstr ""
 
-#: ../cogwhitelist.py:104
+#: cogwhitelist.py:146
 msgid ""
 "Are you sure you want to reset your cog whitelist settings?\n"
 "This action will make {cogs} cog(s) usable by any server.\n"
@@ -67,31 +67,31 @@ msgid ""
 "Unless you have a time machine, **this action cannot be undone.**"
 msgstr ""
 
-#: ../cogwhitelist.py:114
+#: cogwhitelist.py:157
 msgid "Ok then."
 msgstr ""
 
-#: ../cogwhitelist.py:132
+#: cogwhitelist.py:176
 msgid "I have no cogs that require a whitelist to use"
 msgstr ""
 
-#: ../cogwhitelist.py:136
+#: cogwhitelist.py:180
 msgid "Whitelisted Cogs"
 msgstr ""
 
-#: ../cogwhitelist.py:140
+#: cogwhitelist.py:184
 msgid "This guild is currently allowed to use this cog"
 msgstr ""
 
-#: ../cogwhitelist.py:142
+#: cogwhitelist.py:186
 msgid "This guild is **not** currently allowed to use this cog"
 msgstr ""
 
-#: ../cogwhitelist.py:145
+#: cogwhitelist.py:191
 msgid "**This cog is not currently loaded.**"
 msgstr ""
 
-#: ../cogwhitelist.py:147
+#: cogwhitelist.py:193
 msgid ""
 "Current whitelisted guild(s): {guilds}\n"
 "Use `{prefix}cogwhitelist list {cog}` to the whitelisted guild(s).\n"
@@ -99,31 +99,31 @@ msgid ""
 "{status}"
 msgstr ""
 
-#: ../cogwhitelist.py:161 ../cogwhitelist.py:191
+#: cogwhitelist.py:204 cogwhitelist.py:242
 msgid "Page {}/{}"
 msgstr ""
 
-#: ../cogwhitelist.py:171
+#: cogwhitelist.py:217
 msgid "That cog doesn't require a whitelist to use"
 msgstr ""
 
-#: ../cogwhitelist.py:177
+#: cogwhitelist.py:225
 msgid "Whitelisted Guilds"
 msgstr ""
 
-#: ../cogwhitelist.py:178
+#: cogwhitelist.py:226
 msgid "The following guilds are allowed to use {}"
 msgstr ""
 
-#: ../cogwhitelist.py:185
+#: cogwhitelist.py:234
 msgid "Unknown guild"
 msgstr ""
 
-#: ../cogwhitelist.py:187
+#: cogwhitelist.py:237
 msgid "Guild #{}"
 msgstr ""
 
-#: ../cogwhitelist.py:188
+#: cogwhitelist.py:238
 msgid ""
 "**Name:** {name}\n"
 "**ID:** `{id}`"
