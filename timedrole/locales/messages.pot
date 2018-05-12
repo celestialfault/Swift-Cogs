@@ -5,29 +5,39 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2018-04-17 12:04-0600\n"
+"POT-Creation-Date: 2018-05-12 01:35-0600\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: pygettext.py 1.5\n"
+"Generated-By: redgettext 1.0\n"
 
 
-#: ../timedrole.py:39
+#: timedrole.py:52
 msgid "Re-applying missing timed role"
 msgstr ""
 
-#: ../timedrole.py:45
+#: timedrole.py:58
 msgid "Re-applying timed role after member re-join"
 msgstr ""
 
-#: ../timedrole.py:61
+#: timedrole.py:65
+#, docstring
+msgid "Timed role management"
+msgstr ""
+
+#: timedrole.py:71
+#, docstring
+msgid "List all active timed roles"
+msgstr ""
+
+#: timedrole.py:74
 msgid "This guild has no currently active timed roles"
 msgstr ""
 
-#: ../timedrole.py:68
+#: timedrole.py:81
 msgid ""
 "**❯** Timed role **#{id}**\n"
 "**Member** — {member}\n"
@@ -38,35 +48,64 @@ msgid ""
 "**Total duration** — {duration}"
 msgstr ""
 
-#: ../timedrole.py:78
+#: timedrole.py:93
 msgid "No reason specified"
 msgstr ""
 
-#: ../timedrole.py:79
+#: timedrole.py:94
 msgid "An unknown member"
 msgstr ""
 
-#: ../timedrole.py:88
+#: timedrole.py:105
 msgid "Page {}/{}"
 msgstr ""
 
-#: ../timedrole.py:89
+#: timedrole.py:107
 msgid "Timed Roles"
 msgstr ""
 
-#: ../timedrole.py:123
+#: timedrole.py:122
+#, docstring
+msgid ""
+"Add one or more roles to a user for a set amount of time.\n"
+"\n"
+"        You can give a user up to 10 roles at once - this doesn't limit the total amount of\n"
+"        timed roles a member can have, however.\n"
+"\n"
+"        Examples for duration: `5d`, `1mo`, `1y2mo3w4d5m6s`\n"
+"\n"
+"        Abbreviations: `s` for seconds, `m` for minutes, `h` for hours, `d` for days, `w` for weeks,\n"
+"        `mo` for months, `y` for years. Any longer abbreviation is accepted. `m` assumes\n"
+"        minutes instead of months.\n"
+"\n"
+"        One month is counted as 30 days, and one year is counted as 365 days.\n"
+"        All invalid abbreviations are ignored.\n"
+"\n"
+"        Minimum duration for a timed role is two minutes.\n"
+"\n"
+"        Any roles that are above the top role of either the command issuer\n"
+"        or the bot are silently filtered out.\n"
+"        "
+msgstr ""
+
+#: timedrole.py:157
 msgid "Added role(s) {roles} to member **{member}** for **{duration}** successfully."
 msgstr ""
 
-#: ../timedrole.py:132
+#: timedrole.py:166
+#, docstring
+msgid "Remove one or all active timed roles from a member"
+msgstr ""
+
+#: timedrole.py:170
 msgid "Role removed by {}"
 msgstr ""
 
-#: ../timedrole.py:134
+#: timedrole.py:172
 msgid "Removed all timed roles from member **{}**"
 msgstr ""
 
-#: ../timedrole.py:136
+#: timedrole.py:175
 msgid "Removed roles {} from member **{}**"
 msgstr ""
 

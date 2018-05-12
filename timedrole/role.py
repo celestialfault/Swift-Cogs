@@ -1,8 +1,7 @@
-from datetime import timedelta, datetime
+from datetime import datetime, timedelta
 from typing import Optional, Union
 
 import discord
-
 from redbot.core.bot import Red
 
 from timedrole.config import config
@@ -20,7 +19,11 @@ class TempRole:
         self.reason = kwargs.pop("reason", None)
 
     def __repr__(self):
-        return "<TempRole role={self.role!r} member={self.member!r} duration={self.duration!r}>".format(self=self)
+        return (
+            "<TempRole role={self.role!r} member={self.member!r} duration={self.duration!r}>"
+        ).format(
+            self=self
+        )
 
     @property
     def guild(self) -> discord.Guild:
@@ -40,7 +43,7 @@ class TempRole:
             "duration": self.duration.total_seconds(),
             "added_at": self.added_at.timestamp(),
             "added_by": getattr(self.added_by, "id", self.added_by),
-            "reason": self.reason
+            "reason": self.reason,
         }
 
     @classmethod
@@ -98,8 +101,15 @@ class TempRole:
         return cls(member, role=role, **data)
 
     @classmethod
-    async def create(cls, member: discord.Member, role: discord.Role, duration: timedelta,
-                     added_by: discord.Member, *, reason: str = None) -> "TempRole":
+    async def create(
+        cls,
+        member: discord.Member,
+        role: discord.Role,
+        duration: timedelta,
+        added_by: discord.Member,
+        *,
+        reason: str = None
+    ) -> "TempRole":
         """Create a timed role
 
         `apply_role` is not invoked for you, and must be manually done.
@@ -117,8 +127,14 @@ class TempRole:
         reason: Optional[str]
             An optional reason string. This is displayed in '[p]timedrole list'
         """
-        self = cls(member, role=role, duration=duration.total_seconds(), reason=reason,
-                   added_by=added_by.id, added_at=datetime.utcnow().timestamp())
+        self = cls(
+            member,
+            role=role,
+            duration=duration.total_seconds(),
+            reason=reason,
+            added_by=added_by.id,
+            added_at=datetime.utcnow().timestamp(),
+        )
         await self.save()
         return self
 
