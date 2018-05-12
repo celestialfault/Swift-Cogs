@@ -1,3 +1,3 @@
-from redbot.core.i18n import CogI18n
+from redbot.core.i18n import Translator
 
-i18n = CogI18n("Starboard", __file__)
+i18n = Translator("Starboard", __file__)

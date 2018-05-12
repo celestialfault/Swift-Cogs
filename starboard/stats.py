@@ -1,12 +1,10 @@
-from typing import Iterable, Sequence, Dict, Optional
+from typing import Dict, Iterable, Optional, Sequence
 
 import discord
 
-from starboard.i18n import i18n
-from starboard.starboardguild import StarboardGuild
 from starboard.base import get_starboard
-
-from cog_shared.odinair_libs import format_int
+from starboard.guild import StarboardGuild
+from starboard.i18n import i18n
 
 __all__ = ("user_stats", "leaderboard_position", "leaderboard")
 
@@ -33,13 +31,14 @@ async def user_stats(member: discord.Member, *, messages: Iterable = None) -> Di
         [x for x in messages if member.id in _get_starrers(x) and _is_author(x, member) is False]
     )
 
-    received = sum(
-        [
-            len([y for y in _get_starrers(x) if y != member.id])
-            for x in messages
-            if _is_author(x, member) is True
-        ]
-    )
+    received_data = [
+        len([y for y in _get_starrers(x) if y != member.id])
+        for x in messages
+        if _is_author(x, member) is True
+    ]
+
+    received_max = max(received_data) if received_data else 0
+    received = sum(received_data)
 
     messages = len(
         [
@@ -49,7 +48,9 @@ async def user_stats(member: discord.Member, *, messages: Iterable = None) -> Di
         ]
     )
 
-    return {"given": given, "received": received, "messages": messages}
+    return {
+        "given": given, "received": received, "messages": messages, "max_received": received_max
+    }
 
 
 async def leaderboard(
@@ -64,32 +65,40 @@ async def leaderboard(
     given = {}  # type: Dict[discord.Member, int]
     received = {}  # type: Dict[discord.Member, int]
     messages = {}  # type: Dict[discord.Member, int]
+    max_received = {}  # type: Dict[discord.Member, int]
 
     for member in guild.members:
         data = await user_stats(member, messages=message_data)
         given[member] = data["given"]
         received[member] = data["received"]
         messages[member] = data["messages"]
+        max_received[member] = data["max_received"]
 
-    given, received, messages = (
-        sort(given.items()), sort(received.items()), sort(messages.items())
+    given, received, messages, max_received = (
+        sort(given.items()),
+        sort(received.items()),
+        sort(messages.items()),
+        sort(max_received.items()),
     )
 
     if top:
         # noinspection PyTypeChecker
-        given, received, messages = (
+        given, received, messages, max_received = (
             dict(list(given.items())[:top]),
             dict(list(received.items())[:top]),
             dict(list(messages.items())[:top]),
+            dict(list(max_received.items())[:top]),
         )
 
-    return {"given": given, "received": received, "messages": messages}
+    return {
+        "given": given, "received": received, "messages": messages, "max_received": max_received
+    }
 
 
 async def leaderboard_position(member: discord.Member) -> Dict[str, str]:
     lb_data = await leaderboard(member.guild)
     return {
-        k: "#{}".format(format_int(list(v.keys()).index(member) + 1))
+        k: "#{}".format("{:,}".format(list(v.keys()).index(member) + 1))
         if member in v
         else i18n("unranked")
         for k, v in lb_data.items()

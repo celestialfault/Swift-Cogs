@@ -1,42 +1,43 @@
 import asyncio
-from typing import Tuple, Dict, Union
+from typing import Dict, Tuple, Union
 
 import discord
-from discord.ext import commands
 from discord.raw_models import RawMessageUpdateEvent, RawReactionActionEvent, RawReactionClearEvent
-from redbot.core import Config, checks, modlog
-from redbot.core.bot import Red, RedContext
-from redbot.core.utils.chat_formatting import error, warning, bold, info, inline, pagify
+from redbot.core import Config, checks, commands, modlog
+from redbot.core.bot import Red
+from redbot.core.i18n import cog_i18n
+from redbot.core.utils.chat_formatting import bold, error, info, inline, pagify, warning
 from tabulate import tabulate
 
 from cog_shared.odinair_libs import (
+    ConfirmMenu,
+    cmd_group,
     cmd_help,
     fmt,
-    tick,
     hierarchy_allows,
-    ConfirmMenu,
-    format_int,
     index,
-    slice_dict,
+    tick,
 )
-from starboard import stats
-from starboard.base import StarboardBase, get_starboard, setup, get_starboard_cache
+from starboard import stats, v2_migration
+from starboard.base import StarboardBase, get_starboard, get_starboard_cache
 from starboard.checks import can_use_starboard, guild_has_starboard
-from starboard.exceptions import StarboardException, SelfStarException
+from starboard.exceptions import SelfStarException, StarboardException
+from starboard.guild import StarboardGuild
 from starboard.i18n import i18n
 from starboard.log import log
-from starboard.starboardguild import StarboardGuild
-from starboard.v2_migration import v2_import, NoMotorException
+from starboard.message import AutoStarboardMessage, StarboardMessage
 
 
+@cog_i18n(i18n)
 class Starboard(StarboardBase):
     """It's almost like pinning messages, except with stars"""
 
     __author__ = "odinair <odinair@odinair.xyz>"
 
     def __init__(self, bot: Red):
-        config = Config.get_conf(self, identifier=45351212589, force_registration=True)
-        config.register_guild(
+        self.bot = bot
+        self.config = Config.get_conf(self, identifier=45351212589, force_registration=True)
+        self.config.register_guild(
             **{
                 "ignored": {"members": [], "channels": []},
                 "channel": None,
@@ -44,8 +45,6 @@ class Starboard(StarboardBase):
                 "selfstar": True,
             }
         )
-
-        setup(bot, config)
 
         self._tasks = (
             self.bot.loop.create_task(self._register_cases()),
@@ -58,16 +57,9 @@ class Starboard(StarboardBase):
     @commands.group(invoke_without_command=True)
     @commands.guild_only()
     @can_use_starboard()
-    async def star(self, ctx: RedContext, message_id: int):
+    async def star(self, ctx: commands.Context, message: AutoStarboardMessage):
         """Star a message by it's ID"""
         if not await guild_has_starboard(ctx):
-            return
-        starboard = get_starboard(ctx.guild)  # type: StarboardGuild
-        message = await starboard.get_message(
-            message_id=message_id, channel=ctx.channel, auto_create=True
-        )
-        if not message:
-            await ctx.send(i18n("Sorry, I couldn't find that message."))
             return
         if not message.is_message_valid:
             await ctx.send(
@@ -80,7 +72,7 @@ class Starboard(StarboardBase):
                 delete_after=15,
             )
             return
-        if await starboard.is_ignored(message.message.author):
+        if await message.starboard.is_ignored(message.message.author):
             await ctx.send(
                 warning(
                     i18n(
@@ -114,31 +106,26 @@ class Starboard(StarboardBase):
             await ctx.tick()
 
     @star.command(name="show")
-    async def star_show(self, ctx: RedContext, message_id: int):
+    async def star_show(self, ctx: commands.Context, message: StarboardMessage):
         """Show the starboard message for the message given"""
         if not await guild_has_starboard(ctx):
             return
-        starboard = get_starboard(ctx.guild)  # type: StarboardGuild
-        message = await starboard.get_message(message_id=message_id)
-        if not message or message.stars == 0:
-            await ctx.send(i18n("Sorry, I couldn't find that message."))
-            return
+        if not message.stars:
+            raise commands.BadArgument
         if not message.is_message_valid:
             await ctx.send(warning(i18n("That message cannot be displayed on the starboard")))
             return
         await ctx.send(**message.starboard_message_contents)
 
     @star.command(name="remove", aliases=["rm"])
-    async def star_remove(self, ctx: RedContext, message_id: int):
+    async def star_remove(self, ctx: commands.Context, message: StarboardMessage):
         """Remove a previously added star"""
         if not await guild_has_starboard(ctx):
             return
-        starboard = get_starboard(ctx.guild)  # type: StarboardGuild
-        message = await starboard.get_message(message_id=message_id)
         if not message:
             await ctx.send(i18n("Sorry, I couldn't find that message."))
             return
-        if await starboard.is_ignored(message.message.author):
+        if await message.starboard.is_ignored(message.message.author):
             await ctx.send(
                 error(
                     i18n(
@@ -169,15 +156,35 @@ class Starboard(StarboardBase):
             await ctx.tick()
 
     @star.command(name="stats")
-    async def star_stats(self, ctx: RedContext, *, member: discord.Member = None):
+    async def star_stats(self, ctx: commands.Context, *, member: discord.Member = None):
         """Get your or a specified member's stats"""
         member = member or ctx.author
         data_unparsed = await stats.user_stats(member)
-        data = {k: format_int(v) for k, v in data_unparsed.items()}  # type: Dict[str, str]
+        data = {k: "{:,}".format(v) for k, v in data_unparsed.items()}  # type: Dict[str, str]
         positions = await stats.leaderboard_position(member)
 
-        if await ctx.embed_requested():
+        if not await ctx.embed_requested():
+            await ctx.send(
+                info(
+                    i18n(
+                        "Stats for member {member}:\n\n"
+                        "**Stars given:** {given} *(position {given_pos})*\n"
+                        "**Stars received:** {received} *(position {received_pos})*\n"
+                        "**Max stars received: **{max_received} *(position {max_received_pos})*\n"
+                        "**Starboard messages:** {messages} *(position {messages_pos})*"
+                    ).format(
+                        member=bold(str(member)),
+                        **data,
+                        **{"{}_pos".format(k): v for k, v in positions.items()},
+                    )
+                )
+            )
+
+        else:
             embed = discord.Embed(colour=ctx.me.colour)
+            embed.set_author(
+                name=i18n("Starboard Stats"), icon_url=member.avatar_url_as(format="png")
+            )
 
             embed.add_field(
                 name=i18n("Stars Given"),
@@ -190,80 +197,81 @@ class Starboard(StarboardBase):
                 ),
             )
             embed.add_field(
+                name="\N{ZERO WIDTH JOINER}", value="\N{ZERO WIDTH JOINER}", inline=False
+            )
+            embed.add_field(
+                name=i18n("Max Received Stars"),
+                value=i18n("**{} stars** (position {})").format(
+                    data["max_received"], positions["max_received"]
+                ),
+            )
+            embed.add_field(
                 name=i18n("Starboard Messages"),
                 value=i18n("**{} messages** (position {})").format(
                     data["messages"], positions["messages"]
                 ),
             )
 
-            embed.set_author(
-                name=i18n("Starboard Stats"), icon_url=member.avatar_url_as(format="png")
-            )
             await ctx.send(embed=embed)
-        else:
-            positions = {"{}_pos".format(k): v for k, v in positions.items()}
-            desc = i18n(
-                "Stats for member {member}:"
-                "\n"
-                "\n"
-                "\N{RIGHTWARDS BLACK CIRCLED WHITE ARROW} **{given}** stars given "
-                "(position {given_pos})"
-                "\n"
-                "\N{RIGHTWARDS BLACK CIRCLED WHITE ARROW} **{received}** stars received "
-                "(position {received_pos})"
-                "\n"
-                "\N{RIGHTWARDS BLACK CIRCLED WHITE ARROW} **{messages}** starboard messages "
-                "(position {messages_pos})"
-            ).format(
-                member=bold(str(member)), **data, **positions
-            )
-            await ctx.send(info(desc))
 
     @star.command(name="leaderboard", aliases=["lb"])
-    async def star_leaderboard(self, ctx: RedContext):
+    async def star_leaderboard(self, ctx: commands.Context):
         """Retrieve the star leaderboard for the current guild"""
-        data = await stats.leaderboard(ctx.guild, top=10)
+        data = await stats.leaderboard(ctx.guild, top=8)
         if await ctx.embed_requested():
             default_str = inline(i18n("There's nothing here yet..."))
-            msg_keys = list(data["messages"].keys())
-            fmt_str = "**`{index}.`** {member} \N{EM DASH} **{stars}** \N{WHITE MEDIUM STAR}"
 
-            def fmt_(dct: dict):
+            medals = [
+                "\N{FIRST PLACE MEDAL}",
+                "\N{SECOND PLACE MEDAL}",
+                "\N{THIRD PLACE MEDAL}",
+                "**`{index}.`**",
+            ]
+
+            def fmt_(
+                dct: dict,
+                fmt_str: str = "{medal} {member} \N{EM DASH} **{val}** " "\N{WHITE MEDIUM STAR}",
+            ):
+                keys = list(dct.keys())
+
                 return "\n".join(
                     [
                         fmt_str.format(
-                            index=index(list(dct.keys()), x), member=x.mention, stars=format_int(y)
+                            medal=medals[min(len(medals), keys.index(x))].format(
+                                index=index(keys, x)
+                            ),
+                            member=x.mention,
+                            val="{:,}".format(y),
                         )
                         for x, y in dct.items()
                     ]
                 )
 
-            given, received = (fmt_(data["given"]), fmt_(data["received"]))
-
-            messages = slice_dict(data["messages"])
-            fmt_str = "**`{index}.`** {member} \N{EM DASH} **{messages}**"
-            messages = [
-                "\n".join(
-                    [
-                        fmt_str.format(
-                            index=index(msg_keys, k), member=k.mention, messages=format_int(v)
-                        )
-                        for k, v in x.items()
-                    ]
-                )
-                for x in messages
-            ]
             embed = discord.Embed(colour=ctx.me.colour)
-            embed.set_author(name=i18n("Leaderboard"), icon_url=ctx.guild.icon_url)
-            embed.add_field(name=i18n("Stars Given"), value=given or default_str)
-            embed.add_field(name=i18n("Stars Received"), value=received or default_str)
+            embed.set_author(name=i18n("Server Leaderboard"), icon_url=ctx.guild.icon_url)
+            embed.add_field(name=i18n("Stars Given"), value=fmt_(data["given"]) or default_str)
+            embed.add_field(
+                name=i18n("Stars Received"), value=fmt_(data["received"]) or default_str
+            )
 
             embed.add_field(
                 name="\N{ZERO WIDTH JOINER}", value="\N{ZERO WIDTH JOINER}", inline=False
             )
-            embed.add_field(name=i18n("Starboard Messages"), value=messages[0] or default_str)
+
             embed.add_field(
-                name="\N{ZERO WIDTH JOINER}", value=messages[1] or "\N{ZERO WIDTH JOINER}"
+                name=i18n("Max Stars Received"), value=fmt_(data["max_received"]) or default_str
+            )
+
+            embed.add_field(
+                name=i18n("Starboard Messages"),
+                value=fmt_(
+                    data["messages"],
+                    # yes, this was the closest emoji I could find.
+                    # no, it wasn't an option to forego using it here, otherwise the embed
+                    # would look off on servers with actual activity.
+                    fmt_str="{medal} {member} \N{EM DASH} **{val}** \N{TICKET}",
+                )
+                or default_str,
             )
 
             await ctx.send(embed=embed)
@@ -272,83 +280,98 @@ class Starboard(StarboardBase):
 
             def fmt_(dct: dict):
                 return tabulate(
-                    [(str(x[0]), format_int(x[1])) for x in dct.items()], tablefmt="psql"
+                    [(str(x[0]), "{:,}".format(x[1])) for x in dct.items()], tablefmt="psql"
                 )
 
             format_args = {
                 "headers": [
                     i18n("Stars Given").center(30),
                     i18n("Stars Received").center(30),
+                    i18n("Max Stars Received").center(30),
                     i18n("Starboard Messages").center(30),
                 ],
-                "tables": [fmt_(data["given"]), fmt_(data["received"]), fmt_(data["messages"])],
+                "tables": [
+                    fmt_(data["given"]),
+                    fmt_(data["received"]),
+                    fmt_(data["max_received"]),
+                    fmt_(data["messages"]),
+                ],
                 "divider": "\n\n{}\n\n".format("\N{EM DASH}" * 30),
             }
 
             message = (
                 "{headers[0]}\n\n{tables[0]}{divider}{headers[1]}\n\n{tables[1]}"
-                "{divider}{headers[2]}\n\n{tables[2]}"
+                "{divider}{headers[2]}\n\n{tables[2]}{divider}{headers[3]}\n\n{tables[3]}"
             ).format(
                 **format_args
             )
-            await ctx.send_interactive(pagify(message, delims=["\n"]), box_lang="")
+            await ctx.send_interactive(
+                pagify(message, delims=["\n"], page_length=1024), box_lang=""
+            )
 
     ####################
     #   [p]stars
 
     async def ignore(
         self,
-        ctx: RedContext,
+        ctx: commands.Context,
         obj: Union[discord.Member, discord.TextChannel],
         *,
         modlog_case: bool = False,
         reason: str = None,
         unignore: bool = False,
     ):
-        if isinstance(obj, discord.Member):
-            if obj.bot:
+        starboard = get_starboard(obj.guild)  # type: StarboardGuild
+        if (
+            isinstance(obj, discord.Member)
+            and not await hierarchy_allows(self.bot, ctx.author, obj)
+        ):
+            await ctx.send(error(i18n("You aren't allowed to ignore that member")))
+            return
+
+        elif isinstance(obj, discord.TextChannel):
+            if obj == await starboard.get_channel():
                 await ctx.send(
                     warning(
                         i18n(
-                            "Bot accounts are always blocked from using the starboard, "
-                            "and cannot be manually blocked nor unblocked."
+                            "The starboard channel is always ignored and cannot be manually "
+                            "ignored nor unignored."
                         )
                     )
                 )
                 return
-            elif not await hierarchy_allows(self.bot, ctx.author, obj):
-                await ctx.send(error(i18n("You aren't allowed to block that member")))
-                return
-        starboard = get_starboard(obj.guild)  # type: StarboardGuild
+
         if await starboard.is_ignored(obj):
             await ctx.send(
                 warning(
-                    i18n("That user is already blocked from using this server's starboard")
+                    i18n("That user is already ignored from using this server's starboard")
                     if isinstance(obj, discord.Member)
                     else i18n("That channel is already being ignored")
                 )
             )
             return
+
         if await getattr(starboard, "unignore" if unignore else "ignore")(obj):
             await ctx.send(
                 tick(
-                    i18n("**{}** is now blocked from this server's starboard")
+                    i18n("**{}** is now ignored from this server's starboard")
                     if unignore is False
-                    else i18n("**{}** is no longer blocked from this server's starboard")
+                    else i18n("**{}** is no longer ignored from this server's starboard")
                 ).format(
                     obj
                 )
             )
+
             if isinstance(obj, discord.Member) and modlog_case:
                 try:
                     await modlog.create_case(
-                        self.bot,
-                        ctx.guild,
-                        ctx.message.created_at,
-                        "starboardblock" if not unignore else "starboardunblock",
-                        obj,
-                        ctx.author,
-                        reason,
+                        bot=self.bot,
+                        guild=ctx.guild,
+                        created_at=ctx.message.created_at,
+                        action_type="starboardblock" if not unignore else "starboardunblock",
+                        user=obj,
+                        moderator=ctx.author,
+                        reason=reason,
                         until=None,
                         channel=None,
                     )
@@ -358,116 +381,71 @@ class Starboard(StarboardBase):
     @commands.group(name="stars")
     @commands.guild_only()
     @checks.mod_or_permissions(manage_messages=True)
-    async def stars(self, ctx: RedContext):
+    async def stars(self, ctx: commands.Context):
         """Manage starboard messages"""
         if not ctx.invoked_subcommand:
             await ctx.send_help()
 
+    stars_ignore = cmd_group(
+        name="ignore",
+        parent=stars,
+        help=i18n("Manage the current server's starboard ignore list"),
+        aliases=["block"],
+    )
+
+    @stars_ignore.command(name="add")
+    async def ignore_add(self, ctx: commands.Context, obj: discord.TextChannel or discord.Member):
+        """Add a channel or member to the server's ignore list"""
+        await self.ignore(ctx, obj)
+
+    @stars_ignore.command(name="remove")
+    async def ignore_remove(
+        self, ctx: commands.Context, obj: discord.TextChannel or discord.Member
+    ):
+        """Remove a channel or member from the server's ignore list"""
+        await self.ignore(ctx, obj, unignore=True)
+
     @stars.command(name="hide")
-    async def stars_hide(self, ctx: RedContext, message_id: int):
+    async def stars_hide(self, ctx: commands.Context, message: StarboardMessage):
         """Hide a message from the starboard"""
-        starboard = get_starboard(ctx.guild)  # type: StarboardGuild
-        star = await starboard.get_message(message_id=message_id)
-        if not star:
-            await ctx.send(
-                error(
-                    i18n(
-                        "That message either hasn't been starred by anyone yet, or it doesn't exist"
-                    )
-                )
-            )
-            return
-        if star.hidden:
+        if message.hidden:
             await ctx.send(error(i18n("That message is already hidden")))
         else:
-            star.hidden = True
+            message.hidden = True
             await ctx.send(
-                tick(i18n("The message sent by **{}** is now hidden.").format(star.message.author))
+                tick(i18n("The message sent by **{}** is now hidden.").format(message.author))
             )
 
     @stars.command(name="unhide")
-    async def stars_unhide(self, ctx: RedContext, message_id: int):
+    async def stars_unhide(self, ctx: commands.Context, message: StarboardMessage):
         """Unhide a previously hidden message"""
-        starboard = get_starboard(ctx.guild)  # type: StarboardGuild
-        star = await starboard.get_message(message_id=message_id)
-        if not star:
-            await ctx.send(
-                error(
-                    i18n(
-                        "That message either hasn't been starred by anyone yet, or it doesn't exist"
-                    )
-                )
-            )
-            return
-        if star.hidden is False:
+        if message.hidden is False:
             await ctx.send(error(i18n("That message hasn't been hidden")))
         else:
-            star.hidden = False
+            message.hidden = False
             await ctx.send(
-                tick(
-                    i18n("The message sent by **{}** is no longer hidden.").format(
-                        star.message.author
-                    )
-                )
+                tick(i18n("The message sent by **{}** is no longer hidden.").format(message.author))
             )
-
-    @stars.command(name="block", aliases=["blacklist"])
-    async def stars_block(self, ctx: RedContext, member: discord.Member, *, reason: str = None):
-        """Block the passed user from using this guild's starboard
-
-        Bot accounts are always blocked from using the starboard, and cannot be manually blocked.
-
-        For ignoring a channel from the starboard, see `[p]starboard ignore`"""
-        await self.ignore(ctx, member, reason=reason, modlog_case=True)
-
-    @stars.command(name="unblock", aliases=["unblacklist"])
-    async def stars_unblock(self, ctx: RedContext, member: discord.Member, *, reason: str = None):
-        """Unblocks the passed user from using this guild's starboard
-
-        Bot accounts are always blocked from using the starboard, and cannot be manually unblocked.
-
-        For unignoring a channel from the starboard, see `[p]starboard unignore`"""
-        await self.ignore(ctx, member, reason=reason, modlog_case=True, unignore=True)
 
     @stars.command(name="update")
-    async def stars_update(self, ctx: RedContext, message_id: int):
-        """Forcefully update a starboard message
-
-        `message_id` should be the corresponding message that the starboard message
-        is for, and not the starboard message itself."""
-        starboard = get_starboard(ctx.guild)  # type: StarboardGuild
-        star = await starboard.get_message(message_id=message_id)
-        if star is None:
-            await ctx.send(
-                warning(
-                    i18n("I couldn't find a message with that ID - has the message been deleted?")
-                )
-            )
-            return
-        await star.update_cached_message()
-        await star.update_starboard_message()
-        await ctx.send(
-            tick(
-                i18n(
-                    "The starboard message for the message sent by **{}** has been updated"
-                ).format(
-                    star.author
-                )
-            )
-        )
+    async def stars_update(self, ctx: commands.Context, message: StarboardMessage):
+        """Forcefully update a starboard message"""
+        await message.update_cached_message()
+        await message.update_starboard_message()
+        await ctx.tick()
 
     ####################
     #   [p]starboardset
 
     @commands.group(name="starboardset")
     @checks.is_owner()
-    async def starboardset(self, ctx: RedContext):
+    async def starboardset(self, ctx: commands.Context):
         """Core Starboard cog management"""
         await cmd_help(ctx)
 
     @starboardset.command(name="v2_import")
     @checks.is_owner()
-    async def starboardset_v2_import(self, ctx: RedContext, mongo_uri: str):
+    async def starboardset_v2_import(self, ctx: commands.Context, mongo_uri: str):
         """Import Red v2 instance data
 
         Only messages are imported currently; guild settings are not imported,
@@ -493,8 +471,8 @@ class Starboard(StarboardBase):
             tmp = await ctx.send(i18n("Importing data... (this could take a while)"))
             try:
                 async with ctx.typing():
-                    await v2_import(self.bot, mongo_uri)
-            except NoMotorException:
+                    await v2_migration.import_data(self.bot, mongo_uri)
+            except v2_migration.NoMotorError:
                 await tmp.delete()
                 await fmt(
                     ctx,
@@ -516,13 +494,13 @@ class Starboard(StarboardBase):
     @commands.group(name="starboard")
     @commands.guild_only()
     @checks.admin_or_permissions(manage_channels=True)
-    async def cmd_starboard(self, ctx: RedContext):
+    async def cmd_starboard(self, ctx: commands.Context):
         """Manage the guild's starboard"""
         if not ctx.invoked_subcommand:
             await ctx.send_help()
 
     @cmd_starboard.command(name="settings")
-    async def starboard_settings(self, ctx: RedContext):
+    async def starboard_settings(self, ctx: commands.Context):
         """Get the current settings for this guild's starboard"""
         starboard = get_starboard(ctx.guild)  # type: StarboardGuild
 
@@ -552,7 +530,7 @@ class Starboard(StarboardBase):
         )
 
     @cmd_starboard.command(name="selfstar")
-    async def starboard_selfstar(self, ctx: RedContext, toggle: bool = None):
+    async def starboard_selfstar(self, ctx: commands.Context, toggle: bool = None):
         """Toggles if members can star their own messages
 
         Member statistics do not respect this setting, and always ignore self-stars
@@ -570,7 +548,7 @@ class Starboard(StarboardBase):
         )
 
     @cmd_starboard.command(name="channel")
-    async def starboard_channel(self, ctx: RedContext, channel: discord.TextChannel = None):
+    async def starboard_channel(self, ctx: commands.Context, channel: discord.TextChannel = None):
         """Set or clear the server's starboard channel"""
         if channel and channel.guild.id != ctx.guild.id:
             await ctx.send(error(i18n("That channel isn't in this server")))
@@ -584,7 +562,7 @@ class Starboard(StarboardBase):
             await ctx.send(tick(i18n("Set the starboard channel to {}").format(channel.mention)))
 
     @cmd_starboard.command(name="minstars", aliases=["stars"])
-    async def starboard_minstars(self, ctx: RedContext, stars: int):
+    async def starboard_minstars(self, ctx: commands.Context, stars: int):
         """Set the amount of stars required for a message to be sent to this guild's starboard"""
         if stars < 1:
             await ctx.send(warning(i18n("The amount of stars must be a non-zero number")))
@@ -600,23 +578,9 @@ class Starboard(StarboardBase):
         await starboard.min_stars.set(stars)
         await ctx.tick()
 
-    @cmd_starboard.command(name="ignore")
-    async def starboard_ignore(self, ctx: RedContext, *, channel: discord.TextChannel):
-        """Ignore a channel, preventing any stars from occurring in it
-
-        For ignoring a member from the starboard, see `[p]stars block`"""
-        await self.ignore(ctx, channel)
-
-    @cmd_starboard.command(name="unignore")
-    async def starboard_unignore(self, ctx: RedContext, *, channel: discord.TextChannel):
-        """Unignore a channel, allowing stars to occur
-
-        For unignoring a member from the starboard, see `[p]stars unblock`"""
-        await self.ignore(ctx, channel, unignore=True)
-
     @cmd_starboard.command(name="restart_janitor", hidden=True)
     @commands.cooldown(1, 3 * 60, commands.BucketType.guild)
-    async def starboard_restart_janitor(self, ctx: RedContext):
+    async def starboard_restart_janitor(self, ctx: commands.Context):
         """Restart the current server's janitor task
 
         This can be useful if the current server's janitor erroneously exited,

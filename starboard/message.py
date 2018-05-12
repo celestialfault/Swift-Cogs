@@ -1,31 +1,33 @@
 from datetime import datetime
-from typing import Optional, List, Union
+from typing import List, Optional, Union
 
 import discord
+from discord.ext import commands
+from redbot.core.commands import Context
 
-from starboard.log import log
+from starboard import base
 from starboard.exceptions import (
-    StarException,
-    BlockedException,
     BlockedAuthorException,
+    BlockedException,
     SelfStarException,
+    StarException,
 )
-from starboard.base import StarboardBase
+from starboard.log import log
 
-__all__ = ("StarboardMessage",)
+__all__ = ("StarboardMessage", "AutoStarboardMessage")
 
 
-class StarboardMessage(StarboardBase):
+class StarboardMessage(base.StarboardBase, commands.Converter):
     STARBOARD_FORMAT = "\N{WHITE MEDIUM STAR} **{stars}** {channel} \N{EM DASH} ID: {id}"
 
-    def __init__(self, starboard, message: discord.Message):
-        from starboard.starboardguild import StarboardGuild
+    def __init__(self, **kwargs):
+        from starboard.guild import StarboardGuild
 
-        self.message = message  # type: discord.Message
+        self.message = kwargs.get("message", None)  # type: discord.Message
         self.starboard_message = None  # type: discord.Message
         self.starrers = []  # type: List[int]
 
-        self.starboard = starboard  # type: StarboardGuild
+        self.starboard = kwargs.get("starboard", None)  # type: StarboardGuild
         self.last_update = datetime.utcnow()
         self.in_queue = False
         self._hidden = False
@@ -35,6 +37,29 @@ class StarboardMessage(StarboardBase):
             "<StarboardMessage stars={self.stars} hidden={self.hidden} message={self.message!r}"
             " update_queued={self.in_queue}>".format(self=self)
         )
+
+    @staticmethod
+    async def _convert(ctx: Context, argument: str, **kwargs):
+        from starboard.guild import StarboardGuild
+
+        try:
+            argument = int(argument)
+        except ValueError:
+            raise commands.BadArgument("Failed to convert the given argument to a snowflake ID")
+
+        starboard = base.get_starboard(ctx.guild)  # type: StarboardGuild
+        message = await starboard.get_message(message_id=argument, channel=ctx.channel, **kwargs)
+        if message is None:
+            raise commands.BadArgument(
+                "The given message ID couldn't be found - has it been starred before, "
+                "or are you in the wrong channel?"
+            )
+
+        return message
+
+    @classmethod
+    async def convert(cls, ctx: Context, argument: str):
+        return await cls._convert(ctx, argument)
 
     async def load_data(self, *, auto_create: bool = False) -> None:
         entry = await self.starboard.messages.get_raw(str(self.message.id), default=None)
@@ -210,7 +235,7 @@ class StarboardMessage(StarboardBase):
             raise StarException
         if await self.starboard.is_ignored(self.author):
             raise BlockedAuthorException
-        if await self.starboard.is_ignored(member):
+        if await self.starboard.is_ignored(member) or member.bot:
             raise BlockedException
 
         if member == self.author and not self.starboard.selfstar:
@@ -229,3 +254,11 @@ class StarboardMessage(StarboardBase):
 
         self.starrers.remove(member.id)
         self.queue_for_update()
+
+
+class AutoStarboardMessage(StarboardMessage):
+    """Alternate converter for StarboardMessage, which creates message data if it doesn't exist"""
+
+    @classmethod
+    async def convert(cls, ctx: Context, argument: str):
+        return await cls._convert(ctx, argument, auto_create=True)

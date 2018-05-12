@@ -1,20 +1,14 @@
 import asyncio
 
 import discord
-
 from redbot.core.bot import Red
 
 from starboard.base import get_starboard, get_starboard_cache
-from starboard.starboardguild import StarboardGuild
+from starboard.guild import StarboardGuild
 from starboard.log import log
 
-try:
-    from motor import motor_asyncio as motor
-except ImportError:
-    motor = False
-
 migrate_lock = asyncio.Lock()
-__all__ = ("dump_caches", "v2_import", "NoMotorException")
+__all__ = ("import_data", "NoMotorError")
 
 
 r"""
@@ -37,7 +31,7 @@ r"""
 """
 
 
-class NoMotorException(Exception):
+class NoMotorError(Exception):
     pass
 
 
@@ -46,9 +40,12 @@ async def dump_caches():
         await starboard.purge_cache(0, update_items=False)
 
 
-async def v2_import(bot: Red, mongo_uri: str):
-    if motor is False:
-        raise NoMotorException()
+async def import_data(bot: Red, mongo_uri: str):
+    try:
+        from motor import motor_asyncio as motor
+    except ImportError:
+        raise NoMotorError
+
     log.info("Starting v2 data migration...")
     db = motor.AsyncIOMotorClient(mongo_uri)
     await dump_caches()

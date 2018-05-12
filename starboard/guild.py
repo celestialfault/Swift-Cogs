@@ -1,20 +1,16 @@
-from datetime import datetime, timedelta
-from typing import Optional, Union, Dict, List
-
 import asyncio
+from datetime import datetime, timedelta
+from typing import Dict, List, Optional, Union
 
 import discord
-
 from redbot.core.config import Group, Value
 
-from starboard.starboardmessage import StarboardMessage
+from cog_shared.odinair_libs import IterQueue
 from starboard.base import StarboardBase
 from starboard.log import log
-
-from cog_shared.odinair_libs import IterQueue
+from starboard.message import StarboardMessage
 
 _janitors = {}  # type: Dict[int, asyncio.Task]
-__all__ = ("StarboardGuild",)
 
 
 class StarboardGuild(StarboardBase):
@@ -25,7 +21,7 @@ class StarboardGuild(StarboardBase):
         self._cache = {}  # type: Dict[int, StarboardMessage]
 
     def __repr__(self):
-        return "<GuildStarboard guild={0!r} cache_size={1}>".format(self.guild, len(self._cache))
+        return "<GuildStarboard guild={!r} cache_size={}>".format(self.guild, len(self._cache))
 
     @property
     def guild_config(self) -> Group:
@@ -94,7 +90,7 @@ class StarboardGuild(StarboardBase):
             while True:
                 await self.handle_queue()
                 await self.purge_cache()
-                await asyncio.sleep(8)
+                await asyncio.sleep(6)
         except asyncio.CancelledError:
             log.debug(
                 "Janitor for guild {} was cancelled; finishing message update queue & exiting"
@@ -115,7 +111,7 @@ class StarboardGuild(StarboardBase):
                 # or if they were in the queue more than once
                 continue
             await item.update_starboard_message()
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(0.6)
 
     ###############################
     #   Caching
@@ -246,7 +242,7 @@ class StarboardGuild(StarboardBase):
 
         if message is not None:
             if message.id not in self._cache:
-                star = StarboardMessage(self, message)
+                star = StarboardMessage(starboard=self, message=message)
                 await star.load_data(auto_create=auto_create)
                 self._cache[message.id] = star
             return self._cache[message.id]
@@ -263,10 +259,11 @@ class StarboardGuild(StarboardBase):
             return any([await self.is_ignored(obj.author), await self.is_ignored(obj.channel)])
 
         if isinstance(obj, discord.Member):
-            if obj.bot:  # implicitly block bots from using the starboard
-                return True
             return obj.id in await self.ignored.members()
-        return obj.id in await self.ignored.channels() or obj == await self.get_channel()
+        elif isinstance(obj, discord.TextChannel):
+            return obj.id in await self.ignored.channels() or obj == await self.get_channel()
+        else:
+            raise TypeError("obj is not of type TextChannel, Member or Message")
 
     async def ignore(self, obj: Union[discord.TextChannel, discord.Member]):
         """Ignore a member or channel"""
