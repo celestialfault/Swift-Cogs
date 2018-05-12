@@ -1,12 +1,16 @@
+"""Time-related helper tools"""
+
 import re
 from collections import OrderedDict
 from datetime import timedelta
-from typing import Union, Optional
+from typing import Union, Optional, List
 
 import discord
 from discord.ext import commands
 
-__all__ = ('td_format', 'td_seconds', 'FutureTime')
+from .i18n import i18n, lazyi18n, LazyString
+
+__all__ = ("td_format", "td_seconds", "FutureTime")
 
 
 def td_seconds(**kwargs) -> float:
@@ -14,14 +18,14 @@ def td_seconds(**kwargs) -> float:
 
 
 time_periods = [
-    (td_seconds(days=365), "year"),
-    (td_seconds(days=30), "month"),
-    (td_seconds(days=7), "week"),
-    (td_seconds(days=1), "day"),
-    (td_seconds(hours=1), "hour"),
-    (td_seconds(minutes=1), "minute"),
-    (td_seconds(seconds=1), "second")
-]
+    (td_seconds(days=365), lazyi18n("year"), lazyi18n("years")),
+    (td_seconds(days=30), lazyi18n("month"), lazyi18n("months")),
+    (td_seconds(days=7), lazyi18n("week"), lazyi18n("weeks")),
+    (td_seconds(days=1), lazyi18n("day"), lazyi18n("days")),
+    (td_seconds(hours=1), lazyi18n("hour"), lazyi18n("hours")),
+    (td_seconds(minutes=1), lazyi18n("minute"), lazyi18n("minutes")),
+    (td_seconds(seconds=1), lazyi18n("second"), lazyi18n("seconds")),
+]  # type: List[float, LazyString, LazyString]
 
 
 def td_format(td_object: timedelta, milliseconds: bool = False, append_str: bool = False) -> str:
@@ -34,9 +38,11 @@ def td_format(td_object: timedelta, milliseconds: bool = False, append_str: bool
     milliseconds: bool
         If this is True, milliseconds are also appended.
 
-        Note: Milliseconds are rounded to the nearest full number, and as such this may not be fully accurate
+        Note: Milliseconds are rounded to the nearest full number, and as such this may not be
+        fully accurate.
     append_str: bool
-        Whether or not to append or prepend `in` or `ago` depending on if `td_object` is in the future or past
+        Whether or not to append or prepend `in` or `ago` depending on if `td_object` is in the
+        future or past
     """
     # this function is originally from StackOverflow
     # https://stackoverflow.com/a/13756038
@@ -51,46 +57,61 @@ def td_format(td_object: timedelta, milliseconds: bool = False, append_str: bool
         ms = round(td_object.microseconds / 1000)
         if ms > 0:
             if milliseconds is False:
-                prepend = (("in " if past is False else "") if append_str else "")
-                append = ((" ago" if past is True else "") if append_str else "")
-                return prepend + "less than a second" + append
+                return (
+                    i18n("less than a second ago") if past else i18n("in less than a second")
+                ) if append_str else i18n(
+                    "less than a second"
+                )
         else:
-            return "just now"
+            return i18n("just now")
 
     strs = []
 
-    for period_seconds, period_name in time_periods:
+    for period_seconds, period_name, period_plural in time_periods:
         if seconds >= period_seconds:
             period_value, seconds = divmod(seconds, period_seconds)
-            plural = "s" if period_value != 1 else ""
-            strs.append(" ".join([str(round(period_value)), period_name + plural]))
+            strs.append(
+                i18n("{amount} {period}").format(
+                    amount=str(round(period_value)),
+                    period=period_plural if period_value != 1 else period_name,
+                )
+            )
 
     if milliseconds is True:
         ms = round(td_object.microseconds / 1000)
         if ms > 0:
-            plural = "s" if ms != 1 else ""
-            strs.append("{} millisecond{}".format(ms, plural))
+            strs.append((i18n("{} milliseconds") if ms != 1 else i18n("{} millisecond")).format(ms))
 
     built = ", ".join(strs)
     if not append_str:
         return built
-    return ("in {}" if not past else "{} ago").format(built)
+    return (i18n("in {}") if not past else i18n("{} ago")).format(built)
 
 
 class FutureTime(timedelta, commands.Converter):
-    # The following variables, including `get_seconds`, is originally taken from ZeLarpMaster's Reminders cog
-    # https://github.com/ZeLarpMaster/ZeCogs/blob/master/reminder/reminder.py
+    # The following variables, including `get_seconds`, is originally taken from ZeLarpMaster's
+    # Reminders cog: https://github.com/ZeLarpMaster/ZeCogs/blob/master/reminder/reminder.py
+
     # The following changes have been made from the original source:
     #  - Changed TIME_QUANTITIES to use timedelta objects, to be more consistent with td_format
-    #  - Added float support, meaning values similar to '0.5h' are accepted,
+    #  - Added float support, meaning values similar to '0.5h' are accepted
     #    and converted as if they were given as '30m'
     #  - Properly handle spaces between the duration and time period
     #  - Ported to a proper Converter
+    #  - Removed hardcoded maximum of 2 years
     TIME_AMNT_REGEX = re.compile("([0-9]+\.?[0-9]*) ?([a-z]+)", re.IGNORECASE)
-    TIME_QUANTITIES = OrderedDict([("seconds", 1.0), ("minutes", 60.0), ("hours", td_seconds(hours=1)),
-                                   ("days", td_seconds(days=1)), ("weeks", td_seconds(days=7)),
-                                   ("months", td_seconds(days=30)), ("years", td_seconds(days=365))])
-    MAX_SECONDS = TIME_QUANTITIES["years"] * 2
+    TIME_QUANTITIES = OrderedDict(
+        [
+            ("seconds", 1.0),
+            ("minutes", 60.0),
+            ("hours", td_seconds(hours=1)),
+            ("days", td_seconds(days=1)),
+            ("weeks", td_seconds(days=7)),
+            ("months", td_seconds(days=30)),
+            ("years", td_seconds(days=365)),
+        ]
+    )
+    MAX_SECONDS = None
     MIN_SECONDS = None
     STRICT_MODE = False
 
@@ -101,8 +122,12 @@ class FutureTime(timedelta, commands.Converter):
         return td_format(self, milliseconds=milliseconds)
 
     @classmethod
-    def converter(cls, strict: bool = False, min_duration: Union[str, int, float, None] = None,
-                  max_duration: Union[str, int, float, None] = None):
+    def converter(
+        cls,
+        strict: bool = False,
+        min_duration: Union[str, int, float, None] = None,
+        max_duration: Union[str, int, float, None] = None,
+    ):
         """Create a FutureTime converter
 
         Parameters
@@ -117,8 +142,9 @@ class FutureTime(timedelta, commands.Converter):
 
             Defaults to ``False``
         min_duration: Union[str, int, float, None]
-            The minimum duration that can be given in a conversion. This can be disabled by passing ``None``.
-            `str` objects can also be used and will be converted into their appropriate amount of seconds.
+            The minimum duration that can be given in a conversion. This can be disabled by
+            passing ``None``. `str` objects can also be used and will be converted into their
+            appropriate amount of seconds.
 
             Defaults to ``None``
         max_duration: Union[str, int, float, None]
@@ -148,8 +174,9 @@ class FutureTime(timedelta, commands.Converter):
         for time_match in FutureTime.TIME_AMNT_REGEX.finditer(time):
             time_amnt = float(time_match.group(1))
             time_abbrev = time_match.group(2)
-            time_quantity = discord.utils.find(lambda t: t[0].startswith(time_abbrev),
-                                               FutureTime.TIME_QUANTITIES.items())
+            time_quantity = discord.utils.find(
+                lambda t: t[0]().startswith(time_abbrev), FutureTime.TIME_QUANTITIES.items()
+            )
             if time_quantity is not None:
                 seconds += time_amnt * time_quantity[1]
         return None if seconds == 0 else seconds
@@ -158,11 +185,17 @@ class FutureTime(timedelta, commands.Converter):
         seconds = self.get_seconds(argument)
 
         if seconds and self.MAX_SECONDS is not None and seconds > self.MAX_SECONDS:
-            raise commands.BadArgument('Time duration exceeds maximum of {}'
-                                       .format(td_format(timedelta(seconds=self.MAX_SECONDS))))
+            raise commands.BadArgument(
+                "Time duration exceeds maximum of {}".format(
+                    td_format(timedelta(seconds=self.MAX_SECONDS))
+                )
+            )
         elif seconds and self.MIN_SECONDS is not None and seconds < self.MIN_SECONDS:
-            raise commands.BadArgument('Time duration does not exceed minimum of {}'
-                                       .format(td_format(timedelta(seconds=self.MIN_SECONDS))))
+            raise commands.BadArgument(
+                "Time duration does not exceed minimum of {}".format(
+                    td_format(timedelta(seconds=self.MIN_SECONDS))
+                )
+            )
 
         if seconds is None and self.STRICT_MODE:
             raise commands.BadArgument("Failed to parse duration")

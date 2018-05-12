@@ -1,3 +1,5 @@
+"""Interactive menus"""
+
 from asyncio import TimeoutError
 
 from enum import Enum
@@ -6,7 +8,7 @@ from types import GeneratorType
 
 import discord
 
-from redbot.core import RedContext
+from redbot.core.commands import Context
 from redbot.core.bot import Red
 
 __all__ = ("PostMenuAction", "ReactMenu", "ConfirmMenu", "PaginateMenu", "MenuResult", "prompt")
@@ -20,6 +22,7 @@ class PostMenuAction(Enum):
 
 
 class MenuResult:
+
     def __init__(self, action: Any, timed_out: bool, menu: "ReactMenu"):
         self.action = action
         self.timed_out = timed_out
@@ -27,7 +30,11 @@ class MenuResult:
         self.message = getattr(menu, "message", None)
 
     def __repr__(self):
-        return "<MenuResult action={self.action!r} timed_out={self.timed_out} menu={self.menu!r}>".format(self=self)
+        return (
+            "<MenuResult action={self.action!r} timed_out={self.timed_out} menu={self.menu!r}>"
+        ).format(
+            self=self
+        )
 
     def __str__(self):
         return str(self.action)
@@ -51,13 +58,19 @@ class MenuResult:
         return await self.menu.prompt()
 
 
-async def prompt(ctx: RedContext, *, content: str = None, embed: discord.Embed = None, delete_messages: bool = False,
-                 timeout: float = 30.0) -> Optional[discord.Message]:
+async def prompt(
+    ctx: Context,
+    *,
+    content: str = None,
+    embed: discord.Embed = None,
+    delete_messages: bool = False,
+    timeout: float = 30.0
+) -> Optional[discord.Message]:
     """Prompt a user for input
 
     Parameters
     -----------
-    ctx: RedContext
+    ctx: Context
         The Red context object
     content: str
         The message content to send. If `embed` is given, this is optional
@@ -76,12 +89,19 @@ async def prompt(ctx: RedContext, *, content: str = None, embed: discord.Embed =
     message_sent = await ctx.send(content=content, embed=embed)
     message_recv = None
     try:
-        message_recv = await bot.wait_for('message', timeout=timeout,
-                                          check=lambda x: x.author == ctx.author and x.channel == ctx.channel)
+        message_recv = await bot.wait_for(
+            "message",
+            timeout=timeout,
+            check=lambda x: x.author == ctx.author and x.channel == ctx.channel,
+        )
     except TimeoutError:
         pass
     finally:
-        if delete_messages and ctx.guild and ctx.channel.permissions_for(ctx.guild.me).manage_messages:
+        if (
+            delete_messages
+            and ctx.guild
+            and ctx.channel.permissions_for(ctx.guild.me).manage_messages
+        ):
             if message_recv is not None:
                 try:
                     await ctx.channel.delete_messages([message_sent, message_recv])
@@ -93,17 +113,22 @@ async def prompt(ctx: RedContext, *, content: str = None, embed: discord.Embed =
 
 
 class ReactMenu(Awaitable):
-    def __init__(self, ctx: RedContext, actions: Dict[Any, Union[discord.Emoji, discord.Reaction, str]],
-                 **kwargs):
+
+    def __init__(
+        self,
+        ctx: Context,
+        actions: Dict[Any, Union[discord.Emoji, discord.Reaction, str]],
+        **kwargs
+    ):
         """Create a new reaction menu.
 
         Parameters
         -----------
-        ctx: RedContext
+        ctx: Context
             The Red context object. This must at least implement the following attributes:
 
-            - `async send(content: Optional[str], embed: Optional[discord.Embed]) -> discord.Message`
-            - `bot: redbot.core.bot.Red`
+            - `async send(content: Optional[str], embed: Optional[Embed]) -> Message`
+            - `bot: Red`
         actions: Dict[Any, Union[discord.Emoji, str]]
             A dict of actions, similar to {action: emoji, ...}
 
@@ -126,11 +151,11 @@ class ReactMenu(Awaitable):
 
             Default value: ``None``
         message: discord.Message
-            A message to re-use. This is best used with the remove reaction action if this is a message
-            being re-used from prior react menu calls.
+            A message to re-use. This is best used with the remove reaction action if this
+            is a message being re-used from prior react menu calls.
 
-            If this is None and neither ``embed`` nor ``content`` is given, a RuntimeError is raised.
-            Otherwise, if this is given, ``embed`` and ``content`` are ignored.
+            If this is None and neither ``embed`` nor ``content`` is given, a RuntimeError is
+            raised. Otherwise, if this is given, ``embed`` and ``content`` are ignored.
 
             Default value: ``None``
         member: discord.Member
@@ -143,16 +168,17 @@ class ReactMenu(Awaitable):
             Default value: ``30.0``
         post_action: PostMenuAction
             The action to take when a user chooses a reaction.
-            If the menu times out, this will default to clearing reactions if this is not ``PostMenuAction.DELETE``
+            If the menu times out, this will default to clearing reactions if this is not
+             ``PostMenuAction.DELETE``
 
             This setting is treated as if it was set to ``PostMenuAction.CLEAR_REACTIONS``
             if the menu times out and this is not set to ``PostMenuAction.DELETE``
 
             Default value: ``PostMenuAction.REMOVE_REACTION``
         post_action_check: Callable[[Any], bool]
-            An optional Callable that should return a bool value. If it returns False, ``post_action`` will be
-            treated as if it was set to ``PostMenuAction.NONE`` when the menu was created.
-            If the menu times out, this value is ignored.
+            An optional Callable that should return a bool value. If it returns False,
+            ``post_action`` will be treated as if it was set to ``PostMenuAction.NONE`` when the
+            menu was created. If the menu times out, this value is ignored.
 
             Default value: ``None``
 
@@ -179,7 +205,9 @@ class ReactMenu(Awaitable):
         self.embed = kwargs.get("embed", None)
         self.message = kwargs.get("message", None)
         if not any([self.message, self.embed, self.content, getattr(self, "_allow_empty", False)]):
-            raise RuntimeError("Expected any of either message, embed, or content attributes, received none")
+            raise RuntimeError(
+                "Expected any of either message, embed, or content attributes, received none"
+            )
 
         self.default = kwargs.get("default", None)
         self.timeout = kwargs.get("timeout", 30.0)
@@ -198,7 +226,9 @@ class ReactMenu(Awaitable):
             "<ReactMenu content={self.content!r} embed={self.embed!r} message={self.message!r} "
             "default={self.default!r} action_count={actions} post_action={self.post_action} "
             "member={self.member!r}>"
-        ).format(self=self, actions=len(self.actions))
+        ).format(
+            self=self, actions=len(self.actions)
+        )
 
     async def _add_reactions(self):
         """Internal task to add reactions to sent messages"""
@@ -213,7 +243,9 @@ class ReactMenu(Awaitable):
                 raise
             # otherwise, silently swallow it
 
-    async def _handle_post_action(self, timed_out: bool, reaction: discord.Reaction = None, result: Any = None):
+    async def _handle_post_action(
+        self, timed_out: bool, reaction: discord.Reaction = None, result: Any = None
+    ):
         """Internal helper function to handle cleanup"""
         action = self.post_action
         if self._reactions_task is not None:
@@ -235,8 +267,13 @@ class ReactMenu(Awaitable):
     def _reaction_check(self, reaction: discord.Reaction, user: discord.User):
         """Check for discord.py's wait_for function"""
         msg = reaction.message
-        ret = all([msg.id == self.message.id, user.id == self.member.id,
-                   str(reaction.emoji) in self.emojis or reaction.emoji in self.emojis])
+        ret = all(
+            [
+                msg.id == self.message.id,
+                user.id == self.member.id,
+                str(reaction.emoji) in self.emojis or reaction.emoji in self.emojis,
+            ]
+        )
         return ret
 
     async def __aenter__(self):
@@ -254,7 +291,9 @@ class ReactMenu(Awaitable):
         timed_out = False
         reaction = None
         try:
-            reaction, _ = await self.bot.wait_for("reaction_add", check=self._reaction_check, timeout=self.timeout)
+            reaction, _ = await self.bot.wait_for(
+                "reaction_add", check=self._reaction_check, timeout=self.timeout
+            )
         except TimeoutError:
             timed_out = True
         else:
@@ -266,26 +305,31 @@ class ReactMenu(Awaitable):
 
 
 class ConfirmMenu(ReactMenu):
-    def __init__(self, ctx: RedContext, default: bool = False, **kwargs):
-        actions = {
-            True: "\N{WHITE HEAVY CHECK MARK}",
-            False: "\N{CROSS MARK}"
-        }
+
+    def __init__(self, ctx: Context, default: bool = False, **kwargs):
+        actions = {True: "\N{WHITE HEAVY CHECK MARK}", False: "\N{CROSS MARK}"}
         post_action = kwargs.pop("post_action", PostMenuAction.DELETE)
 
-        if 'message' in kwargs:
-            kwargs['content'] = kwargs.pop('message')
+        if "message" in kwargs:
+            kwargs["content"] = kwargs.pop("message")
 
-        super().__init__(ctx, actions, default=default, post_action=post_action,
-                         post_action_check=None, **kwargs)
+        super().__init__(
+            ctx, actions, default=default, post_action=post_action, post_action_check=None, **kwargs
+        )
 
     async def prompt(self) -> bool:
         return (await super().prompt()).action
 
 
 class PaginateMenu(ReactMenu):
-    def __init__(self, ctx: RedContext, actions: Dict[Any, Union[discord.Emoji, discord.Reaction, str]],
-                 pages: Union[Sequence[Any], GeneratorType], **kwargs):
+
+    def __init__(
+        self,
+        ctx: Context,
+        actions: Dict[Any, Union[discord.Emoji, discord.Reaction, str]],
+        pages: Union[Sequence[Any], GeneratorType],
+        **kwargs
+    ):
         """Create a pagination menu
 
         Page switching is handled internally and any uses of the paginate buttons are not returned
@@ -293,7 +337,7 @@ class PaginateMenu(ReactMenu):
 
         Parameters
         -----------
-        ctx: RedContext
+        ctx: Context
             The Red context object
         actions: Dict[Any, Union[discord.Emoji, discord.Reaction, str]]
             The list of actions to allow members to perform.
@@ -309,8 +353,8 @@ class PaginateMenu(ReactMenu):
         page: int
             The page index to start on. Defaults to `0`
         converter: Callable[[Any, int, int], Union[str, discord.Embed, Tuple[str, discord.Embed]]]
-            A converter to use to convert the items in `pages`. This defaults to a generic Embed converter
-            with the item as the description with a plain 'Page {}/{}' footer.
+            A converter to use to convert the items in `pages`. This defaults to a generic Embed
+            converter with the item as the description with a plain 'Page {}/{}' footer.
 
             The call signature is as follows:
 
@@ -337,24 +381,36 @@ class PaginateMenu(ReactMenu):
         actions = {
             "__paginate_backward": "\N{LEFTWARDS BLACK ARROW}",
             **{x: actions[x] for x in actions},
-            "__paginate_forward": "\N{BLACK RIGHTWARDS ARROW}"
+            "__paginate_forward": "\N{BLACK RIGHTWARDS ARROW}",
         }
 
         if isinstance(pages, GeneratorType):
             pages = list(pages)
         self.pages = pages
         self.page = kwargs.pop("page", 0)
-        self.converter = kwargs.pop("converter", lambda x, page, pages_: discord.Embed(description=str(x))
-                                    .set_footer(text="Page {}/{}".format(page + 1, pages_)))
+        self.converter = kwargs.pop(
+            "converter",
+            lambda x, page, pages_: discord.Embed(description=str(x)).set_footer(
+                text="Page {}/{}".format(page + 1, pages_)
+            ),
+        )
 
         self._allow_empty = True
 
-        super().__init__(ctx, actions, post_action=PostMenuAction.REMOVE_REACTION, post_action_check=None, **kwargs)
+        super().__init__(
+            ctx,
+            actions,
+            post_action=PostMenuAction.REMOVE_REACTION,
+            post_action_check=None,
+            **kwargs
+        )
 
     async def prompt(self) -> Tuple[MenuResult, Any]:
         result = None
         while True:
-            val = await discord.utils.maybe_coroutine(self.converter, self.pages[self.page], self.page, len(self.pages))
+            val = await discord.utils.maybe_coroutine(
+                self.converter, self.pages[self.page], self.page, len(self.pages)
+            )
             if isinstance(val, tuple):
                 self.content = val[0]
                 self.embed = val[1]

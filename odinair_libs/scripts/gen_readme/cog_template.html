@@ -1,0 +1,24 @@
+<details>
+<summary>{{ name }}</summary>
+
+{{ description }}
+
+{% if requirements %}
+### Requirements
+
+{% for requirement in requirements %}
+{% if "repo_url" in requirement %}
+- [{{ requirement["name"] }}]({{ requirement["repo_url"] }})
+{% else %}
+- {{ requirement["name"] }}
+{% endif %}
+{% endfor %}
+{% endif %}
+
+### Install Cog
+
+```
+[p]cog install {{ repo }} {{ raw_name }}
+[p]load {{ raw_name }}
+```
+</details>

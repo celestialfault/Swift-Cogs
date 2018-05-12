@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2018-04-30 18:19-0600\n"
+"POT-Creation-Date: 2018-05-12 00:44-0600\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -15,115 +15,207 @@ msgstr ""
 "Generated-By: redgettext 1.0\n"
 
 
-#: ../formatting.py:20
+#: formatting.py:27
 msgid "Add Reactions"
 msgstr ""
 
-#: ../formatting.py:21
+#: formatting.py:28
 msgid "Administrator"
 msgstr ""
 
-#: ../formatting.py:22
+#: formatting.py:29
 msgid "Attach Files"
 msgstr ""
 
-#: ../formatting.py:23
+#: formatting.py:30
 msgid "Ban Members"
 msgstr ""
 
-#: ../formatting.py:24
+#: formatting.py:31
 msgid "Change Nickname"
 msgstr ""
 
-#: ../formatting.py:25
+#: formatting.py:32
 msgid "Connect"
 msgstr ""
 
-#: ../formatting.py:26
+#: formatting.py:33
 msgid "Create Instant Invite"
 msgstr ""
 
-#: ../formatting.py:27
+#: formatting.py:34
 msgid "Deafen Members"
 msgstr ""
 
-#: ../formatting.py:28
+#: formatting.py:35
 msgid "Embed Links"
 msgstr ""
 
-#: ../formatting.py:29
+#: formatting.py:36
 msgid "External Emojis"
 msgstr ""
 
-#: ../formatting.py:30
+#: formatting.py:37
 msgid "Kick Members"
 msgstr ""
 
-#: ../formatting.py:31
+#: formatting.py:38
 msgid "Manage Channels"
 msgstr ""
 
-#: ../formatting.py:32
+#: formatting.py:39
 msgid "Manage Emojis"
 msgstr ""
 
-#: ../formatting.py:33
+#: formatting.py:40
 msgid "Manage Server"
 msgstr ""
 
-#: ../formatting.py:34
+#: formatting.py:41
 msgid "Manage Messages"
 msgstr ""
 
-#: ../formatting.py:35
+#: formatting.py:42
 msgid "Manage Nicknames"
 msgstr ""
 
-#: ../formatting.py:36
+#: formatting.py:43
 msgid "Manage Roles"
 msgstr ""
 
-#: ../formatting.py:37
+#: formatting.py:44
 msgid "Manage Webhooks"
 msgstr ""
 
-#: ../formatting.py:38
+#: formatting.py:45
 msgid "Mention Everyone"
 msgstr ""
 
-#: ../formatting.py:39
+#: formatting.py:46
 msgid "Move Members"
 msgstr ""
 
-#: ../formatting.py:40
+#: formatting.py:47
 msgid "Mute Members"
 msgstr ""
 
-#: ../formatting.py:41
+#: formatting.py:48
 msgid "Read Message History"
 msgstr ""
 
-#: ../formatting.py:42
+#: formatting.py:49
 msgid "Read Messages"
 msgstr ""
 
-#: ../formatting.py:43
+#: formatting.py:50
 msgid "Send Messages"
 msgstr ""
 
-#: ../formatting.py:44
+#: formatting.py:51
 msgid "Send TTS Messages"
 msgstr ""
 
-#: ../formatting.py:45
+#: formatting.py:52
 msgid "Speak"
 msgstr ""
 
-#: ../formatting.py:46
+#: formatting.py:53
 msgid "Use Voice Activation"
 msgstr ""
 
-#: ../formatting.py:47
+#: formatting.py:54
 msgid "View Audit Log"
+msgstr ""
+
+#: time.py:21
+msgid "year"
+msgstr ""
+
+#: time.py:21
+msgid "years"
+msgstr ""
+
+#: time.py:22
+msgid "month"
+msgstr ""
+
+#: time.py:22
+msgid "months"
+msgstr ""
+
+#: time.py:23
+msgid "week"
+msgstr ""
+
+#: time.py:23
+msgid "weeks"
+msgstr ""
+
+#: time.py:24
+msgid "day"
+msgstr ""
+
+#: time.py:24
+msgid "days"
+msgstr ""
+
+#: time.py:25
+msgid "hour"
+msgstr ""
+
+#: time.py:25
+msgid "hours"
+msgstr ""
+
+#: time.py:26
+msgid "minute"
+msgstr ""
+
+#: time.py:26
+msgid "minutes"
+msgstr ""
+
+#: time.py:27
+msgid "second"
+msgstr ""
+
+#: time.py:27
+msgid "seconds"
+msgstr ""
+
+#: time.py:61
+msgid "in less than a second"
+msgstr ""
+
+#: time.py:61
+msgid "less than a second ago"
+msgstr ""
+
+#: time.py:62
+msgid "less than a second"
+msgstr ""
+
+#: time.py:66
+msgid "just now"
+msgstr ""
+
+#: time.py:74
+msgid "{amount} {period}"
+msgstr ""
+
+#: time.py:83
+msgid "{} millisecond"
+msgstr ""
+
+#: time.py:83
+msgid "{} milliseconds"
+msgstr ""
+
+#: time.py:88
+msgid "in {}"
+msgstr ""
+
+#: time.py:88
+msgid "{} ago"
 msgstr ""
 

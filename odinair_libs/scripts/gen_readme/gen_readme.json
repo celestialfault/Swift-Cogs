@@ -1,0 +1,8 @@
+{
+  "output": "./README.md",
+  "template": "cog_template.html",
+  "cog_name_key": "_cog_list_name",
+  "repo_name": "swift-cogs",
+  "overwrite": false,
+  "scan_for": ["# Cogs"]
+}

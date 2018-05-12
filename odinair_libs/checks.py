@@ -1,8 +1,10 @@
+"""Shared command checks"""
+
 from discord import Member
 from discord.ext.commands import check
 from redbot.core.bot import Red
 
-__all__ = ('cogs_loaded', 'bot_in_x_guilds', 'bot_not_in_x_guilds', 'hierarchy_allows')
+__all__ = ("cogs_loaded", "bot_in_x_guilds", "bot_not_in_x_guilds", "hierarchy_allows")
 
 
 def cogs_loaded(*cogs):
@@ -23,16 +25,31 @@ def bot_not_in_x_guilds(guilds: int):
     return check(lambda ctx: len(ctx.bot.guilds) < guilds)
 
 
-async def hierarchy_allows(bot: Red, mod: Member, member: Member) -> bool:
+async def hierarchy_allows(
+    bot: Red, mod: Member, member: Member, *, allow_disable: bool = True
+) -> bool:
+    """Check if a guild's role hierarchy allows an action.
+
+    This can be effectively disabled on a per-guild basis with the Mod cog;
+    however, this can be overridden with the `allow_disable` keyword argument.
+    """
     if await bot.is_owner(mod):
         return True
+
     guild = mod.guild
     if guild != member.guild:
         return False
-    return any([
-        guild.owner == mod,  # guild owner
-        # guild admin and member is not an admin
-        await bot.is_admin(mod) and not (await bot.is_admin(member) or guild.owner == member),
-        # guild mod and member is not a mod
-        await bot.is_mod(mod) and not (await bot.is_mod(member) or guild.owner == member)
-    ])
+
+    mod_cog = bot.get_cog("Mod")
+    if (
+        allow_disable
+        and mod_cog is not None
+        and not await mod_cog.settings.guild(guild).respect_hierarchy()
+    ):
+        return True
+
+    # Always prevent actions taken against the guild owner
+    if member == guild.owner:
+        return False
+
+    return mod.top_role > member.top_role
