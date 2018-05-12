@@ -2,7 +2,7 @@
   "author": ["odinair"],
   "bot_version": [3, 0, 0],
   "min_python_version": [3, 5, 1],
-  "description": "Quickly mention a role, without allowing your average Joe to mention it.",
+  "description": "Quickly mention a role, without allowing your average Joe to mention it.\n\nThis cog has yet to be extensively tested.",
   "short": "Quickly mention a role, without allowing your average Joe to mention it.",
   "type": "COG",
   "tags": [

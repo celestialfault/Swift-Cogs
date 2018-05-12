@@ -1,20 +1,18 @@
 import asyncio
-
 import re
 
 import discord
-from discord.ext import commands
-
-from redbot.core import checks, RedContext, Config
+from redbot.core import Config, checks, commands
 from redbot.core.bot import Red
-from redbot.core.i18n import CogI18n
-from redbot.core.utils.chat_formatting import warning, escape
+from redbot.core.i18n import Translator, cog_i18n
+from redbot.core.utils.chat_formatting import escape, warning
 
-from cog_shared.odinair_libs import tick, cmd_help
+from cog_shared.odinair_libs import cmd_help, tick
 
-_ = CogI18n("RoleMention", __file__)
+_ = Translator("RoleMention", __file__)
 
 
+@cog_i18n(_)
 class RoleMention:
     MENTION_REGEX = re.compile(r"{{mention role: ?@?(?P<NAME>[\W\w]+)}}", re.IGNORECASE)
 
@@ -37,23 +35,30 @@ class RoleMention:
             me = guild.me
             my_cperms = message.channel.permissions_for(me)
             my_gperms = me.guild_permissions
-            return all([
-                not message.author.bot,
-                my_gperms.manage_roles,
-                my_cperms.send_messages,
-                any([
-                    guild.me.guild_permissions.manage_roles,
-                    await self.bot.is_admin(message.author),
-                ])
-            ])
+            return all(
+                [
+                    not message.author.bot,
+                    my_gperms.manage_roles,
+                    my_cperms.send_messages,
+                    any(
+                        [
+                            guild.me.guild_permissions.manage_roles,
+                            await self.bot.is_admin(message.author),
+                        ]
+                    ),
+                ]
+            )
         except AttributeError:
-            # This can happen as a result of Red.is_admin() being passed a User.
-            # I'm not sure how or why, but it somehow can happen. I guess.
-            # Of course, this is purely going off of my system logs. So I don't know how it happened,
-            # and by extension I don't know how to reproduce the bug. But it happened *somehow*.
+            # This can happen as a result of Red.is_admin() being passed a user object, instead
+            # of a member. I'm not sure how or why, but it somehow can happen.
+            # Of course, this is purely going off of my system logs.
+            # So I don't know how it happened, and by extension I don't know how to reproduce the
+            # bug. But what I do know is that it happened, somehow.
             return False
 
-    async def _make_mentionable(self, *roles: discord.Role, mod: discord.Member, mentionable: bool = True):
+    async def _make_mentionable(
+        self, *roles: discord.Role, mod: discord.Member, mentionable: bool = True
+    ):
         if not roles:
             raise ValueError("no roles were given to make mentionable")
         allowed_roles = await self.config.guild(roles[0].guild).roles()
@@ -66,7 +71,9 @@ class RoleMention:
             await role.edit(mentionable=mentionable, reason=_("Role mention by {}").format(mod))
 
     @staticmethod
-    async def _send_message(content: str, author: discord.Member, channel: discord.TextChannel, *roles: discord.Role):
+    async def _send_message(
+        content: str, author: discord.Member, channel: discord.TextChannel, *roles: discord.Role
+    ):
         if not roles:
             raise ValueError
         embed = discord.Embed(colour=author.colour, description=content)
@@ -77,7 +84,7 @@ class RoleMention:
     @commands.guild_only()
     @commands.bot_has_permissions(manage_roles=True)
     @checks.admin_or_permissions(manage_roles=True)
-    async def rolemention(self, ctx: RedContext):
+    async def rolemention(self, ctx: commands.Context):
         """Manage role mention settings
 
         Role mentions can be sent by using `{{mention role: Role Name}}`
@@ -87,36 +94,46 @@ class RoleMention:
         """
         await cmd_help(ctx)
 
-    @rolemention.command(name="add")
-    async def rolemention_add(self, ctx: RedContext, *, role: discord.Role):
-        """Allow a role to be mentioned"""
+    async def _add_remove(self, ctx: commands.Context, role: discord.Role, *, rm: bool = False):
         if role.is_default():
-            await ctx.send(warning("I cannot make a guild's default role mentionable"))
-            return
+            raise commands.BadArgument("cannot make a server's default role mentionable")
         async with self.config.guild(ctx.guild).roles() as roles:
-            if role.id in roles:
-                await ctx.send(warning(_("That role is already mentionable")))
-                return
-            roles.append(role.id)
-            await ctx.send(escape(tick(_("`{}` is now allowed to be mentioned").format(role.name)),
-                                  mass_mentions=True))
+            if rm is False:
+                if role.id in roles:
+                    await ctx.send(warning(_("That role is already mentionable")))
+                    return
+                roles.append(role.id)
+
+            else:
+                if role.id not in roles:
+                    await ctx.send(warning(_("That role is not currently mentionable")))
+                    return
+                roles.remove(role.id)
+
+            await ctx.send(
+                escape(
+                    tick(_("`{}` is now allowed to be mentioned").format(role.name)),
+                    mass_mentions=True,
+                )
+                if rm is False
+                else escape(
+                    tick(_("`{}` is no longer allowed to be mentioned").format(role.name)),
+                    mass_mentions=True,
+                )
+            )
+
+    @rolemention.command(name="add")
+    async def rolemention_add(self, ctx: commands.Context, *, role: discord.Role):
+        """Allow a role to be mentioned"""
+        await self._add_remove(ctx, role, rm=False)
 
     @rolemention.command(name="remove")
-    async def rolemention_remove(self, ctx: RedContext, *, role: discord.Role):
+    async def rolemention_remove(self, ctx: commands.Context, *, role: discord.Role):
         """Disallow a role from being mentioned"""
-        if role.is_default():
-            await ctx.send(warning("I cannot make a guild's default role mentionable"))
-            return
-        async with self.config.guild(ctx.guild).roles() as roles:
-            if role.id not in roles:
-                await ctx.send(warning("That role is not already mentionable"))
-                return
-            roles.remove(role.id)
-            await ctx.send(escape(tick(_("`{}` is no longer allowed to be mentioned").format(role.name)),
-                                  mass_mentions=True))
+        await self._add_remove(ctx, role, rm=True)
 
     @rolemention.command(name="list")
-    async def rolemention_list(self, ctx: RedContext):
+    async def rolemention_list(self, ctx: commands.Context):
         """List all roles setup to allow role mentions for"""
         roles = []
         for rid in await self.config.guild(ctx.guild).roles():
@@ -124,9 +141,13 @@ class RoleMention:
             if role is None:
                 continue
             roles.append(role)
-        await ctx.send(embed=discord.Embed(title=_("Mentionable roles"), colour=discord.Colour.blurple(),
-                                           description=" ".join(
-                                               [x.mention for x in roles] or [_("No mentionable roles")])))
+        await ctx.send(
+            embed=discord.Embed(
+                title=_("Mentionable roles"),
+                colour=discord.Colour.blurple(),
+                description=" ".join([x.mention for x in roles] or [_("No mentionable roles")]),
+            )
+        )
 
     async def on_message(self, message: discord.Message):
         try:
@@ -147,7 +168,9 @@ class RoleMention:
             full_match = match.group(0)
             role = discord.utils.get(guild.roles, name=name)  # type: discord.Role
 
-            message_content = message_content.replace(full_match, getattr(role, "mention", full_match))
+            message_content = message_content.replace(
+                full_match, getattr(role, "mention", full_match)
+            )
 
             if role is None or role.id not in allowed_roles:
                 continue
