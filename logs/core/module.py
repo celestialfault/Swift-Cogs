@@ -14,6 +14,7 @@ from cog_shared.odinair_libs import flatten
 from logs.core.i18n import i18n
 from logs.core.logentry import LogEntry
 from logs.core.utils import add_descriptions, replace_dict_items
+from logs.core.config import config
 
 log = logging.getLogger("red.odinair.logs")
 
@@ -43,22 +44,19 @@ async def log_event(module: str, event: str, *args, use_guild: discord.Guild = N
 
 
 bot = None  # type: Red
-config = None  # type: Config
 session = None  # type: ClientSession
 loaded = False
 
 
-def load(bot_: Red, config_: Config):
+def load(red: Red):
     from logs import modules
 
     global loaded
     global bot
-    global config
     global session
 
     loaded = True
-    bot = bot_
-    config = config_
+    bot = red
     session = ClientSession()
 
     for mod in modules.default_modules:
@@ -68,18 +66,17 @@ def load(bot_: Red, config_: Config):
 def unload():
     from logs import modules
 
-    for module in modules.modules.values():
+    for module in list(modules.modules.values()):
         modules.unregister(module)
 
     global loaded
     global bot
-    global config
     global session
 
     loaded = False
     session.close()
     bot = None
-    config = None
+    session = None
 
 
 # noinspection PyTypeChecker
@@ -166,6 +163,10 @@ class Module(ABC):
     @property
     def descriptions(self):
         return {"module": self.description, "options": flatten(self.settings, sep=":")}
+
+    @property
+    def config_scope(self) -> str:
+        return Config.GUILD if not self.is_global else Config.GLOBAL
 
     # noinspection PyMethodMayBeStatic
     async def can_modify_settings(self, member: discord.Member):

@@ -4,7 +4,7 @@ from typing import List, Optional, Type
 import discord
 from discord.raw_models import RawBulkMessageDeleteEvent
 from redbot.core import commands
-from redbot.core import checks, Config
+from redbot.core import checks
 from redbot.core.bot import Red
 from redbot.core.i18n import cog_i18n
 from redbot.core.utils.chat_formatting import warning, info, error, inline, bold
@@ -101,30 +101,9 @@ class Logs:
 
     __author__ = "odinair <odinair@odinair.xyz>"
 
-    defaults_global = {
-        **{
-            x.name: {"_log_channel": None, "_webhook": None, **x(guild=None).defaults}
-            for x in all_modules.values()
-            if x(guild=None).is_global is True
-        },
-        "ignore": {"channels": [], "members": [], "roles": [], "member_roles": []},
-    }
-
-    defaults_guild = {
-        **{
-            x.name: {"_log_channel": None, "_webhook": None, **x(guild=None).defaults}
-            for x in all_modules.values()
-            if x(guild=None).is_global is not True
-        },
-        "ignore": {"channels": [], "members": [], "roles": [], "member_roles": [], "guild": False},
-    }
-
     def __init__(self, bot: Red):
         self.bot = bot
-        self.config = Config.get_conf(self, identifier=2401248235421, force_registration=False)
-        self.config.register_guild(**self.defaults_guild)
-        self.config.register_global(**self.defaults_global)
-        load(self.bot, self.config)
+        load(self.bot)
 
     def __unload(self):
         unload()

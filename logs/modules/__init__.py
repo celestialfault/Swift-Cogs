@@ -1,6 +1,6 @@
 from typing import Dict, Type, Union
 
-from logs.core import Module
+from logs.core import Module, rebuild_defaults
 from logs.modules.channel import ChannelModule
 from logs.modules.guild import GuildModule
 from logs.modules.member import MemberModule
@@ -21,8 +21,10 @@ def register(module: Type[Module]):
         modules.pop(imodule.name).unregister()
     module.register()
     modules[imodule.name] = module
+    rebuild_defaults()
 
 
 def unregister(module: Union[Type[Module], str]):
-    module_id = module if not isinstance(module, Module) else module(guild=None).name
+    module_id = module if isinstance(module, str) else module(guild=None).name
     modules.pop(module_id).unregister()
+    rebuild_defaults()
