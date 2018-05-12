@@ -5,37 +5,60 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2018-04-17 12:04-0600\n"
+"POT-Creation-Date: 2018-05-12 01:23-0600\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: pygettext.py 1.5\n"
+"Generated-By: redgettext 1.0\n"
 
 
-#: ../requirerole.py:112
+#: requirerole.py:38
+#, docstring
+msgid "Allow and disallow users to use a bot's commands based on per-guild configurable roles"
+msgstr ""
+
+#: requirerole.py:110
+#, docstring
+msgid ""
+"Require one of any specific roles to use the bot in the current guild\n"
+"\n"
+"        To require a member to __not__ have one or more roles, you can use\n"
+"        `~` before the role name to treat it as a blacklisted role.\n"
+"        If a role name has `~` at the start of it's name, you can escape\n"
+"        it with a backslash (`\\`) character. Blacklisted roles override\n"
+"        any possible whitelisted roles a member may have.\n"
+"\n"
+"        Role names are case sensitive. If a role has spaces in it's name, wrap it in quotes.\n"
+"        Passing no roles removes any currently set role requirements.\n"
+"\n"
+"        The guild owner and members with the Administrator permission\n"
+"        always bypass these requirements, regardless of roles."
+msgstr ""
+
+#: requirerole.py:133
 msgid "I can't set a role requirement with the guild's default role - if you'd like to clear your current role requirements, you can execute this command with no arguments to do so."
 msgstr ""
 
-#: ../requirerole.py:122
+#: requirerole.py:146
 msgid "Cleared currently set role requirements."
 msgstr ""
 
-#: ../requirerole.py:128
+#: requirerole.py:156
 msgid ""
 "A member will now need to pass the following checks to use my commands:\n"
 "\n"
 msgstr ""
 
-#: ../requirerole.py:130
+#: requirerole.py:158
 msgid ""
 "**Any of the following roles:**\n"
 "{roles}"
 msgstr ""
 
-#: ../requirerole.py:134
+#: requirerole.py:162
 msgid ""
 "**None of the following roles:**\n"
 "{roles}"
