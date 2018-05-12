@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2018-05-03 07:57-0600\n"
+"POT-Creation-Date: 2018-05-12 01:20-0600\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -15,173 +15,243 @@ msgstr ""
 "Generated-By: redgettext 1.0\n"
 
 
-#: ../editor.py:49
+#: editor.py:49
 msgid "Editing Quote #{}"
 msgstr ""
 
-#: ../editor.py:66
+#: editor.py:66
 msgid "Change attributed author"
 msgstr ""
 
-#: ../editor.py:70
+#: editor.py:70
 msgid "Change quote creator"
 msgstr ""
 
-#: ../editor.py:73
+#: editor.py:73
 msgid "Change quote contents"
 msgstr ""
 
-#: ../editor.py:74
+#: editor.py:74
 msgid "Delete quote"
 msgstr ""
 
-#: ../editor.py:75
+#: editor.py:75
 msgid "Save changes"
 msgstr ""
 
-#: ../editor.py:76
+#: editor.py:76
 msgid "Exit without saving"
 msgstr ""
 
-#: ../editor.py:100
+#: editor.py:100
 msgid "Your changes have been carefully recorded and saved."
 msgstr ""
 
-#: ../editor.py:107
+#: editor.py:107
 msgid "Please respond with the new quote content"
 msgstr ""
 
-#: ../editor.py:109
+#: editor.py:109
 msgid "Changed quote content successfully."
 msgstr ""
 
-#: ../editor.py:113
+#: editor.py:113
 msgid "Which user would you like to attribute this quote to?"
 msgstr ""
 
-#: ../editor.py:117 ../editor.py:125
+#: editor.py:117 editor.py:125
 msgid "Attributed quote to **{}**."
 msgstr ""
 
-#: ../editor.py:121
+#: editor.py:121
 msgid "Which user would you like to make the new quote creator?"
 msgstr ""
 
-#: ../editor.py:131
+#: editor.py:131
 msgid ""
 "Are you sure you want to delete this quote?\n"
 "\n"
 "Unless you have a time machine, **this action is irreversible!**"
 msgstr ""
 
-#: ../editor.py:138
+#: editor.py:138
 msgid "Quote deleted."
 msgstr ""
 
-#: ../editor.py:159
+#: editor.py:159
 msgid "Menu timed out, any changes not saved have been discarded."
 msgstr ""
 
-#: ../quote.py:30
-msgid "Content"
-msgstr ""
-
-#: ../quote.py:31
-msgid "Attributed Author"
-msgstr ""
-
-#: ../quote.py:32
-msgid "Quote Creator"
-msgstr ""
-
-#: ../quote.py:58
-msgid "Revision #{}"
-msgstr ""
-
-#: ../quote.py:61
-msgid "**Type:** {type} ❘ Use `{prefix}quote history {quote} {rev}` to view this revision"
-msgstr ""
-
-#: ../quote.py:78
-msgid "Before"
-msgstr ""
-
-#: ../quote.py:80
-msgid "After"
-msgstr ""
-
-#: ../quote.py:201
+#: quote.py:106
 msgid "Unknown quote author"
 msgstr ""
 
-#: ../quote.py:206
+#: quote.py:111
 msgid "Quote #{} | Quoted by {!s}"
 msgstr ""
 
-#: ../quote.py:208
+#: quote.py:113
 msgid "Quote #{} | Quoted by an unknown user"
 msgstr ""
 
-#: ../quotes.py:22
+#: quotes.py:29
+#, docstring
+msgid "Save and retrieve quotes"
+msgstr ""
+
+#: quotes.py:33
 msgid ""
-"❗ Are you sure you want to delete this quote?\n"
+"Are you sure you want to delete this quote?\n"
 "\n"
 "Unless you have a time machine, this action **cannot be undone**."
 msgstr ""
 
-#: ../quotes.py:54
+#: quotes.py:46
+#, docstring
+msgid ""
+"Save and retrieve quotes\n"
+"\n"
+"        If no quote is given, a random quote is retrieved instead.\n"
+"        "
+msgstr ""
+
+#: quotes.py:62
+#, docstring
+msgid ""
+"Generates some junk lorem ipsum quotes.\n"
+"\n"
+"        This is basically only useful if you're working on Quotes itself,\n"
+"        and need some data to test with.\n"
+"\n"
+"        **Requires the `loremipsum` module (`[p]pipinstall loremipsum`).**\n"
+"        "
+msgstr ""
+
+#: quotes.py:74
+msgid "Failed to import the `loremipsum` module; please do `{prefix}pipinstall loremipsum` and use this command again."
+msgstr ""
+
+#: quotes.py:106
+msgid ""
+"Are you sure you want to reset all quotes?\n"
+"\n"
+"Unless you have a time machine, **this action is irreversible.**"
+msgstr ""
+
+#: quotes.py:111
+msgid "Operation cancelled."
+msgstr ""
+
+#: quotes.py:120
+#, docstring
+msgid "Import quotes data from a Red v2 instance"
+msgstr ""
+
+#: quotes.py:123
 msgid "That file path doesn't seem to be valid"
 msgstr ""
 
-#: ../quotes.py:58
+#: quotes.py:127
 msgid "Imported data successfully."
 msgstr ""
 
-#: ../quotes.py:64 ../quotes.py:85
+#: quotes.py:131
+#, docstring
+msgid "Add a quote"
+msgstr ""
+
+#: quotes.py:133 quotes.py:154
 msgid "Quote added"
 msgstr ""
 
-#: ../quotes.py:79
+#: quotes.py:137
+#, docstring
+msgid ""
+"Quote a message by it's ID\n"
+"\n"
+"        The message specified must be in the same channel this command is executed in\n"
+"\n"
+"        You can obtain a message's ID by enabling Developer Mode in your Appearance\n"
+"        settings, and clicking Copy ID in the message's context menu\n"
+"        "
+msgstr ""
+
+#: quotes.py:148
 msgid "I couldn't find that message. (is it in a different channel?)"
 msgstr ""
 
-#: ../quotes.py:82
+#: quotes.py:151
 msgid "I'm not allowed to retrieve that message"
 msgstr ""
 
-#: ../quotes.py:101
-msgid "That quote has no recorded modifications"
+#: quotes.py:158
+#, docstring
+msgid ""
+"Interactive quote editor\n"
+"\n"
+"        This requires you to be the quote creator, the attributed author\n"
+"        or a guild moderator or administrator.\n"
+"        "
 msgstr ""
 
-#: ../quotes.py:109 ../quotes.py:153
-msgid "Quote #{}"
+#: quotes.py:168
+#, docstring
+msgid ""
+"Attribute a quote to the specified user\n"
+"\n"
+"        This requires you to be the quote creator, an administrator or moderator\n"
+"        "
 msgstr ""
 
-#: ../quotes.py:110 ../quotes.py:150
-msgid "Page {}/{}"
-msgstr ""
-
-#: ../quotes.py:133
-msgid "This guild has no quotes! Use `{prefix}quote add` to add some!"
-msgstr ""
-
-#: ../quotes.py:147
-msgid "Guild Quotes"
-msgstr ""
-
-#: ../quotes.py:148
-msgid "Displaying {} out of {} quotes"
-msgstr ""
-
-#: ../quotes.py:174
+#: quotes.py:178
 msgid "Attributed quote #{} to **{}**."
 msgstr ""
 
-#: ../quotes.py:188
+#: quotes.py:183
+#, docstring
+msgid ""
+"List the quotes in the current guild\n"
+"\n"
+"        Maximum amount of quotes per page is 15; any higher values are silently reduced\n"
+"        to this limit.\n"
+"        "
+msgstr ""
+
+#: quotes.py:192
+msgid "This guild has no quotes! Use `{prefix}quote add` to add some!"
+msgstr ""
+
+#: quotes.py:200
+msgid "Guild Quotes"
+msgstr ""
+
+#: quotes.py:201
+msgid "Displaying {} out of {} quotes"
+msgstr ""
+
+#: quotes.py:203
+msgid "Page {}/{}"
+msgstr ""
+
+#: quotes.py:206
+msgid "Quote #{}"
+msgstr ""
+
+#: quotes.py:217
+#, docstring
+msgid ""
+"Remove a quote by it's ID\n"
+"\n"
+"        This requires you to either be the quote's creator, an administrator,\n"
+"        moderator, or the attributed message author.\n"
+"        "
+msgstr ""
+
+#: quotes.py:226
 msgid "Quote successfully deleted."
 msgstr ""
 
-#: ../quotes.py:190
+#: quotes.py:228
 msgid "Ok then."
 msgstr ""
 

@@ -1,21 +1,20 @@
 from datetime import datetime
-from enum import Enum
 from typing import List, Optional
 
 import discord
-from discord.ext import commands
-from redbot.core import Config, RedContext
+from redbot.core import commands
+from redbot.core import Config
 from redbot.core.bot import Red
-from redbot.core.i18n import CogI18n
+from redbot.core.i18n import Translator
 
-__all__ = ("i18n", "conf", "RevisionType", "QuoteRevision", "Quote", "ensure_can_modify")
+__all__ = ("i18n", "conf", "Quote", "ensure_can_modify")
 
 conf = Config.get_conf(
     cog_instance=None, cog_name="Quotes", identifier=441356724, force_registration=True
 )
 conf.register_guild(quotes=[])
 
-i18n = CogI18n("Quotes", __file__)
+i18n = Translator("Quotes", __file__)
 
 
 async def ensure_can_modify(member: discord.Member, quote: "Quote"):
@@ -26,95 +25,12 @@ async def ensure_can_modify(member: discord.Member, quote: "Quote"):
         raise commands.CheckFailure
 
 
-class RevisionType(Enum):
-    CONTENT = i18n("Content")
-    ATTRIBUTED_AUTHOR = i18n("Attributed Author")
-    QUOTE_CREATOR = i18n("Quote Creator")
-
-
-class QuoteRevision:
-
-    def __init__(
-        self,
-        quote: "Quote",
-        rev_type: RevisionType,
-        changed_from,
-        changed_to,
-        rev_id: int,
-        timestamp: datetime = None,
-    ):
-        self.quote = quote
-        self.type = rev_type
-        self.changed_from = changed_from
-        self.changed_to = changed_to
-        self.id = rev_id
-        self.timestamp = timestamp or datetime.utcnow()
-
-    def __int__(self):
-        return self.id
-
-    @property
-    def title(self):
-        return i18n("Revision #{}").format(self.id)
-
-    def summary(self, prefix: str = "[p]"):
-        return i18n(
-            "**Type:** {type} \N{LIGHT VERTICAL BAR} Use `{prefix}quote history {quote} {rev}` "
-            "to view this revision"
-        ).format(
-            type=self.type.value, prefix=prefix, quote=self.quote.id, rev=self.id
-        )
-
-    def embed(self, colour: discord.Colour = discord.Colour.blurple()):
-        changed_from = self.changed_from
-        changed_to = self.changed_to
-        if isinstance(changed_from, discord.Member):
-            changed_from = changed_from.mention
-        if isinstance(changed_to, discord.Member):
-            changed_to = changed_to.mention
-
-        return (
-            discord.Embed(colour=colour, title=self.title, timestamp=self.timestamp).add_field(
-                name=i18n("Before"), value=changed_from, inline=False
-            ).add_field(
-                name=i18n("After"), value=changed_to, inline=False
-            )
-        )
-
-    @classmethod
-    def from_dict(cls, quote: "Quote", rev_id: int, data: dict):
-        ts = datetime.fromtimestamp(data.get("timestamp"))
-        rev_type = getattr(RevisionType, data.get("rev_type"))
-        if rev_type in (RevisionType.ATTRIBUTED_AUTHOR, RevisionType.QUOTE_CREATOR):
-            changed_from = quote.guild.get_member(data.get("changed_from")) or data.get(
-                "changed_from"
-            )
-            changed_to = quote.guild.get_member(data.get("changed_to")) or data.get("changed_to")
-        else:
-            changed_from = data.get("changed_from")
-            changed_to = data.get("changed_to")
-        return cls(quote, rev_type, changed_from, changed_to, rev_id, ts)
-
-    @property
-    def as_dict(self):
-        return {
-            "rev_type": self.type.name,
-            "changed_from": self.changed_from.id
-            if isinstance(self.changed_from, discord.Member)
-            else self.changed_from,
-            "changed_to": self.changed_to.id
-            if isinstance(self.changed_to, discord.Member)
-            else self.changed_to,
-            "timestamp": self.timestamp.timestamp(),
-        }
-
-
 class Quote(commands.Converter):
     bot = None  # type: Red
 
     def __init__(self, **kwargs):
         self.guild = kwargs.get("guild")  # type: discord.Guild
-        self.id = kwargs.get("id")  # type: id
+        self.id = kwargs.get("id")  # type: int
         self._text = kwargs.get("text")  # type: str
         self._message_author = kwargs.get("message_author_id")  # type: int
         self._creator = kwargs.get("author_id")  # type: int
@@ -122,19 +38,11 @@ class Quote(commands.Converter):
             kwargs.get("timestamp", datetime.utcnow().timestamp())
         )  # type: datetime
 
-        revisions = kwargs.get("revisions", [])
-        self.revisions = [
-            QuoteRevision.from_dict(self, data=x, rev_id=revisions.index(x) + 1) for x in revisions
-        ]
-
     def __int__(self):
         return self.id
 
     def __str__(self):
         return self.text
-
-    def _add_rev(self, rev_type: RevisionType, old, new):
-        self.revisions.append(QuoteRevision(self, rev_type, old, new, len(self.revisions)))
 
     @property
     def embed_user(self):
@@ -163,7 +71,6 @@ class Quote(commands.Converter):
         """Set the quote text. This creates a revision history entry"""
         if text == self.text:
             return
-        self._add_rev(RevisionType.CONTENT, self.text, text)
         self._text = text
 
     @property
@@ -176,7 +83,6 @@ class Quote(commands.Converter):
         """Change the user who created the quote. This creates a revision history entry"""
         if creator == self.creator:
             return
-        self._add_rev(RevisionType.QUOTE_CREATOR, self.creator, creator)
         self._creator = creator.id
 
     @property
@@ -189,7 +95,6 @@ class Quote(commands.Converter):
         """Set the quoted message author. This creates a revision history entry"""
         if message_author == self.message_author:
             return
-        self._add_rev(RevisionType.ATTRIBUTED_AUTHOR, self.message_author, message_author)
         self._message_author = message_author.id
 
     @property
@@ -217,7 +122,6 @@ class Quote(commands.Converter):
             "message_author_id": getattr(self.message_author, "id", self.message_author),
             "text": self.text,
             "timestamp": self.timestamp.timestamp(),
-            "revisions": [x.as_dict for x in self.revisions],
         }
 
     async def can_modify(self, member: discord.Member) -> bool:
@@ -259,7 +163,6 @@ class Quote(commands.Converter):
             "message_author_id": getattr(message_author, "id", author.id),
             "text": text,
             "timestamp": datetime.utcnow().timestamp(),
-            "revisions": [],
         }
         async with conf.guild(guild).quotes() as quotes:
             quotes.append(quote)
@@ -267,6 +170,8 @@ class Quote(commands.Converter):
 
     @classmethod
     async def all_quotes(cls, guild: discord.Guild) -> List["Quote"]:
+        # FIXME: This is extremely unoptimized, and results in a noticeable delay
+        #        when getting the quote list in servers with around 150 or more quotes
         quotes = []
         for i in range(len(await conf.guild(guild).quotes())):
             quotes.append(await cls.get(guild, quote_id=i + 1))
@@ -274,7 +179,7 @@ class Quote(commands.Converter):
 
     # noinspection PyMethodOverriding
     @staticmethod
-    async def convert(ctx: RedContext, argument: str):
+    async def convert(ctx: commands.Context, argument: str):
         if ctx.guild is None:
             raise commands.NoPrivateMessage
 

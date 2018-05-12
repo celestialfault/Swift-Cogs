@@ -2,12 +2,12 @@ from typing import Type, Awaitable
 
 import discord
 from discord.ext import commands
-from redbot.core import RedContext
+from redbot.core.commands import Context
 from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import warning
 
 from cog_shared.odinair_libs import ReactMenu, PostMenuAction, tick, prompt, ConfirmMenu
-from quotes.quote import Quote, i18n, ensure_can_modify
+from quotes.quote import Quote, i18n
 
 
 class StopLoop(Exception):
@@ -20,7 +20,7 @@ class ContinueLoop(Exception):
 
 class QuoteEditor:
 
-    def __init__(self, ctx: RedContext, quote: Quote):
+    def __init__(self, ctx: Context, quote: Quote):
         self.ctx = ctx
         self.quote = quote
 
@@ -68,7 +68,7 @@ class QuoteEditor:
             "change_creator": {
                 "emoji": "\N{PERSON WITH BALL}",
                 "description": i18n("Change quote creator"),
-                "if": _creator_check,
+                "only_if": _creator_check,
             },
             "change_content": {"emoji": "\N{MEMO}", "description": i18n("Change quote contents")},
             "delete_quote": {"emoji": "\N{WASTEBASKET}", "description": i18n("Delete quote")},
@@ -141,8 +141,8 @@ class QuoteEditor:
     async def prompt(self):
         actions = {}
         for action, data in self.actions.items():
-            if data.get("if", None):
-                if not await discord.utils.maybe_coroutine(data.get("if"), self):
+            if "only_if" in data:
+                if not await discord.utils.maybe_coroutine(data.get("only_if"), self):
                     continue
             actions[action] = data
 
