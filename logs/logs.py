@@ -2,17 +2,17 @@ import contextlib
 from typing import List, Optional, Type
 
 import discord
-from aiohttp import ClientSession
-from discord.ext import commands
 from discord.raw_models import RawBulkMessageDeleteEvent
+from redbot.core import commands
 from redbot.core import checks, Config
-from redbot.core.bot import Red, RedContext
+from redbot.core.bot import Red
+from redbot.core.i18n import cog_i18n
 from redbot.core.utils.chat_formatting import warning, info, error, inline, bold
 
 from cog_shared.odinair_libs import tick, cmd_help, fmt, ConfirmMenu, prompt, cmd_group
 from logs.core import Module, get_module, i18n, log_event
-from logs.core.module import log
-from logs.modules import all_modules
+from logs.core.module import log, unload, load
+from logs.modules import modules as all_modules
 
 
 def ignore_handler(
@@ -29,7 +29,7 @@ def ignore_handler(
     name = kwargs.pop("name", "add" if remove is False else "remove")
 
     # noinspection PyUnusedLocal
-    async def _command(self, ctx: RedContext, *, item):
+    async def _command(self, ctx: commands.Context, *, item):
         new_item = ...
         for converter in converters:
             with contextlib.suppress(commands.BadArgument):
@@ -38,7 +38,8 @@ def ignore_handler(
         if new_item is ...:
             raise commands.BadArgument
         item = getattr(item, "id", item)
-        async with Module.config.guild(ctx.guild).ignore.get_attr(conf_opt)() as ignored:
+        # noinspection PyTypeChecker
+        async with Module(None).config.guild(ctx.guild).ignore.get_attr(conf_opt)() as ignored:
             if remove is False:
                 if item in ignored:
                     await ctx.send(warning(i18n("That item is already currently being ignored")))
@@ -56,10 +57,12 @@ def ignore_handler(
 
     if conf_opt == "guild":
         # noinspection PyUnusedLocal
-        async def _command(self, ctx: RedContext, toggle: bool = None):  # noqa
+        async def _command(self, ctx: commands.Context, toggle: bool = None):  # noqa
             if toggle is None:
-                toggle = not await Module.config.guild(ctx.guild).ignore.guild()
-            await Module.config.guild(ctx.guild).ignore.guild.set(toggle)
+                # noinspection PyTypeChecker
+                toggle = not await Module(None).config.guild(ctx.guild).ignore.guild()
+            # noinspection PyTypeChecker
+            await Module(None).config.guild(ctx.guild).ignore.guild.set(toggle)
             await ctx.send(
                 tick(
                     i18n("Now ignoring the current server")
@@ -71,7 +74,7 @@ def ignore_handler(
     return parent.command(name=name, **kwargs)(_command)
 
 
-async def retrieve_module(ctx: RedContext, module_name: str):
+async def retrieve_module(ctx: commands.Context, module_name: str):
     module = get_module(module_name, guild=ctx.guild)
     if module is None:
         raise commands.BadArgument
@@ -80,7 +83,7 @@ async def retrieve_module(ctx: RedContext, module_name: str):
     return module
 
 
-async def retrieve_all_modules(ctx: RedContext) -> List[Module]:
+async def retrieve_all_modules(ctx: commands.Context) -> List[Module]:
     """Returns all modules the given member can modify"""
     modules = []
     for module in all_modules.values():
@@ -92,6 +95,7 @@ async def retrieve_all_modules(ctx: RedContext) -> List[Module]:
 
 
 # noinspection PyMethodMayBeStatic
+@cog_i18n(i18n)
 class Logs:
     """Log anything and everything that happens in your server"""
 
@@ -120,22 +124,20 @@ class Logs:
         self.config = Config.get_conf(self, identifier=2401248235421, force_registration=False)
         self.config.register_guild(**self.defaults_guild)
         self.config.register_global(**self.defaults_global)
-        Module.config = self.config
-        Module.bot = self.bot
-        Module.session = ClientSession()
+        load(self.bot, self.config)
 
     def __unload(self):
-        Module.session.close()
+        unload()
 
     @commands.group(name="logset")
     @commands.guild_only()
     @checks.guildowner_or_permissions(administrator=True)
-    async def logset(self, ctx: RedContext):
+    async def logset(self, ctx: commands.Context):
         """Manage log settings"""
         await cmd_help(ctx)
 
     @logset.command(name="setup")
-    async def logset_setup(self, ctx: RedContext):
+    async def logset_setup(self, ctx: commands.Context):
         """Quick-start for logging settings"""
         for module in await retrieve_all_modules(ctx):
             async with ConfirmMenu(
@@ -207,7 +209,7 @@ class Logs:
     @logset.command(name="webhook")
     @commands.bot_has_permissions(manage_webhooks=True)
     async def logset_webhook(
-        self, ctx: RedContext, module: str, channel: discord.TextChannel = None
+        self, ctx: commands.Context, module: str, channel: discord.TextChannel = None
     ):
         """Setup a module to log via a webhook
 
@@ -262,7 +264,7 @@ class Logs:
 
     @logset.command(name="channel")
     async def logset_channel(
-        self, ctx: RedContext, module: str, channel: discord.TextChannel = None
+        self, ctx: commands.Context, module: str, channel: discord.TextChannel = None
     ):
         """Set the log channel for a module
 
@@ -292,7 +294,7 @@ class Logs:
             )
 
     @logset.command(name="modules", aliases=["list"])
-    async def logset_modules(self, ctx: RedContext):
+    async def logset_modules(self, ctx: commands.Context):
         """List all available modules"""
         modules = [
             "{} \N{EM DASH} {}".format(bold(module.friendly_name), inline(str(module.name)))
@@ -304,7 +306,7 @@ class Logs:
         )
 
     @logset.command(name="module")
-    async def logset_module(self, ctx: RedContext, module: str, *settings: str):
+    async def logset_module(self, ctx: commands.Context, module: str, *settings: str):
         """Get or set a module's settings"""
         module = await retrieve_module(ctx, module)
         if not settings:
@@ -319,7 +321,7 @@ class Logs:
             )
 
     @logset.command(name="reset")
-    async def logset_reset(self, ctx: RedContext):
+    async def logset_reset(self, ctx: commands.Context):
         """Reset the server's log settings"""
         if await ConfirmMenu(
             ctx,

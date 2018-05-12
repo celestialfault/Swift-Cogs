@@ -21,39 +21,14 @@ class VoiceModule(Module):
         embed.description = i18n("Member: {}").format(member.mention)
         embed.set_footer(text=i18n("Member ID: {}").format(member.id))
 
-        await embed.add_if_changed(
-            name=i18n("Channel"),
-            before=before.channel,
-            after=after.channel,
-            config_opt=("channel",),
+        return await embed.add_multiple_changed(
+            before,
+            after,
+            [
+                {"name": i18n("Channel"), "value": "channel", "config_opt": ("channel",)},
+                {"name": i18n("Self Mute"), "value": "self_mute", "config_opt": ("mute", "self")},
+                {"name": i18n("Server Mute"), "value": "mute", "config_opt": ("mute", "server")},
+                {"name": i18n("Self Deaf"), "value": "self_deaf", "config_opt": ("deaf", "self")},
+                {"name": i18n("Server Deaf"), "value": "deaf", "config_opt": ("deaf", "server")},
+            ],
         )
-
-        await embed.add_if_changed(
-            name=i18n("Self Mute"),
-            before=before.self_mute,
-            after=after.self_mute,
-            config_opt=("mute", "self"),
-        )
-
-        await embed.add_if_changed(
-            name=i18n("Server Mute"),
-            before=before.mute,
-            after=after.mute,
-            config_opt=("mute", "server"),
-        )
-
-        await embed.add_if_changed(
-            name=i18n("Self Deaf"),
-            before=before.self_deaf,
-            after=after.self_deaf,
-            config_opt=("deaf", "self"),
-        )
-
-        await embed.add_if_changed(
-            name=i18n("Server Deaf"),
-            before=before.deaf,
-            after=after.deaf,
-            config_opt=("deaf", "server"),
-        )
-
-        return embed

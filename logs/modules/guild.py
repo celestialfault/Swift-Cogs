@@ -31,55 +31,46 @@ class GuildModule(Module):
         embed.set_author(name=i18n("Server Updated"), icon_url=self.icon_uri())
         embed.set_footer(text=i18n("Server ID: {}").format(after.id))
 
-        await embed.add_if_changed(
-            name=i18n("2FA Requirement"),
-            before=before.mfa_level,
-            after=after.mfa_level,
-            converter=lambda x: i18n("Enabled") if x == 1 else i18n("Disabled"),
-            config_opt=("2fa",),
+        return await embed.add_multiple_changed(
+            before,
+            after,
+            [
+                {"name": i18n("Name"), "value": "name", "config_opt": ["name"]},
+                {
+                    "name": i18n("Owner"),
+                    "value": "owner",
+                    "converter": lambda x: getattr(x, "mention", str(x)),
+                    "config_opt": ["owner"],
+                },
+                {
+                    "name": i18n("2FA Requirement"),
+                    "value": "mfa_level",
+                    "converter": lambda x: i18n("Enabled") if x == 1 else i18n("Disabled"),
+                    "config_opt": ["2fa"],
+                },
+                {
+                    "name": i18n("AFK Channel"),
+                    "value": "afk_channel",
+                    "converter": lambda x: getattr(x, "mention", i18n("None")),
+                    "config_opt": ["afk", "channel"],
+                },
+                {
+                    "name": i18n("AFK Timeout"),
+                    "value": "afk_timeout",
+                    "converter": lambda x: td_format(timedelta(seconds=x)),
+                    "config_opt": ["afk", "timeout"],
+                },
+                {
+                    "name": i18n("Voice Region"),
+                    "value": "region",
+                    "converter": lambda x: normalize(str(x)),
+                    "config_opt": ["region"],
+                },
+                {
+                    "name": i18n("Content Filter"),
+                    "value": "explicit_content_filter",
+                    "converter": lambda x: normalize(str(x)),
+                    "config_opt": ["filter"],
+                },
+            ],
         )
-
-        await embed.add_if_changed(
-            name=i18n("AFK Channel"),
-            before=before.afk_channel,
-            after=after.afk_channel,
-            converter=lambda x: getattr(x, "mention", i18n("None")),
-            config_opt=("afk", "channel"),
-        )
-
-        await embed.add_if_changed(
-            name=i18n("AFK Timeout"),
-            before=before.afk_timeout,
-            after=after.afk_timeout,
-            converter=lambda x: td_format(timedelta(seconds=x)),
-            config_opt=("afk", "timeout"),
-        )
-
-        await embed.add_if_changed(
-            name=i18n("Name"), before=before.name, after=after.name, config_opt=("name",)
-        )
-
-        await embed.add_if_changed(
-            name=i18n("Owner"),
-            before=before.owner,
-            after=after.owner,
-            converter=lambda x: getattr(x, "mention", str(x)),
-            config_opt=("owner",),
-        )
-
-        await embed.add_if_changed(
-            name=i18n("Voice Region"),
-            before=before.region,
-            after=after.region,
-            config_opt=("region",),
-        )
-
-        await embed.add_if_changed(
-            name=i18n("Content Filter"),
-            converter=lambda x: normalize(x),
-            config_opt=("filter",),
-            before=before.explicit_content_filter,
-            after=after.explicit_content_filter,
-        )
-
-        return embed

@@ -61,54 +61,61 @@ class ChannelModule(Module):
             self,
             colour=discord.Color.blurple(),
             description=i18n("Channel: {}").format(after.mention),
-        )
-        # noinspection PyUnresolvedReferences
-        embed.set_footer(text=i18n("Channel ID: {}").format(after.id))
-        embed.set_author(name=i18n("Channel Updated"), icon_url=self.icon_uri())
-
-        # noinspection PyUnresolvedReferences
-        await embed.add_if_changed(
-            name=i18n("Name"), before=before.name, after=after.name, config_opt=("update", "name")
+        ).set_footer(
+            text=i18n("Channel ID: {}").format(getattr(after, "id"))
+        ).set_author(
+            name=i18n("Channel Updated"), icon_url=self.icon_uri()
         )
 
-        await embed.add_if_changed(
-            name=i18n("Category"),
-            before=before.category,
-            after=after.category,
-            converter=lambda x: getattr(x, "mention", i18n("None")),
-            config_opt=("update", "category"),
-        )
-
-        await embed.add_if_changed(
-            name=i18n("Position"),
-            before=before.position,
-            after=after.position,
-            config_opt=("update", "position"),
-        )
+        checks = [
+            {
+                "name": i18n("Name"),
+                # yes, pycharm, a guild channel does have a name attribute
+                "before": getattr(before, "name"),
+                "after": getattr(after, "name"),
+                "config_opt": ("update", "name"),
+            },
+            {
+                "name": i18n("Category"),
+                "before": before.category,
+                "after": after.category,
+                "converter": lambda x: getattr(x, "mention", i18n("None")),
+                "config_opt": ("update", "category"),
+            },
+            {
+                "name": i18n("Position"),
+                "before": before.position,
+                "after": after.position,
+                "config_opt": ("update", "position"),
+            },
+        ]
 
         if isinstance(before, discord.TextChannel) and isinstance(after, discord.TextChannel):
-            await embed.add_if_changed(
-                name=i18n("Channel Topic"),
-                before=before.topic,
-                after=after.topic,
-                diff=True,
-                config_opt=("update", "topic"),
-            )
+            checks += [
+                {
+                    "name": i18n("Channel Topic"),
+                    "before": before.topic,
+                    "after": after.topic,
+                    "diff": True,
+                    "config_opt": ("update", "topic"),
+                }
+            ]
 
         elif isinstance(before, discord.VoiceChannel) and isinstance(after, discord.VoiceChannel):
-            await embed.add_if_changed(
-                name=i18n("User Limit"),
-                before=before.user_limit,
-                after=after.user_limit,
-                config_opt=("update", "userlimit"),
-            )
+            checks += [
+                {
+                    "name": i18n("User Limit"),
+                    "before": before.user_limit,
+                    "after": after.user_limit,
+                    "config_opt": ("update", "userlimit"),
+                },
+                {
+                    "name": i18n("Bitrate"),
+                    "before": before.bitrate,
+                    "after": after.bitrate,
+                    "converter": lambda x: "{} kbps".format(x[:4]),
+                    "config_opt": ("update", "bitrate"),
+                },
+            ]
 
-            await embed.add_if_changed(
-                name=i18n("Bitrate"),
-                before=before.bitrate,
-                after=after.bitrate,
-                converter=lambda x: "{} kbps".format(x[:4]),
-                config_opt=("update", "bitrate"),
-            )
-
-        return embed
+        return await embed.add_multiple_changed(checks)

@@ -1,6 +1,6 @@
 from datetime import datetime
 from difflib import Differ
-from typing import List, Tuple
+from typing import List, Any, Dict, Sequence, Callable
 
 import discord
 
@@ -43,6 +43,19 @@ class LogEntry(discord.Embed):
             return
         await send_to.send(embed=self, **kwargs)
 
+    async def add_multiple_changed(self, before, after, checks: List[Dict[str, Any]]):
+        for check in checks:
+            values = check.pop("value").split(".")
+            before_value = before
+            after_value = after
+            for val in values:
+                before_value = getattr(before_value, val)
+                after_value = getattr(after_value, val)
+
+            if before_value != after_value:
+                await self.add_if_changed(before=before_value, after=after_value, **check)
+        return self
+
     async def add_if_changed(
         self,
         *,
@@ -52,8 +65,8 @@ class LogEntry(discord.Embed):
         diff: bool = False,
         box_lang: str = None,
         inline: bool = False,
-        converter=None,
-        config_opt: Tuple[str, ...] = None
+        converter: Callable[[Any], str] = translate_common_types,
+        config_opt: Sequence[str]
     ):
         if diff and not (isinstance(before, (List, str)) and isinstance(after, (List, str))):
             raise ValueError(

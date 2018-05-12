@@ -18,8 +18,6 @@ class MessageModule(Module):
     }
 
     async def edit(self, before: discord.Message, after: discord.Message):
-        if not await self.is_opt_enabled("edit"):
-            return None
         if after.author.bot:
             return None
 
@@ -28,19 +26,27 @@ class MessageModule(Module):
         )
         embed.set_author(name=i18n("Message Edited"), icon_url=self.icon_uri(after.author))
         embed.set_footer(text=i18n("Message ID: {}").format(after.id))
+
         embed.add_field(
             name=i18n("Message Author"),
             inline=True,
             value="{after.author.mention} ({after.author.id})".format(after=after),
         )
+
         embed.add_field(
             name=i18n("Channel"),
             inline=True,
             value="{after.channel.mention} ({after.channel.id})".format(after=after),
         )
+
         await embed.add_if_changed(
-            name=i18n("Content Diff"), before=before.content, after=after.content, diff=True
+            name=i18n("Content Diff"),
+            before=before.content,
+            after=after.content,
+            diff=True,
+            config_opt=["edit"],
         )
+
         return embed
 
     async def delete(self, message: discord.Message):

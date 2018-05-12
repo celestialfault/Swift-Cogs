@@ -19,9 +19,9 @@ log = logging.getLogger("red.odinair.logs")
 
 
 def get_module(module_id: str, *args, **kwargs) -> "Module":
-    from logs.modules import all_modules
+    from logs.modules import modules
 
-    return all_modules[module_id.lower()](*args, **kwargs)
+    return modules[module_id.lower()](*args, **kwargs)
 
 
 async def log_event(module: str, event: str, *args, use_guild: discord.Guild = None, **kwargs):
@@ -42,20 +42,88 @@ async def log_event(module: str, event: str, *args, use_guild: discord.Guild = N
     return await get_module(module, guild).log(event, *args, **kwargs)
 
 
+bot = None  # type: Red
+config = None  # type: Config
+session = None  # type: ClientSession
+loaded = False
+
+
+def load(bot_: Red, config_: Config):
+    from logs import modules
+
+    global loaded
+    global bot
+    global config
+    global session
+
+    loaded = True
+    bot = bot_
+    config = config_
+    session = ClientSession()
+
+    for mod in modules.default_modules:
+        modules.register(mod)
+
+
+def unload():
+    from logs import modules
+
+    for module in modules.modules.values():
+        modules.unregister(module)
+
+    global loaded
+    global bot
+    global config
+    global session
+
+    loaded = False
+    session.close()
+    bot = None
+    config = None
+
+
+# noinspection PyTypeChecker
 class Module(ABC):
     """Base logging module class
 
     Loggers should extend this class with the abstract properties implemented.
     """
-    # the following attributes are populated upon cog initialization
-    config = None  # type: Config
-    bot = None  # type: Red
-    session = None  # type: ClientSession
+
+    @property
+    def bot(self) -> Red:
+        assert loaded is True
+        return bot
+
+    @property
+    def config(self) -> Config:
+        assert loaded is True
+        return config
+
+    @property
+    def session(self) -> ClientSession:
+        assert loaded is True
+        return session
 
     _TOGGLE_REGEX = re.compile("(?P<KEY>([a-z0-9]:?)+)=?(?P<VALUE>[a-z]+)?", re.IGNORECASE)
 
     def __init__(self, guild: discord.Guild):
         self.guild = guild
+
+    @classmethod
+    def register(cls):
+        """Helper method called on module init.
+
+        Can be overridden by subclasses to implement their own setup routine
+        """
+        pass
+
+    @classmethod
+    def unregister(cls):
+        """Helper method called when performing unload hooks.
+
+        Can be overridden by subclasses to implement their own cleanup routine
+        """
+        pass
 
     @property
     @abstractmethod
@@ -130,9 +198,7 @@ class Module(ABC):
         webhook = await self.get_config_value("_webhook")()
         channel_id = await self.get_config_value("_log_channel")()
         if webhook:
-            return discord.Webhook.from_url(
-                webhook, adapter=discord.AsyncWebhookAdapter(self.session)
-            )
+            return discord.Webhook.from_url(webhook, adapter=discord.AsyncWebhookAdapter(session))
         return self.bot.get_channel(channel_id)
 
     async def set_destination(

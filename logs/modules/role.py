@@ -2,7 +2,7 @@ import discord
 
 from logs.core import Module, LogEntry, i18n
 
-from cog_shared.odinair_libs import normalize
+from cog_shared.odinair_libs import normalize, formatting
 
 
 class RoleModule(Module):
@@ -31,9 +31,11 @@ class RoleModule(Module):
             colour=discord.Colour.green(),
             require_fields=False,
             description=i18n("Role: {}").format(role.mention),
+        ).set_author(
+            name=i18n("Role Created"), icon_url=self.icon_uri()
+        ).set_footer(
+            text=i18n("Role ID: {}").format(role.id)
         )
-        embed.set_author(name=i18n("Role Created"), icon_url=self.icon_uri())
-        embed.set_footer(text=i18n("Role ID: {}").format(role.id))
 
         embed.add_field(
             name=i18n("Colour"),
@@ -61,15 +63,16 @@ class RoleModule(Module):
         if not await self.is_opt_enabled("delete"):
             return None
 
-        embed = LogEntry(
+        return LogEntry(
             self,
             colour=discord.Colour.red(),
             require_fields=False,
             description=i18n("Role `{}` was deleted").format(role.name),
+        ).set_author(
+            name=i18n("Role Deleted"), icon_url=self.icon_uri()
+        ).set_footer(
+            text=i18n("Role ID: {}").format(role.id)
         )
-        embed.set_author(name=i18n("Role Deleted"), icon_url=self.icon_uri())
-        embed.set_footer(text=i18n("Role ID: {}").format(role.id))
-        return embed
 
     async def update(self, before: discord.Role, after: discord.Role):
         embed = LogEntry(
@@ -80,45 +83,38 @@ class RoleModule(Module):
         embed.set_author(name=i18n("Role Updated"), icon_url=self.icon_uri())
         embed.set_footer(text=i18n("Role ID: {}").format(after.id))
 
-        await embed.add_if_changed(
-            name=i18n("Name"), before=before.name, after=after.name, config_opt=("update", "name")
+        return await embed.add_multiple_changed(
+            before,
+            after,
+            [
+                {"name": i18n("Name"), "value": "name", "config_opt": ("update", "name")},
+                {
+                    "name": i18n("Mentionable"),
+                    "value": "mentionable",
+                    "config_opt": ("update", "mentionable"),
+                },
+                {"name": i18n("Hoist"), "value": "hoist", "config_opt": ("update", "hoist")},
+                {
+                    "name": i18n("Colour"),
+                    "value": "colour",
+                    "converter": lambda x: str(x)
+                    if x != discord.Colour.default()
+                    else i18n("None"),
+                    "config_opt": ("update", "colour"),
+                },
+                {
+                    "name": i18n("Permissions"),
+                    "value": "permissions",
+                    "diff": True,
+                    "converter": lambda x: (
+                        formatting.permissions.get(z, lambda: z)() for z, y in x if y
+                    ),
+                    "config_opt": ("update", "permissions"),
+                },
+                {
+                    "name": i18n("Position"),
+                    "value": "position",
+                    "config_opt": ("update", "position"),
+                },
+            ],
         )
-
-        await embed.add_if_changed(
-            name=i18n("Mentionable"),
-            before=before.mentionable,
-            after=after.mentionable,
-            config_opt=("update", "mentionable"),
-        )
-
-        await embed.add_if_changed(
-            name=i18n("Hoist"),
-            before=before.hoist,
-            after=after.hoist,
-            config_opt=("update", "hoist"),
-        )
-
-        await embed.add_if_changed(
-            name=i18n("Colour"),
-            before=before.colour,
-            after=after.colour,
-            config_opt=("update", "colour"),
-            converter=lambda x: str(x) if x != discord.Colour.default() else i18n("None"),
-        )
-
-        await embed.add_if_changed(
-            name=i18n("Permissions"),
-            diff=True,
-            config_opt=("update", "permissions"),
-            before=[normalize(x, guild="server") for x, y in before.permissions if y],
-            after=[normalize(x, guild="server") for x, y in after.permissions if y],
-        )
-
-        await embed.add_if_changed(
-            name=i18n("Position"),
-            before=before.position,
-            after=after.position,
-            config_opt=("update", "position"),
-        )
-
-        return embed
