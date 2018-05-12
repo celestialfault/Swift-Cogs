@@ -175,7 +175,7 @@ class FutureTime(timedelta, commands.Converter):
             time_amnt = float(time_match.group(1))
             time_abbrev = time_match.group(2)
             time_quantity = discord.utils.find(
-                lambda t: t[0]().startswith(time_abbrev), FutureTime.TIME_QUANTITIES.items()
+                lambda t: t[0].startswith(time_abbrev), FutureTime.TIME_QUANTITIES.items()
             )
             if time_quantity is not None:
                 seconds += time_amnt * time_quantity[1]
