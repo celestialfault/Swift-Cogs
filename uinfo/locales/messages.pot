@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2018-05-12 01:35-0600\n"
+"POT-Creation-Date: 2018-05-12 02:47-0600\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -15,97 +15,102 @@ msgstr ""
 "Generated-By: redgettext 1.0\n"
 
 
-#: uinfo.py:29
+#: uinfo.py:16
+#, docstring
+msgid "Yet another [p]userinfo variation"
+msgstr ""
+
+#: uinfo.py:28
 msgid "🛠 **Bot Owner**"
 msgstr ""
 
-#: uinfo.py:32
+#: uinfo.py:31
 msgid "🔑 Server Owner"
 msgstr ""
 
-#: uinfo.py:34
+#: uinfo.py:33
 msgid "🔨 Server Administrator"
 msgstr ""
 
-#: uinfo.py:36
+#: uinfo.py:35
 msgid "🛡 Server Moderator"
 msgstr ""
 
-#: uinfo.py:38
+#: uinfo.py:37
 msgid "👥 Server Member"
 msgstr ""
 
-#: uinfo.py:47
+#: uinfo.py:46
 msgid "🎮 Playing **{}**"
 msgstr ""
 
-#: uinfo.py:49
+#: uinfo.py:48
 msgid "📹 Streaming **{}**"
 msgstr ""
 
-#: uinfo.py:53
+#: uinfo.py:52
 msgid "🎵 Listening to **{}**"
 msgstr ""
 
-#: uinfo.py:55
+#: uinfo.py:54
 msgid "🎵 Listening to **{}** — **{}** on **Spotify**"
 msgstr ""
 
-#: uinfo.py:61
+#: uinfo.py:60
 msgid "📽 Watching **{}**"
 msgstr ""
 
-#: uinfo.py:69
+#: uinfo.py:68
 msgid "Online"
 msgstr ""
 
-#: uinfo.py:71
+#: uinfo.py:70
 msgid "Idle"
 msgstr ""
 
-#: uinfo.py:73
+#: uinfo.py:72
 msgid "Do Not Disturb"
 msgstr ""
 
-#: uinfo.py:75
+#: uinfo.py:74
 msgid "Offline"
 msgstr ""
 
-#: uinfo.py:80
+#: uinfo.py:79
 #, docstring
 msgid "Displays your or a specified user's profile"
 msgstr ""
 
-#: uinfo.py:99
+#: uinfo.py:98
 msgid "🏷 Nicknamed as {}"
 msgstr ""
 
-#: uinfo.py:106
+#: uinfo.py:105
 msgid "Member #{} | User ID: {}"
 msgstr ""
 
-#: uinfo.py:109
+#: uinfo.py:108
 msgid "None"
 msgstr ""
 
-#: uinfo.py:111
+#: uinfo.py:110
 msgid "Server Roles"
 msgstr ""
 
-#: uinfo.py:113
+#: uinfo.py:112
 msgid "Joined Discord"
 msgstr ""
 
-#: uinfo.py:114
+#: uinfo.py:113
 msgid "Joined Server"
 msgstr ""
 
-#: uinfo.py:120
+#: uinfo.py:119
 #, docstring
 msgid "Get the avatar of yourself or a specified user"
 msgstr ""
 
-#: uinfo.py:122
+#: uinfo.py:121
 msgid "{}'s avatar"
 msgstr ""
 

@@ -4,7 +4,7 @@ import discord
 
 from logs.core import Module, LogEntry, i18n
 
-from cog_shared.odinair_libs import normalize, td_format
+from cog_shared.swift_libs import normalize, td_format
 
 
 class GuildModule(Module):

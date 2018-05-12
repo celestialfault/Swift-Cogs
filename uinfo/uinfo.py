@@ -6,7 +6,7 @@ from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import escape, bold
 from redbot.core.i18n import Translator, cog_i18n
 
-from cog_shared.odinair_libs.time import td_format
+from cog_shared.swift_libs.time import td_format
 
 _ = Translator("UInfo", __file__)
 

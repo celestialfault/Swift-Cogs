@@ -8,7 +8,7 @@ from redbot.core.bot import Red
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import bold, warning
 
-from cog_shared.odinair_libs import FutureTime, PaginateMenu, chunks, fmt, td_format, tick
+from cog_shared.swift_libs import FutureTime, PaginateMenu, chunks, fmt, td_format, tick
 from timedrole.role import TempRole
 
 _ = Translator("TimedRole", __file__)

@@ -10,7 +10,7 @@ from redbot.core import Config
 from redbot.core.bot import Red
 from redbot.core.config import Group, Value
 
-from cog_shared.odinair_libs import flatten
+from cog_shared.swift_libs import flatten
 from logs.core.i18n import i18n
 from logs.core.logentry import LogEntry
 from logs.core.utils import add_descriptions, replace_dict_items

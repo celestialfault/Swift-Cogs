@@ -10,10 +10,10 @@ plugins:
     enabled: true
   pep8:
     enabled: true
-    config:
+    checks:
       E251:
         # > 'Okay: def foo(arg: int = 42):'
-        # > still warns about it, despite being pep8-compliant syntax
+        # > still warns exact same syntax, despite being pep8 compliant
         # > [visible confusion]
         enabled: false
       F401:

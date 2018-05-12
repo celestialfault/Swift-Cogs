@@ -2,7 +2,7 @@ import discord
 
 from logs.core import Module, LogEntry, i18n
 
-from cog_shared.odinair_libs import normalize, formatting
+from cog_shared.swift_libs import normalize, formatting
 
 
 class RoleModule(Module):

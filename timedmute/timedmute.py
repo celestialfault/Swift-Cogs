@@ -6,7 +6,7 @@ from redbot.core.bot import Config, Red
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import warning
 
-from cog_shared.odinair_libs import FutureTime, cogs_loaded, hierarchy_allows
+from cog_shared.swift_libs import FutureTime, cogs_loaded, hierarchy_allows
 
 try:
     from timedrole.role import TempRole

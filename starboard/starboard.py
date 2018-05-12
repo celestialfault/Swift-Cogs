@@ -9,7 +9,7 @@ from redbot.core.i18n import cog_i18n
 from redbot.core.utils.chat_formatting import bold, error, info, inline, pagify, warning
 from tabulate import tabulate
 
-from cog_shared.odinair_libs import (
+from cog_shared.swift_libs import (
     ConfirmMenu,
     cmd_group,
     cmd_help,

@@ -9,10 +9,11 @@ from redbot.core.bot import Red
 from redbot.core.i18n import cog_i18n
 from redbot.core.utils.chat_formatting import warning, info, error, inline, bold
 
-from cog_shared.odinair_libs import tick, cmd_help, fmt, ConfirmMenu, prompt, cmd_group
+from cog_shared.swift_libs import tick, cmd_help, fmt, ConfirmMenu, prompt, cmd_group
 from logs.core import Module, get_module, i18n, log_event
 from logs.core.module import log, unload, load
 from logs.modules import modules as all_modules
+from logs.modules import DummyModule
 
 
 def ignore_handler(
@@ -39,7 +40,7 @@ def ignore_handler(
             raise commands.BadArgument
         item = getattr(item, "id", item)
         # noinspection PyTypeChecker
-        async with Module(None).config.guild(ctx.guild).ignore.get_attr(conf_opt)() as ignored:
+        async with DummyModule().config.guild(ctx.guild).ignore.get_attr(conf_opt)() as ignored:
             if remove is False:
                 if item in ignored:
                     await ctx.send(warning(i18n("That item is already currently being ignored")))
@@ -60,9 +61,9 @@ def ignore_handler(
         async def _command(self, ctx: commands.Context, toggle: bool = None):  # noqa
             if toggle is None:
                 # noinspection PyTypeChecker
-                toggle = not await Module(None).config.guild(ctx.guild).ignore.guild()
+                toggle = not await DummyModule().config.guild(ctx.guild).ignore.guild()
             # noinspection PyTypeChecker
-            await Module(None).config.guild(ctx.guild).ignore.guild.set(toggle)
+            await DummyModule().config.guild(ctx.guild).ignore.guild.set(toggle)
             await ctx.send(
                 tick(
                     i18n("Now ignoring the current server")

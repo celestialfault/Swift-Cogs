@@ -9,7 +9,7 @@ from redbot.core import checks, Config
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import warning, escape, info, inline
 
-from cog_shared.odinair_libs import tick, fmt, cog_name, ConfirmMenu, PaginateMenu, chunks
+from cog_shared.swift_libs import tick, fmt, cog_name, ConfirmMenu, PaginateMenu, chunks
 
 log = logging.getLogger("red.cogwhitelist")
 _ = Translator("CogWhitelist", __file__)

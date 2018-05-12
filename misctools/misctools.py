@@ -15,7 +15,7 @@ from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import info, pagify, warning
 from tabulate import tabulate
 
-from cog_shared.odinair_libs import ConfirmMenu, formatting, td_format
+from cog_shared.swift_libs import ConfirmMenu, formatting, td_format
 
 _ = Translator("MiscTools", __file__)
 

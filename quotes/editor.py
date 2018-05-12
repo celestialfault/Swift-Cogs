@@ -6,7 +6,7 @@ from redbot.core.commands import Context
 from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import warning
 
-from cog_shared.odinair_libs import ReactMenu, PostMenuAction, tick, prompt, ConfirmMenu
+from cog_shared.swift_libs import ReactMenu, PostMenuAction, tick, prompt, ConfirmMenu
 from quotes.quote import Quote, i18n
 
 

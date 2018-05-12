@@ -67,5 +67,5 @@ def to_lazy_translator(translator: Translator):
     return LazyTranslator(translator.cog_name + "_LazyI18n", translator.cog_folder / "__init__.py")
 
 
-i18n = Translator("odinair_libs", __file__)
+i18n = Translator("swift_libs", __file__)
 lazyi18n = to_lazy_translator(i18n)

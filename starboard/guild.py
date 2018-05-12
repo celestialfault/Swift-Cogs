@@ -5,7 +5,7 @@ from typing import Dict, List, Optional, Union
 import discord
 from redbot.core.config import Group, Value
 
-from cog_shared.odinair_libs import IterQueue
+from cog_shared.swift_libs import IterQueue
 from starboard.base import StarboardBase
 from starboard.log import log
 from starboard.message import StarboardMessage

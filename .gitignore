@@ -1,5 +1,5 @@
-# pycharm generated files
-.idea/
+# pycharm / intellij generated files
+.idea
 *.iws
 
 # compiled python files
@@ -7,8 +7,10 @@
 **/*.pyc
 
 # virtual environments
-.venv/
-venv/
+.venv
+venv
+env
+.env
 
-# this only contains a symlink to odinair_libs for pycharm hints, and isn't actually all that useful
-cog_shared/
+# this isn't all that useful, as it simply contains a symlink to `swift_libs` for IntelliSense typing
+cog_shared

@@ -2,12 +2,12 @@ from typing import Tuple
 
 import discord
 from discord.ext.commands.converter import RoleConverter
-from redbot.core import checks, Config, commands
+from redbot.core import Config, checks, commands
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator, cog_i18n
-from redbot.core.utils.chat_formatting import warning, escape
+from redbot.core.utils.chat_formatting import escape, warning
 
-from cog_shared.odinair_libs import tick
+from cog_shared.swift_libs import tick
 
 _ = Translator("RequireRole", __file__)
 

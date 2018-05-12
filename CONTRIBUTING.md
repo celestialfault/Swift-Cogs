@@ -13,7 +13,7 @@ pip install -r requirements-dev.txt
 pre-commit install
 ```
 
-There's a multitude of helpful scripts located in `odinair_libs/scripts/` that may make working on
+There's a multitude of helpful scripts located in `swift_libs/scripts/` that may make working on
 these cogs much quicker. Some of these scripts are primarily designed for how this repository
 is setup, but can likely be used in other repositories without too many modifications.
 

@@ -8,7 +8,7 @@ from redbot.core.bot import Red
 from redbot.core.i18n import cog_i18n
 from redbot.core.utils.chat_formatting import error, warning
 
-from cog_shared.odinair_libs import (
+from cog_shared.swift_libs import (
     ConfirmMenu,
     PaginateMenu,
     chunks,

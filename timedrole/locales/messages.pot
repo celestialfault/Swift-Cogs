@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2018-05-12 01:35-0600\n"
+"POT-Creation-Date: 2018-05-12 02:47-0600\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -15,29 +15,34 @@ msgstr ""
 "Generated-By: redgettext 1.0\n"
 
 
-#: timedrole.py:52
+#: timedrole.py:19
+#, docstring
+msgid "Give users roles for a set amount of time"
+msgstr ""
+
+#: timedrole.py:50
 msgid "Re-applying missing timed role"
 msgstr ""
 
-#: timedrole.py:58
+#: timedrole.py:56
 msgid "Re-applying timed role after member re-join"
 msgstr ""
 
-#: timedrole.py:65
+#: timedrole.py:63
 #, docstring
 msgid "Timed role management"
 msgstr ""
 
-#: timedrole.py:71
+#: timedrole.py:69
 #, docstring
 msgid "List all active timed roles"
 msgstr ""
 
-#: timedrole.py:74
+#: timedrole.py:72
 msgid "This guild has no currently active timed roles"
 msgstr ""
 
-#: timedrole.py:81
+#: timedrole.py:79
 msgid ""
 "**❯** Timed role **#{id}**\n"
 "**Member** — {member}\n"
@@ -48,23 +53,23 @@ msgid ""
 "**Total duration** — {duration}"
 msgstr ""
 
-#: timedrole.py:93
+#: timedrole.py:91
 msgid "No reason specified"
 msgstr ""
 
-#: timedrole.py:94
+#: timedrole.py:92
 msgid "An unknown member"
 msgstr ""
 
-#: timedrole.py:105
+#: timedrole.py:103
 msgid "Page {}/{}"
 msgstr ""
 
-#: timedrole.py:107
+#: timedrole.py:105
 msgid "Timed Roles"
 msgstr ""
 
-#: timedrole.py:122
+#: timedrole.py:120
 #, docstring
 msgid ""
 "Add one or more roles to a user for a set amount of time.\n"
@@ -88,7 +93,7 @@ msgid ""
 "        "
 msgstr ""
 
-#: timedrole.py:157
+#: timedrole.py:155
 msgid "Added role(s) {roles} to member **{member}** for **{duration}** successfully."
 msgstr ""
 

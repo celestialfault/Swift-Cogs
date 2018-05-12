@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2018-05-12 01:35-0600\n"
+"POT-Creation-Date: 2018-05-12 02:47-0600\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -15,11 +15,16 @@ msgstr ""
 "Generated-By: redgettext 1.0\n"
 
 
-#: timedmute.py:57
+#: timedmute.py:21
+#, docstring
+msgid "Mute users for a set amount of time"
+msgstr ""
+
+#: timedmute.py:56
 msgid "Timed mute role permissions"
 msgstr ""
 
-#: timedmute.py:87
+#: timedmute.py:86
 #, docstring
 msgid ""
 "Mute a user for a set amount of time.\n"
@@ -44,17 +49,17 @@ msgid ""
 "        "
 msgstr ""
 
-#: timedmute.py:108
+#: timedmute.py:107
 msgid "This action is not allowed by your server's role hierarchy"
 msgstr ""
 
-#: timedmute.py:114
+#: timedmute.py:113
 msgid ""
 "Setting up this guild's muted role...\n"
 "(this may take a while, depending on how many channels you have)"
 msgstr ""
 
-#: timedmute.py:124
+#: timedmute.py:123
 msgid "That member is already muted!"
 msgstr ""
 

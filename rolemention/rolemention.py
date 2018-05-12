@@ -7,7 +7,7 @@ from redbot.core.bot import Red
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import escape, warning
 
-from cog_shared.odinair_libs import cmd_help, tick
+from cog_shared.swift_libs import cmd_help, tick
 
 _ = Translator("RoleMention", __file__)
 

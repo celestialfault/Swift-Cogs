@@ -1,15 +1,15 @@
 import logging
 from asyncio import sleep
 from random import choice
-from typing import List, Union, Tuple
+from typing import List, Tuple, Union
 
 import discord
 from redbot.core import Config, checks, commands
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator, cog_i18n
-from redbot.core.utils.chat_formatting import pagify, warning, escape
+from redbot.core.utils.chat_formatting import escape, pagify, warning
 
-from cog_shared.odinair_libs import ConfirmMenu, FutureTime, fmt, tick
+from cog_shared.swift_libs import ConfirmMenu, FutureTime, fmt, tick
 
 log = logging.getLogger("red.rndactivity")
 _ = Translator("RNDActivity", __file__)
