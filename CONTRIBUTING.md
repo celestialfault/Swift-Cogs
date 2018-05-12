@@ -3,17 +3,21 @@ Hi, thanks for taking the time to contribute!
 The following is a set of guidelines (not rules!) to contributing. Use your best judgement, and feel free
 to propose changes to this document in a pull request.
 
--------
-
 # Code style guidelines
 
 These cogs follow the [Black](https://github.com/ambv/black) code style; it's recommended that you setup `pre-commit`
-to format your changes to conform to the style before committing:
+to format your changes to conform to this style before committing:
 
 ```bash
 pip install -r requirements-dev.txt
 pre-commit install
 ```
+
+There's a multitude of helpful scripts located in `odinair_libs/scripts/` that may make working on
+these cogs much quicker. Some of these scripts are primarily designed for how this repository
+is setup, but can likely be used in other repositories without too many modifications.
+
+----
 
 - Please do the following:
     - Ensure your changes work on at least Windows, Mac OSX, and Linux
