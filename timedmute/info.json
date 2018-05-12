@@ -2,7 +2,7 @@
   "author": ["odinair"],
   "bot_version": [3, 0, 0],
   "min_python_version": [3, 5, 1],
-  "description": "Mute users for a set amount of time.\n**This cog requires my Timed Role cog.",
+  "description": "Mute users for a set amount of time.\nThis cog requires my Timed Role cog.",
   "short": "Mute users for a set amount of time. Requires my timedrole cog",
   "type": "COG",
   "required_cogs": {

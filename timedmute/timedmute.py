@@ -1,36 +1,34 @@
 from typing import Optional
 
 import discord
-from discord.ext import commands
-
-from redbot.core import checks, modlog
-from redbot.core.i18n import CogI18n
-from redbot.core.bot import Red, RedContext, Config
+from redbot.core import checks, commands, modlog
+from redbot.core.bot import Config, Red
+from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import warning
-from redbot.core.utils.mod import is_allowed_by_hierarchy
 
-from cog_shared.odinair_libs import FutureTime, cogs_loaded
+from cog_shared.odinair_libs import FutureTime, cogs_loaded, hierarchy_allows
 
 try:
     from timedrole.role import TempRole
 except ImportError:
     raise RuntimeError("This cog requires my 'timedrole' cog to function")
 
-_ = CogI18n("TimedMute", __file__)
+_ = Translator("TimedMute", __file__)
 
 
+@cog_i18n(_)
 class TimedMute:
     """Mute users for a set amount of time"""
-    OVERWRITE_PERMISSIONS = discord.PermissionOverwrite(speak=False, send_messages=False, add_reactions=False)
+    OVERWRITE_PERMISSIONS = discord.PermissionOverwrite(
+        speak=False, send_messages=False, add_reactions=False
+    )
 
     __author__ = "odinair <odinair@odinair.xyz>"
 
     def __init__(self, bot: Red):
         self.bot = bot
         self.config = Config.get_conf(self, identifier=12903812, force_registration=True)
-        self.config.register_guild(
-            punished_role=None  # This is an ID of the guild's punished role
-        )
+        self.config.register_guild(punished_role=None)
         self._cases_task = self.bot.loop.create_task(self._setup_cases())
 
     def __unload(self):
@@ -39,8 +37,12 @@ class TimedMute:
     @staticmethod
     async def _setup_cases():
         try:
-            await modlog.register_casetype(name="timedmute", default_setting=True, case_str="Timed Mute",
-                                           image="\N{STOPWATCH}\N{SPEAKER WITH CANCELLATION STROKE}")
+            await modlog.register_casetype(
+                name="timedmute",
+                default_setting=True,
+                case_str="Timed Mute",
+                image="\N{STOPWATCH}\N{SPEAKER WITH CANCELLATION STROKE}",
+            )
         except RuntimeError:
             pass
 
@@ -48,8 +50,11 @@ class TimedMute:
         # noinspection PyUnresolvedReferences
         if not channel.permissions_for(channel.guild.me).manage_roles:
             return
-        await channel.set_permissions(target=role, overwrite=self.OVERWRITE_PERMISSIONS,
-                                      reason=_("Timed mute role permissions"))
+        await channel.set_permissions(
+            target=role,
+            overwrite=self.OVERWRITE_PERMISSIONS,
+            reason=_("Timed mute role permissions"),
+        )
 
     async def setup_role(self, guild: discord.Guild) -> discord.Role:
         # `Guild.create_role` is a coroutine. PyCharm would like to disagree.
@@ -70,9 +75,14 @@ class TimedMute:
     @cogs_loaded("TimedRole")
     @checks.mod_or_permissions(manage_roles=True)
     @commands.bot_has_permissions(manage_roles=True)
-    async def timedmute(self, ctx: RedContext, member: discord.Member,
-                        duration: FutureTime.converter(min_duration=2 * 60, strict=True),
-                        *, reason: str = None):
+    async def timedmute(
+        self,
+        ctx: commands.Context,
+        member: discord.Member,
+        duration: FutureTime.converter(min_duration=2 * 60, strict=True),
+        *,
+        reason: str = None
+    ):
         """Mute a user for a set amount of time.
 
         Muted users will not be able to send messages, add new reactions to messages
@@ -93,16 +103,18 @@ class TimedMute:
         Expired mutes are checked alongside expired timed roles assigned with
         `[p]timedrole`.
         """
-        mod_cog = self.bot.get_cog('Mod')
-        if mod_cog and not await is_allowed_by_hierarchy(bot=ctx.bot, settings=mod_cog.settings, guild=ctx.guild,
-                                                         mod=ctx.author, user=member):
-            await ctx.send(warning(_("This action is not allowed by your guild's hierarchy settings")))
+        if not hierarchy_allows(self.bot, mod=ctx.author, member=member):
+            await ctx.send(warning(_("This action is not allowed by your server's role hierarchy")))
             return
 
         role = await self.get_punished_role(ctx.guild)
         if role is None:
-            tmp_msg = await ctx.send(_("Setting up this guild's muted role...\n"
-                                       "(this may take a while, depending on how many channels you have)"))
+            tmp_msg = await ctx.send(
+                _(
+                    "Setting up this guild's muted role...\n"
+                    "(this may take a while, depending on how many channels you have)"
+                )
+            )
             async with ctx.typing():
                 role = await self.setup_role(ctx.guild)
             await tmp_msg.delete()
@@ -111,13 +123,22 @@ class TimedMute:
             await ctx.send(warning(_("That member is already muted!")))
             return
 
-        role = await TempRole.create(member, role, duration=duration, added_by=ctx.author, reason=reason)
+        role = await TempRole.create(
+            member, role, duration=duration, added_by=ctx.author, reason=reason
+        )
         await role.apply_role(reason=reason)
 
         try:
-            await modlog.create_case(bot=self.bot, guild=ctx.guild, user=member, moderator=ctx.author,
-                                     reason=reason, until=role.expires_at, action_type="timedmute",
-                                     created_at=role.added_at)
+            await modlog.create_case(
+                bot=self.bot,
+                guild=ctx.guild,
+                user=member,
+                moderator=ctx.author,
+                reason=reason,
+                until=role.expires_at,
+                action_type="timedmute",
+                created_at=role.added_at,
+            )
         except RuntimeError:
             pass
         await ctx.tick()
