@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2018-04-30 19:11-0600\n"
+"POT-Creation-Date: 2018-05-12 01:35-0600\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -15,11 +15,49 @@ msgstr ""
 "Generated-By: redgettext 1.0\n"
 
 
-#: ../misctools.py:44
+#: misctools.py:31
+#, docstring
+msgid "A collection of small utilities that don't fit in any other cog"
+msgstr ""
+
+#: misctools.py:40
+#, docstring
+msgid "Get the source for a command or sub command"
+msgstr ""
+
+#: misctools.py:43
 msgid "That command doesn't exist"
 msgstr ""
 
-#: ../misctools.py:118
+#: misctools.py:49
+#, docstring
+msgid ""
+"Get the unicode name for characters\n"
+"\n"
+"        Up to 25 characters can be given at one time\n"
+"        "
+msgstr ""
+
+#: misctools.py:65
+#, docstring
+msgid ""
+"Update Red to the latest version\n"
+"\n"
+"        This command uses CLI-like flags to determine how to update Red.\n"
+"\n"
+"        Available flags:\n"
+"        ```\n"
+"        --dev     Pulls the latest changes from GitHub\n"
+"        --audio   Installs optional audio packages\n"
+"        --mongo   Installs optional MongoDB packages\n"
+"        ```\n"
+"\n"
+"        These flags can also be used in shorthand fashion, meaning `-da`\n"
+"        is effectively the same as passing `--dev --audio`.\n"
+"        "
+msgstr ""
+
+#: misctools.py:108
 msgid ""
 "By continuing with this action, this I will execute the following command on your host machine:\n"
 "```\n"
@@ -32,26 +70,38 @@ msgid ""
 "**Please confirm that you wish to continue with this action.**"
 msgstr ""
 
-#: ../misctools.py:135
+#: misctools.py:126
 msgid "Update aborted."
 msgstr ""
 
-#: ../misctools.py:140
+#: misctools.py:131
 msgid ""
 "Updating Red...\n"
 "\n"
 "This may take a while, so go get yourself a cup of coffee, tea, or whatever other choice of beverage you may prefer."
 msgstr ""
 
-#: ../misctools.py:154
+#: misctools.py:145
 msgid "Red has been updated. Please restart the bot for any updates to take affect."
 msgstr ""
 
-#: ../misctools.py:158
+#: misctools.py:149
 msgid "Something went wrong while updating. Please attempt an update manually."
 msgstr ""
 
-#: ../misctools.py:176
+#: misctools.py:154
+#, docstring
+msgid ""
+"Get the time it takes the bot to respond to a command\n"
+"\n"
+"        This is by no means fully accurate, and should be treated similarly to rough estimate\n"
+"\n"
+"        Time to command execution means how long it took for the bot to receive the command message\n"
+"        and execute the command\n"
+"        "
+msgstr ""
+
+#: misctools.py:167
 msgid ""
 "🏓 Pong!\n"
 "Time to command execution: {}\n"
@@ -60,7 +110,17 @@ msgid ""
 "Full round trip: {}"
 msgstr ""
 
-#: ../misctools.py:211
+#: misctools.py:179
+#, docstring
+msgid "Retrieve when one or more snowflake IDs were created at"
+msgstr ""
+
+#: misctools.py:197
+#, docstring
+msgid "Get the time difference between two snowflake IDs"
+msgstr ""
+
+#: misctools.py:202
 msgid ""
 "**Starting snowflake:** {start[0]} — `{start[1]}`\n"
 "**Ending snowflake:** {end[0]} — `{end[1]}`\n"
@@ -68,23 +128,36 @@ msgid ""
 "**Time difference:** {difference}"
 msgstr ""
 
-#: ../misctools.py:247
+#: misctools.py:219
+#, docstring
+msgid ""
+"Break down the permissions for a given member\n"
+"\n"
+"        This command does not take channel overrides into account, and only\n"
+"        checks for server role permissions.\n"
+"\n"
+"        If more than three roles grant a single permission, only the first three are shown\n"
+"        for each permission.\n"
+"        "
+msgstr ""
+
+#: misctools.py:238
 msgid "Permission Breakdown"
 msgstr ""
 
-#: ../misctools.py:252
+#: misctools.py:243
 msgid "Granted by default role"
 msgstr ""
 
-#: ../misctools.py:255
+#: misctools.py:246
 msgid "Not granted by any role"
 msgstr ""
 
-#: ../misctools.py:261
+#: misctools.py:253
 msgid "Granted By"
 msgstr ""
 
-#: ../misctools.py:261
+#: misctools.py:253
 msgid "Permission"
 msgstr ""
 

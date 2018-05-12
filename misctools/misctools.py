@@ -7,18 +7,17 @@ from datetime import datetime
 from inspect import getsource
 from textwrap import dedent
 from typing import Dict, List
-from tabulate import tabulate
 
 import discord
-from discord.ext import commands
-from redbot.core import checks
-from redbot.core.bot import Red, RedContext
-from redbot.core.i18n import CogI18n
-from redbot.core.utils.chat_formatting import warning, pagify, info
+from redbot.core import checks, commands
+from redbot.core.bot import Red
+from redbot.core.i18n import Translator, cog_i18n
+from redbot.core.utils.chat_formatting import info, pagify, warning
+from tabulate import tabulate
 
-from cog_shared.odinair_libs import td_format, ConfirmMenu, formatting
+from cog_shared.odinair_libs import ConfirmMenu, formatting, td_format
 
-_ = CogI18n("MiscTools", __file__)
+_ = Translator("MiscTools", __file__)
 
 
 class Arguments(argparse.ArgumentParser):
@@ -27,6 +26,7 @@ class Arguments(argparse.ArgumentParser):
         raise RuntimeError(message)
 
 
+@cog_i18n(_)
 class MiscTools:
     """A collection of small utilities that don't fit in any other cog"""
 
@@ -36,18 +36,16 @@ class MiscTools:
         self.bot = bot
 
     @commands.command()
-    async def rtfs(self, ctx: RedContext, *, command_name: str):
+    async def rtfs(self, ctx: commands.Context, *, command_name: str):
         """Get the source for a command or sub command"""
         command = self.bot.get_command(command_name)
         if command is None:
             await ctx.send(warning(_("That command doesn't exist")))
             return
-        await ctx.send_interactive(
-            pagify(dedent(getsource(command.callback)), shorten_by=10), box_lang="py"
-        )
+        await ctx.send_interactive(pagify(dedent(getsource(command.callback))), box_lang="py")
 
     @commands.command()
-    async def charinfo(self, ctx: RedContext, *, characters: str):
+    async def charinfo(self, ctx: commands.Context, *, characters: str):
         """Get the unicode name for characters
 
         Up to 25 characters can be given at one time
@@ -63,7 +61,7 @@ class MiscTools:
 
     @commands.command(hidden=True)
     @checks.is_owner()
-    async def updatered(self, ctx: RedContext, *, args: str):
+    async def updatered(self, ctx: commands.Context, *, args: str):
         """Update Red to the latest version
 
         This command uses CLI-like flags to determine how to update Red.
@@ -75,15 +73,10 @@ class MiscTools:
         --mongo   Installs optional MongoDB packages
         ```
 
-        **Please note that if you choose to update using `--dev`, you are
-        acknowledging that you are using software in active development,
-        which means you may encounter more issues than when using
-        a regular release of Red.**
-
         These flags can also be used in shorthand fashion, meaning `-da`
         is effectively the same as passing `--dev --audio`.
         """
-        parser = Arguments(add_help=False, allow_abbrev=False)
+        parser = Arguments(add_help=False)
         parser.add_argument("-d", "--dev", action="store_true")
         parser.add_argument("-a", "--audio", action="store_true")
         parser.add_argument("-m", "--mongo", action="store_true")
@@ -94,12 +87,10 @@ class MiscTools:
             await ctx.send(warning(str(e)))
             return
 
-        interpreter = sys.executable
-
         # The following is mostly ripped from the Red launcher update function
         eggs = []
         if args.audio:
-            eggs.append("audio")
+            eggs.append("voice")
         if args.mongo:
             eggs.append("mongo")
 
@@ -112,7 +103,7 @@ class MiscTools:
             if eggs:
                 package += "[{}]".format(", ".join(eggs))
 
-        args = [interpreter, "-m", "pip", "install", "-U", "--process-dependency-links", package]
+        args = [sys.executable, "-m", "pip", "install", "-U", "--process-dependency-links", package]
 
         confirm_str = _(
             "By continuing with this action, this I will execute the following command "
@@ -126,7 +117,8 @@ class MiscTools:
         ).format(
             # the full executable path is masked to hide the root directory,
             # since some users may use a venv in a directory that they wouldn't
-            # want to reveal through an update command
+            # want to reveal through an update command, such as on Windows
+            # with a real name as their account name
             " ".join(["python"] + args[1:])
         )
 
@@ -158,7 +150,7 @@ class MiscTools:
             )
 
     @commands.command(aliases=["pingt"])
-    async def pingtime(self, ctx: RedContext):
+    async def pingtime(self, ctx: commands.Context):
         """Get the time it takes the bot to respond to a command
 
         This is by no means fully accurate, and should be treated similarly to rough estimate
@@ -183,7 +175,7 @@ class MiscTools:
         )
 
     @commands.group(aliases=["snowflake"], invoke_without_command=True)
-    async def snowflaketime(self, ctx: RedContext, *snowflakes: int):
+    async def snowflaketime(self, ctx: commands.Context, *snowflakes: int):
         """Retrieve when one or more snowflake IDs were created at"""
         if not snowflakes:
             await ctx.send_help()
@@ -201,7 +193,7 @@ class MiscTools:
         await ctx.send_interactive(pagify("\n".join(strs)))
 
     @snowflaketime.command(name="delta")
-    async def snowflake_delta(self, ctx: RedContext, start: int, end: int):
+    async def snowflake_delta(self, ctx: commands.Context, start: int, end: int):
         """Get the time difference between two snowflake IDs"""
         start, end = (discord.utils.snowflake_time(start), discord.utils.snowflake_time(end))
         now = datetime.utcnow()
@@ -223,7 +215,7 @@ class MiscTools:
 
     @commands.command(aliases=["permbd"])
     @commands.guild_only()
-    async def permissionbreakdown(self, ctx: RedContext, *, member: discord.Member = None):
+    async def permissionbreakdown(self, ctx: commands.Context, *, member: discord.Member = None):
         """Break down the permissions for a given member
 
         This command does not take channel overrides into account, and only
