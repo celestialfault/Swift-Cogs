@@ -237,7 +237,7 @@ class Starboard(StarboardBase):
                 return "\n".join(
                     [
                         fmt_str.format(
-                            medal=medals[min(len(medals), keys.index(x))].format(
+                            medal=medals[min(len(medals) - 1, keys.index(x))].format(
                                 index=index(keys, x)
                             ),
                             member=x.mention,
