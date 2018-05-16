@@ -2,13 +2,12 @@
 <p align="center">A varied collection of moderation and utility cogs</p>
 <p align="center">
   <a href="https://circleci.com/gh/notodinair/Swift-Cogs"><img alt="Build Status" src="https://img.shields.io/circleci/project/github/notodinair/Swift-Cogs.svg?style=flat-square" /></a>
-  <a href="https://codeclimate.com/github/notodinair/Swift-Cogs/maintainability"><img alt="Maintainability Rating" src="https://api.codeclimate.com/v1/badges/78a9d2290e62c90c524f/maintainability" /></a>
-  <a href="https://python.org/"><img alt="Python: 3.5" src="https://img.shields.io/badge/python-3.5-blue.svg?style=flat-square" /></a>
+  <a href="https://python.org/"><img alt="Python: 3.6" src="https://img.shields.io/badge/python-3.6-blue.svg?style=flat-square" /></a>
   <a href="https://github.com/Cog-Creators/Red-DiscordBot/tree/V3/develop"><img alt="Red-DiscordBot: 3.0.0" src="https://img.shields.io/badge/red--discordbot-3.0.0-red.svg?style=flat-square" /></a>
   <a href="https://github.com/ambv/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg?style=flat-square"></a>
 </p>
 
-# Installation
+----
 
 **Until Red v3 is considered stable, these cogs should be considered beta software, with no guarantee of stability.**
 Breaking changes can and will be made, with or without warning, with backward compatibility not always implemented.
