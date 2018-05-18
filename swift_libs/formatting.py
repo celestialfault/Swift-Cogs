@@ -17,6 +17,7 @@ __all__ = (
     "index",
     "permissions",
     "cog_name",
+    "flatten_values",
 )
 
 # The values in this dict may act somewhat differently to how you expect:
@@ -139,6 +140,16 @@ def cog_name(bot: Red, name: str):
 @discord.utils.deprecated()
 def format_int(i: int):
     return "{:,}".format(i)
+
+
+def flatten_values(d):
+    items = []
+    for k, v in d.items():
+        if isinstance(v, collections.MutableMapping):
+            items.extend(flatten_values(d[k]))
+        else:
+            items.append(v)
+    return items
 
 
 def flatten(d, parent_key="", *, sep="_"):  # https://stackoverflow.com/a/6027615

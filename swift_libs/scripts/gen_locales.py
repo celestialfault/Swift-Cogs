@@ -61,7 +61,7 @@ if __name__ == "__main__":
 
     keywords = [
         item
-        for sublist in [["-k", x] for x in ["lazyi18n", "i18n", *args.keyword]]
+        for sublist in [["-k", x] for x in ["lazyi18n", "i18n", "fi18n", *args.keyword]]
         for item in sublist
     ]
 

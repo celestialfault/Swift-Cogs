@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2018-05-12 02:47-0600\n"
+"POT-Creation-Date: 2018-05-16 02:50-0600\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -128,59 +128,59 @@ msgid "View Audit Log"
 msgstr ""
 
 #: time.py:21
-msgid "year"
+msgid "{} year"
 msgstr ""
 
 #: time.py:21
-msgid "years"
+msgid "{} years"
 msgstr ""
 
 #: time.py:22
-msgid "month"
+msgid "{} month"
 msgstr ""
 
 #: time.py:22
-msgid "months"
+msgid "{} months"
 msgstr ""
 
 #: time.py:23
-msgid "week"
+msgid "{} week"
 msgstr ""
 
 #: time.py:23
-msgid "weeks"
+msgid "{} weeks"
 msgstr ""
 
 #: time.py:24
-msgid "day"
+msgid "{} day"
 msgstr ""
 
 #: time.py:24
-msgid "days"
+msgid "{} days"
 msgstr ""
 
 #: time.py:25
-msgid "hour"
+msgid "{} hour"
 msgstr ""
 
 #: time.py:25
-msgid "hours"
+msgid "{} hours"
 msgstr ""
 
 #: time.py:26
-msgid "minute"
+msgid "{} minute"
 msgstr ""
 
 #: time.py:26
-msgid "minutes"
+msgid "{} minutes"
 msgstr ""
 
 #: time.py:27
-msgid "second"
+msgid "{} second"
 msgstr ""
 
 #: time.py:27
-msgid "seconds"
+msgid "{} seconds"
 msgstr ""
 
 #: time.py:61
@@ -199,23 +199,19 @@ msgstr ""
 msgid "just now"
 msgstr ""
 
-#: time.py:74
-msgid "{amount} {period}"
-msgstr ""
-
-#: time.py:83
+#: time.py:80
 msgid "{} millisecond"
 msgstr ""
 
-#: time.py:83
+#: time.py:80
 msgid "{} milliseconds"
 msgstr ""
 
-#: time.py:88
+#: time.py:85
 msgid "in {}"
 msgstr ""
 
-#: time.py:88
+#: time.py:85
 msgid "{} ago"
 msgstr ""
 

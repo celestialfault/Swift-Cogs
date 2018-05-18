@@ -1,6 +1,6 @@
 gen_cog.py
 --------------
-    This generates a cog that has a single with a simple response.
+    Generates a cog that has a single command with a simple response.
 
     This is designed to help quicken the cog development process by removing some
     tedious boilerplate work.
@@ -14,7 +14,7 @@ gen_cog.py
 
 gen_readme
 --------------
-    Generates a nice cog list in your repository's README file (or any other desginated file).
+    Generates a nice cog list in your repository's README file (or any other designated file).
 
     This requires the `Jinja2` library.
 
@@ -24,18 +24,19 @@ gen_readme
     Usage
     -------
 
-    $ python -m gen_readme [cogs...]
+    $ python -m gen_readme [cogs...] [--config CONFIG]
 
 
 gen_locales.py
 ------------------
-    Generate cog locales with `redgettext`.
+    Generates cog locales with `redgettext`.
 
 
     Usage
     -------
 
-    $ python gen_locales.py [cogs...] [optional --flag options...]
+    $ python gen_locales.py [cogs...] [--docstrings] [--verbose] [-p|--output-dir OUTPUT DIR]
+                            [-k|--keyword KEYWORD [KEYWORD ...]]
 
 
 test.sh
@@ -44,9 +45,9 @@ test.sh
 
     This checks the following:
 
-    - ensure all cogs at least compile
+    - all cogs compile
     - flake8
-    - black (currently this check doesn't exit with a non-zero code if a failure is encountered)
+    - black code style
 
     You won't find this all too useful unless you're creating a patch for a cog in this repository.
 

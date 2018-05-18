@@ -61,6 +61,35 @@ with open(str(absolute_path(config["template"])), mode="r") as template_f:
 ###########################################
 
 
+class Cog:
+
+    def __init__(self, raw_name: str, raw_info: dict):
+        self.info = raw_info
+        self.raw_name = raw_name
+
+    @property
+    def description(self):
+        return self.info.get("description")
+
+    @property
+    def short(self):
+        return self.info.get("short")
+
+    @property
+    def tags(self):
+        return self.info.get("tags", [])
+
+    @property
+    def name(self):
+        return self.info.get(cog_name_key, self.raw_name)
+
+    @property
+    def requirements(self):
+        return [{"name": x} for x in self.info.get("requirements", [])] + [
+            {"name": x, "repo_url": y} for x, y in self.info.get("required_cogs", {}).items()
+        ]
+
+
 def parse_requirements(info: dict):
     for req in info.get("requirements", []):
         yield {"name": req}
@@ -80,37 +109,29 @@ def parse_cogs():
         else args.cogs
     )
 
+    cog_info = {}
+
     for cog in sorted(cogs):
+        print("Retrieving info for cog {}".format(cog))
         try:
             with open(root / cog / "info.json") as finfo:
                 info = json.load(finfo)
-        except IOError as e:
-            if e.errno == 2:
-                print("{} has no info.json file, skipping".format(cog))
-                continue
-            raise
+        except FileNotFoundError:
+            print("  {} has no info.json file, skipping".format(cog))
+            continue
         else:
-            print("Parsing cog {}".format(cog))
-
             if info.get("hidden", False) is True or info.get("type", "COG") == "SHARED_LIBRARY":
                 print("  {} is marked as hidden; skipping.".format(cog))
                 continue
+            cog_info[cog] = info
 
-            yield re.sub(
-                r"\n(\n){2,}",
-                "\n\n",
-                template.render(
-                    name=info.get(cog_name_key, cog),
-                    raw_name=cog,
-                    requirements=list(parse_requirements(info)),
-                    repo=repo_name,
-                    description=info.get("description", info.get("short", None)),
-                    # the following aren't used in the default template, but are available
-                    # for others who may find it useful
-                    tags=info.get("tags", []),
-                    raw_info=info,
-                ).rstrip(),
-            )
+    return re.sub(
+        r"\n(\n){2,}",
+        "\n\n",
+        template.render(
+            cogs=[Cog(name, info) for name, info in cog_info.items()], repo=repo_name
+        ).rstrip(),
+    ).rstrip()
 
 
 def read_file():
@@ -127,9 +148,9 @@ def read_file():
 
 old = read_file()
 with open(out, mode="w") as f:
-    cog_readme = "\n\n".join(parse_cogs())
+    cog_readme = parse_cogs()
     if old:
-        data = "\n".join([old, cog_readme])
+        data = "".join([old, cog_readme])
     else:
         data = cog_readme
 

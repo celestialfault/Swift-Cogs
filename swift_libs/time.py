@@ -18,13 +18,13 @@ def td_seconds(**kwargs) -> float:
 
 
 time_periods = [
-    (td_seconds(days=365), lazyi18n("year"), lazyi18n("years")),
-    (td_seconds(days=30), lazyi18n("month"), lazyi18n("months")),
-    (td_seconds(days=7), lazyi18n("week"), lazyi18n("weeks")),
-    (td_seconds(days=1), lazyi18n("day"), lazyi18n("days")),
-    (td_seconds(hours=1), lazyi18n("hour"), lazyi18n("hours")),
-    (td_seconds(minutes=1), lazyi18n("minute"), lazyi18n("minutes")),
-    (td_seconds(seconds=1), lazyi18n("second"), lazyi18n("seconds")),
+    (td_seconds(days=365), lazyi18n("{} year"), lazyi18n("{} years")),
+    (td_seconds(days=30), lazyi18n("{} month"), lazyi18n("{} months")),
+    (td_seconds(days=7), lazyi18n("{} week"), lazyi18n("{} weeks")),
+    (td_seconds(days=1), lazyi18n("{} day"), lazyi18n("{} days")),
+    (td_seconds(hours=1), lazyi18n("{} hour"), lazyi18n("{} hours")),
+    (td_seconds(minutes=1), lazyi18n("{} minute"), lazyi18n("{} minutes")),
+    (td_seconds(seconds=1), lazyi18n("{} second"), lazyi18n("{} seconds")),
 ]  # type: List[float, LazyString, LazyString]
 
 
@@ -71,10 +71,7 @@ def td_format(td_object: timedelta, milliseconds: bool = False, append_str: bool
         if seconds >= period_seconds:
             period_value, seconds = divmod(seconds, period_seconds)
             strs.append(
-                i18n("{amount} {period}").format(
-                    amount=str(round(period_value)),
-                    period=period_plural if period_value != 1 else period_name,
-                )
+                (period_plural if period_value != 1 else period_name).format(round(period_value))
             )
 
     if milliseconds is True:

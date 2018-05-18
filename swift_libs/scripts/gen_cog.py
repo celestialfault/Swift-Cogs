@@ -33,7 +33,7 @@ def setup(bot):
 
 template_info = {
     "type": "COG",
-    "python_version": None,
+    "python_version": list(sys.version_info)[:3],
     "bot_version": [3, 0, 0],
     "tags": [],
     "description": "My new cog",
@@ -126,7 +126,6 @@ def create_cog(cog_name: str, *, allow_erasing: bool = False):
     mkdir("locales", root_dir=cog_dir)
 
     info = deepcopy(template_info)
-    info["python_version"] = list(sys.version_info)[:3]
     info["tags"] = args.tag or []
     info["short"] = args.description if args.short is ... else args.short
     info["description"] = args.description

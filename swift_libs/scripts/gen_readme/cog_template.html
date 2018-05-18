@@ -1,12 +1,13 @@
+{% for cog in cogs %}
 <details>
-<summary>{{ name }}</summary>
+<summary>{{ cog.name }}</summary>
 
-{{ description }}
+{{ cog.description }}
 
-{% if requirements %}
+{% if cog.requirements %}
 ### Requirements
 
-{% for requirement in requirements %}
+{% for requirement in cog.requirements %}
 {% if "repo_url" in requirement %}
 - [{{ requirement["name"] }}]({{ requirement["repo_url"] }})
 {% else %}
@@ -18,7 +19,8 @@
 ### Install Cog
 
 ```
-[p]cog install {{ repo }} {{ raw_name }}
-[p]load {{ raw_name }}
+[p]cog install {{ repo }} {{ cog.raw_name }}
+[p]load {{ cog.raw_name }}
 ```
 </details>
+{% endfor %}
