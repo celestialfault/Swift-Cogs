@@ -108,10 +108,6 @@ class StarboardGuild(StarboardBase):
         for item in self.update_queue:
             if not isinstance(item, StarboardMessage):
                 continue
-            if not item.in_queue:
-                # Avoid re-updating messages if they've been updated before we got to them,
-                # or if they were in the queue more than once
-                continue
             await item.update_starboard_message()
             await asyncio.sleep(0.6)
 
