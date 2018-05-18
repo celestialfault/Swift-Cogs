@@ -8,6 +8,8 @@ from redbot.core.utils.chat_formatting import box
 
 from logs.core.i18n import i18n
 
+__all__ = ["LogEntry"]
+
 
 def translate_common_types(var):
     if var is None:
@@ -23,7 +25,9 @@ def translate_common_types(var):
 class LogEntry(discord.Embed):
 
     def __init__(self, module, **kwargs):
-        self.module = module
+        from logs.core import Module
+
+        self.module: Module = module
         self.require_fields = kwargs.pop("require_fields", True)
         self.ignore_fields = kwargs.pop("ignore_fields", [])
         kwargs["timestamp"] = kwargs.pop("timestamp", datetime.utcnow())

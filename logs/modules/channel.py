@@ -118,4 +118,4 @@ class ChannelModule(Module):
                 },
             ]
 
-        return await embed.add_multiple_changed(checks)
+        return await embed.add_multiple_changed(before, after, checks)

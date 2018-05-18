@@ -10,7 +10,7 @@ from logs.modules.voice import VoiceModule
 
 __all__ = ("Module", "DummyModule", "modules")
 
-modules = {}  # type: Dict[str, Type[Module]]
+modules: Dict[str, Type[Module]] = {}
 default_modules = [VoiceModule, GuildModule, RoleModule, MessageModule, MemberModule, ChannelModule]
 
 

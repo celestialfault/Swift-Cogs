@@ -71,9 +71,11 @@ class MessageModule(Module):
             # due to how LogEntry.add_field works, this will only display if value is not None
             .add_field(
                 name=i18n("Attachments"),
-                value="\n".join(["<{.url}>".format(x) for x in message.attachments])
-                if message.attachments
-                else None,
+                value=(
+                    "\n".join([f"<{x.url}>" for x in message.attachments])
+                    if message.attachments
+                    else None
+                ),
             )
         ) if all(
             [await self.is_opt_enabled("delete"), not message.author.bot]
@@ -86,7 +88,7 @@ class MessageModule(Module):
             LogEntry(
                 self,
                 colour=discord.Colour.dark_red(),
-                description=i18n("{count} message(s) were deleted from channel {channel}").format(
+                description=i18n("{count} messages were deleted from {channel}").format(
                     count=len(message_ids), channel=channel.mention
                 ),
                 require_fields=False,

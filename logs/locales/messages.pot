@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2018-05-12 02:47-0600\n"
+"POT-Creation-Date: 2018-05-18 07:11-0600\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -15,54 +15,50 @@ msgstr ""
 "Generated-By: redgettext 1.0\n"
 
 
-#: core/logentry.py:14 modules/channel.py:82 modules/guild.py:54
-#: modules/member.py:92 modules/role.py:42 modules/role.py:102
+#: core/logentry.py:16 modules/channel.py:82 modules/guild.py:54
+#: modules/member.py:92 modules/role.py:42 modules/role.py:101
 msgid "None"
 msgstr ""
 
-#: core/logentry.py:16
+#: core/logentry.py:18
 msgid "False"
 msgstr ""
 
-#: core/logentry.py:18
+#: core/logentry.py:20
 msgid "True"
 msgstr ""
 
-#: core/logentry.py:116
+#: core/logentry.py:120
 msgid ""
 "**Before:** {before}\n"
 "**After:** {after}"
 msgstr ""
 
-#: core/module.py:265
+#: core/module.py:235
 msgid "Logging is disabled"
 msgstr ""
 
-#: core/module.py:267
-msgid "Logging via webhook"
-msgstr ""
-
-#: core/module.py:269
+#: core/module.py:237
 msgid "Logging to channel {channel}"
 msgstr ""
 
-#: core/module.py:276
+#: core/module.py:244
 msgid "{friendly_name} Logging Module"
 msgstr ""
 
-#: core/module.py:281 modules/guild.py:48
+#: core/module.py:249 modules/guild.py:48
 msgid "Enabled"
 msgstr ""
 
-#: core/module.py:283
+#: core/module.py:251
 msgid "**None** — All of this module's options are disabled"
 msgstr ""
 
-#: core/module.py:286 modules/guild.py:48
+#: core/module.py:254 modules/guild.py:48
 msgid "Disabled"
 msgstr ""
 
-#: core/module.py:288
+#: core/module.py:256
 msgid "**None** — All of this module's options are enabled"
 msgstr ""
 
@@ -70,86 +66,64 @@ msgstr ""
 msgid "No description set"
 msgstr ""
 
-#: logs.py:46
+#: logs.py:54
 msgid "That item is already currently being ignored"
 msgstr ""
 
-#: logs.py:51
+#: logs.py:59
 msgid "That item is not currently being ignored"
 msgstr ""
 
-#: logs.py:69
+#: logs.py:77
 msgid "Now ignoring the current server"
 msgstr ""
 
-#: logs.py:71
+#: logs.py:79
 msgid "No longer ignoring the current server"
 msgstr ""
 
-#: logs.py:101
+#: logs.py:109
 #, docstring
 msgid "Log anything and everything that happens in your server"
 msgstr ""
 
-#: logs.py:116
+#: logs.py:124
 #, docstring
 msgid "Manage log settings"
 msgstr ""
 
-#: logs.py:121
+#: logs.py:129
 #, docstring
 msgid "Quick-start for logging settings"
 msgstr ""
 
-#: logs.py:125
-msgid "Would you like to enable the **{}** module?"
+#: logs.py:134
+msgid ""
+"**{mod.friendly_name} Settings**\n"
+"Logging to: {destination}\n"
+"\n"
+"⚙ — Update module log settings\n"
+"🎧 — Set log channel\n"
+"❌ — Close menu"
 msgstr ""
 
-#: logs.py:136
+#: logs.py:142
+msgid "No log channel setup"
+msgstr ""
+
+#: logs.py:148
+msgid "Module {0.current} out of {0.total}"
+msgstr ""
+
+#: logs.py:181
+msgid "Please respond with a space-separated list of options you would like to enable."
+msgstr ""
+
+#: logs.py:199
 msgid "What channel would you like to log to?"
 msgstr ""
 
-#: logs.py:156
-msgid "Would you like to setup logging options for module **{}**?"
-msgstr ""
-
-#: logs.py:166
-msgid "Please respond with a space-separated list of options you would like to enable"
-msgstr ""
-
-#: logs.py:179
-msgid "You can setup the options for this module later with `{prefix}logset module {module}`."
-msgstr ""
-
-#: logs.py:187
-msgid "You're all done!"
-msgstr ""
-
-#: logs.py:194
-#, docstring
-msgid ""
-"Setup a module to log via a webhook\n"
-"\n"
-"        This cannot be combined with a conventional log channel set with `[p]logset channel`\n"
-"\n"
-"        Previously created webhooks that are then unregistered are not cleaned up\n"
-"        by this command, and have to be removed manually.\n"
-"        "
-msgstr ""
-
-#: logs.py:208
-msgid "Any previously set webhook for module **{module}** has been cleared."
-msgstr ""
-
-#: logs.py:220
-msgid "I'm not authorized to manage webhooks in that channel"
-msgstr ""
-
-#: logs.py:239
-msgid "Module **{module}** will now log to {channel} via webhook."
-msgstr ""
-
-#: logs.py:249
+#: logs.py:218
 #, docstring
 msgid ""
 "Set the log channel for a module\n"
@@ -158,105 +132,105 @@ msgid ""
 "        "
 msgstr ""
 
-#: logs.py:255
+#: logs.py:224
 msgid "I'm not able to send messages in that channel"
 msgstr ""
 
-#: logs.py:262
+#: logs.py:230
 msgid "Module **{module}** will now log to {channel}"
 msgstr ""
 
-#: logs.py:270
+#: logs.py:238
 msgid "The log channel for module **{module}** has been cleared"
 msgstr ""
 
-#: logs.py:278
+#: logs.py:246
 #, docstring
 msgid "List all available modules"
 msgstr ""
 
-#: logs.py:285
+#: logs.py:253
 msgid ""
 "Available modules:\n"
 "\n"
 "{modules}"
 msgstr ""
 
-#: logs.py:290
+#: logs.py:258
 #, docstring
 msgid "Get or set a module's settings"
 msgstr ""
 
-#: logs.py:298
+#: logs.py:266
 msgid "Updated settings for module **{}**"
 msgstr ""
 
-#: logs.py:305
+#: logs.py:273
 #, docstring
 msgid "Reset the server's log settings"
 msgstr ""
 
-#: logs.py:308
+#: logs.py:275
 msgid "Are you sure you want to reset this server's log settings?"
 msgstr ""
 
-#: logs.py:312
+#: logs.py:278
 msgid "Server log settings have been reset."
 msgstr ""
 
-#: logs.py:314
+#: logs.py:280
 msgid "Okay then."
 msgstr ""
 
-#: logs.py:322
+#: logs.py:295
 msgid "Manage the servers ignore lists"
 msgstr ""
 
-#: logs.py:330
+#: logs.py:304
 msgid "Toggle the current server's ignore status"
 msgstr ""
 
-#: logs.py:335
+#: logs.py:309
 msgid "Manage the channel ignore list"
 msgstr ""
 
-#: logs.py:339
+#: logs.py:313
 msgid "Ignore a given channel"
 msgstr ""
 
-#: logs.py:349
+#: logs.py:323
 msgid "Unignore a given channel"
 msgstr ""
 
-#: logs.py:361
+#: logs.py:335
 msgid "Manage the member ignore list"
 msgstr ""
 
-#: logs.py:366
+#: logs.py:340
 msgid "Ignore a given member"
 msgstr ""
 
-#: logs.py:373
+#: logs.py:347
 msgid "Unignore a given member"
 msgstr ""
 
-#: logs.py:378
+#: logs.py:352
 msgid "Manage the role ignore list"
 msgstr ""
 
-#: logs.py:382
+#: logs.py:356
 msgid "Ignore a given role"
 msgstr ""
 
-#: logs.py:388
+#: logs.py:362
 msgid "Unignore a given role"
 msgstr ""
 
-#: logs.py:397
+#: logs.py:371
 msgid "Manage the member role ignore list"
 msgstr ""
 
-#: logs.py:404 logs.py:411
+#: logs.py:378 logs.py:385
 msgid "Add a member role to the ignore list"
 msgstr ""
 
@@ -341,7 +315,7 @@ msgstr ""
 msgid "Category"
 msgstr ""
 
-#: modules/channel.py:86 modules/role.py:115
+#: modules/channel.py:86 modules/role.py:113
 msgid "Position"
 msgstr ""
 
@@ -557,11 +531,11 @@ msgstr ""
 msgid "Attachments"
 msgstr ""
 
-#: modules/message.py:89
-msgid "{count} message(s) were deleted from channel {channel}"
+#: modules/message.py:91
+msgid "{count} messages were deleted from {channel}"
 msgstr ""
 
-#: modules/message.py:94
+#: modules/message.py:96
 msgid "Message Bulk Deletion"
 msgstr ""
 

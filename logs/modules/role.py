@@ -2,7 +2,7 @@ import discord
 
 from logs.core import Module, LogEntry, i18n
 
-from cog_shared.swift_libs import normalize, formatting
+from cog_shared.swift_libs.formatting import permissions
 
 
 class RoleModule(Module):
@@ -53,7 +53,7 @@ class RoleModule(Module):
 
         embed.add_field(
             name=i18n("Permissions"),
-            value=", ".join([normalize(x, guild="server") for x, y in role.permissions if y]),
+            value=", ".join([str(permissions.get(x, x)) for x, y in role.permissions if y]),
             inline=False,
         )
 
@@ -97,18 +97,16 @@ class RoleModule(Module):
                 {
                     "name": i18n("Colour"),
                     "value": "colour",
-                    "converter": lambda x: str(x)
-                    if x != discord.Colour.default()
-                    else i18n("None"),
+                    "converter": lambda x: (
+                        str(x) if x != discord.Colour.default() else i18n("None")
+                    ),
                     "config_opt": ("update", "colour"),
                 },
                 {
                     "name": i18n("Permissions"),
                     "value": "permissions",
                     "diff": True,
-                    "converter": lambda x: (
-                        formatting.permissions.get(z, lambda: z)() for z, y in x if y
-                    ),
+                    "converter": lambda x: (str(permissions.get(z, z)) for z, y in x if y),
                     "config_opt": ("update", "permissions"),
                 },
                 {

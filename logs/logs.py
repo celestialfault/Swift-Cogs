@@ -1,19 +1,27 @@
 import contextlib
-from typing import List, Optional, Type
+from typing import List, Type
 
 import discord
 from discord.raw_models import RawBulkMessageDeleteEvent
-from redbot.core import commands
-from redbot.core import checks
+from redbot.core import checks, commands
 from redbot.core.bot import Red
 from redbot.core.i18n import cog_i18n
-from redbot.core.utils.chat_formatting import warning, info, error, inline, bold
+from redbot.core.utils.chat_formatting import bold, info, inline, warning
 
-from cog_shared.swift_libs import tick, cmd_help, fmt, ConfirmMenu, prompt, cmd_group
-from logs.core import Module, get_module, i18n, log_event
-from logs.core.module import log, unload, load
-from logs.modules import modules as all_modules
-from logs.modules import DummyModule
+from cog_shared.swift_libs import (
+    confirm,
+    PaginatedMenu,
+    cmd_group,
+    cmd_help,
+    fi18n,
+    tick,
+    prompt,
+    Page,
+    PostAction,
+)
+from logs.core import Module, get_module, i18n, log_event, config
+from logs.core.module import load, log, unload
+from logs.modules import DummyModule, modules as all_modules
 
 
 def ignore_handler(
@@ -119,128 +127,89 @@ class Logs:
     @logset.command(name="setup")
     async def logset_setup(self, ctx: commands.Context):
         """Quick-start for logging settings"""
-        for module in await retrieve_all_modules(ctx):
-            async with ConfirmMenu(
-                ctx,
-                message=i18n("Would you like to enable the **{}** module?").format(
-                    module.friendly_name
-                ),
-            ) as result:
-                await module.module_config.clear()
-                if not result:
-                    continue
-                channel = None  # type: Optional[discord.TextChannel]
-                while channel is None:
-                    given = await prompt(
-                        ctx,
-                        content=i18n("What channel would you like to log to?"),
-                        timeout=90,
-                        delete_messages=True,
-                    )
-                    if given is None:
-                        break
-                    try:
-                        channel = commands.TextChannelConverter().convert(ctx, given.content)
-                    except commands.BadArgument:
-                        continue
-                    else:
-                        break
-                if channel is None:
-                    continue
-                await module.module_config.set_raw(
-                    "_log_channel", value=getattr(channel, "id", None)
-                )
-                async with ConfirmMenu(
-                    ctx,
-                    colour=discord.Color.blurple(),
-                    message=i18n(
-                        "Would you like to setup logging options for module **{}**?"
-                    ).format(
-                        module.friendly_name
+        modules = await retrieve_all_modules(ctx)
+
+        async def converter(pg: Page):
+            return discord.Embed(
+                description=i18n(
+                    "**{mod.friendly_name} Settings**\nLogging to: {destination}\n\n"
+                    "\N{GEAR} \N{EM DASH} Update module log settings\n"
+                    "\N{HEADPHONE} \N{EM DASH} Set log channel\n"
+                    "\N{CROSS MARK} \N{EM DASH} Close menu"
+                ).format(
+                    mod=pg.data,
+                    destination=getattr(
+                        await pg.data.log_destination(), "mention", i18n("No log channel setup")
                     ),
-                ) as setup_opts:
-                    if setup_opts:
-                        tmp = await ctx.send(embed=await module.config_embed())
-                        resp = await prompt(
-                            ctx,
-                            content=i18n(
-                                "Please respond with a space-separated list of options "
-                                "you would like to enable"
-                            ),
-                            delete_messages=True,
-                            timeout=90,
-                        )
-                        if resp:
-                            await module.toggle_options(*str(resp.content).split(" "))
-                        await tmp.delete()
-                    await fmt(
-                        ctx,
-                        info(
-                            i18n(
-                                "You can setup the options for this module later with "
-                                "`{prefix}logset module {module}`."
-                            )
-                        ),
-                        module=module.name,
-                        delete_after=15.0,
-                    )
-        await ctx.send(tick(i18n("You're all done!")))
-
-    @logset.command(name="webhook")
-    @commands.bot_has_permissions(manage_webhooks=True)
-    async def logset_webhook(
-        self, ctx: commands.Context, module: str, channel: discord.TextChannel = None
-    ):
-        """Setup a module to log via a webhook
-
-        This cannot be combined with a conventional log channel set with `[p]logset channel`
-
-        Previously created webhooks that are then unregistered are not cleaned up
-        by this command, and have to be removed manually.
-        """
-        module = await retrieve_module(ctx, module)
-
-        await module.module_config.set_raw("_log_channel", value=None)
-        if channel is None:
-            await module.module_config.set_raw("_webhook", value=None)
-            await ctx.send(
-                tick(
-                    i18n(
-                        "Any previously set webhook for module **{module}** has been cleared."
-                    ).format(
-                        module=module.friendly_name
-                    )
                 )
+            ).set_author(
+                name="Logs Setup", icon_url=ctx.guild.icon_url
+            ).set_footer(
+                text=i18n("Module {0.current} out of {0.total}").format(pg)
             )
-            return
 
-        try:
-            webhooks = await channel.webhooks()  # type: List[discord.Webhook]
-        except discord.Forbidden:
-            await ctx.send(error(i18n("I'm not authorized to manage webhooks in that channel")))
-            return
+        last_page = 0
+        while True:
+            result = await PaginatedMenu(
+                ctx=ctx,
+                actions={
+                    "settings": "\N{GEAR}", "channel": "\N{HEADPHONE}", "close": "\N{CROSS MARK}"
+                },
+                pages=modules,
+                converter=converter,
+                wrap_around=True,
+                page=last_page,
+            ).prompt(
+                post_action=PostAction.NO_ACTION
+            )
+            module = result.page
+            last_page = modules.index(module)
 
-        webhook = None
-        for hook in webhooks:
-            if hook.name == ctx.me.name:
-                webhook = hook
+            try:
+                await result.menu.message.delete()
+                result.menu.message = None
+            except (AttributeError, discord.HTTPException):
+                pass
+
+            if result.timed_out or result == "close":
                 break
 
-        # Create the webhook if no matching webhooks were found
-        if webhook is None:
-            # thanks again pycharm, i don't know what i'd do without your warnings about
-            # async functions not being async
-            # noinspection PyUnresolvedReferences
-            webhook = await channel.create_webhook(name=ctx.me.name)
-
-        await module.module_config.set_raw("_webhook", value=webhook.url)
-        await ctx.send(
-            tick(
-                i18n("Module **{module}** will now log to {channel} via webhook.").format(
-                    module=module.friendly_name, channel=channel.mention
+            if result == "settings":
+                tmp = await ctx.send(embed=await module.config_embed())
+                resp = await prompt(
+                    ctx,
+                    content=i18n(
+                        "Please respond with a space-separated list of options you would like "
+                        "to enable."
+                    ),
+                    delete_messages=True,
+                    timeout=90,
                 )
-            )
-        )
+                if resp:
+                    await module.toggle_options(*str(resp.content).split(" "))
+                await tmp.delete()
+
+            elif result == "channel":
+                try:
+                    channel = commands.TextChannelConverter().convert(
+                        ctx,
+                        (
+                            await prompt(
+                                ctx,
+                                content=i18n("What channel would you like to log to?"),
+                                timeout=90,
+                                delete_messages=True,
+                            )
+                        ).content,
+                    )
+                except (commands.BadArgument, AttributeError):
+                    continue
+                else:
+                    if channel is None:
+                        continue
+                    await module.module_config.set_raw(
+                        "_log_channel", value=getattr(channel, "id", None)
+                    )
 
     @logset.command(name="channel")
     async def logset_channel(
@@ -255,7 +224,6 @@ class Logs:
             await ctx.send(warning(i18n("I'm not able to send messages in that channel")))
             return
         await module.module_config.set_raw("_log_channel", value=getattr(channel, "id", None))
-        await module.module_config.set_raw("_webhook", value=None)
         if channel:
             await ctx.send(
                 tick(
@@ -303,12 +271,10 @@ class Logs:
     @logset.command(name="reset")
     async def logset_reset(self, ctx: commands.Context):
         """Reset the server's log settings"""
-        if await ConfirmMenu(
-            ctx,
-            content=i18n("Are you sure you want to reset this server's log settings?"),
-            colour=discord.Colour.red(),
+        if await confirm(
+            ctx, content=warning(i18n("Are you sure you want to reset this server's log settings?"))
         ):
-            await self.config.guild(ctx.guild).set(self.defaults_guild)
+            await config.guild(ctx.guild).clear()
             await ctx.send(tick(i18n("Server log settings have been reset.")))
         else:
             await ctx.send(i18n("Okay then."))
@@ -319,7 +285,15 @@ class Logs:
 
     # Welcome to the Sea of Bad Ideas™, please enjoy your stay.
 
-    logset_ignore = cmd_group("ignore", parent=logset, help=i18n("Manage the servers ignore lists"))
+    # explanation for the following series of fi18n calls:
+    # `fi18n` is added as a keyword function when calling redgettext via
+    # `swift_libs/scripts/gen_locales.py`, and all fi18n does is just returns the
+    # input string, as a means to get red's dpy command wrapper to translate
+    # help strings for us
+
+    logset_ignore = cmd_group(
+        "ignore", parent=logset, help=fi18n("Manage the servers ignore lists")
+    )
 
     ignore_guild = ignore_handler(
         name="server",
@@ -327,16 +301,16 @@ class Logs:
         parent=logset_ignore,
         converters=[],
         conf_opt="guild",
-        help=i18n("Toggle the current server's ignore status"),
+        help=fi18n("Toggle the current server's ignore status"),
     )
 
     # Channels
     ignore_channel = cmd_group(
-        "channel", parent=logset_ignore, help=i18n("Manage the channel ignore list")
+        "channel", parent=logset_ignore, help=fi18n("Manage the channel ignore list")
     )
     ignore_channel_add = ignore_handler(
         parent=ignore_channel,
-        help=i18n("Ignore a given channel"),
+        help=fi18n("Ignore a given channel"),
         conf_opt="channels",
         converters=[
             commands.TextChannelConverter,
@@ -346,7 +320,7 @@ class Logs:
     )
     ignore_channel_remove = ignore_handler(
         parent=ignore_channel,
-        help=i18n("Unignore a given channel"),
+        help=fi18n("Unignore a given channel"),
         conf_opt="channels",
         remove=True,
         converters=[
@@ -358,34 +332,34 @@ class Logs:
 
     # Members
     ignore_member = cmd_group(
-        "member", parent=logset_ignore, help=i18n("Manage the member ignore list")
+        "member", parent=logset_ignore, help=fi18n("Manage the member ignore list")
     )
     ignore_member_add = ignore_handler(
         conf_opt="members",
         parent=ignore_member,
-        help=i18n("Ignore a given member"),
+        help=fi18n("Ignore a given member"),
         converters=[commands.MemberConverter],
     )
     ignore_member_remove = ignore_handler(
         conf_opt="members",
         parent=ignore_member,
         remove=True,
-        help=i18n("Unignore a given member"),
+        help=fi18n("Unignore a given member"),
         converters=[commands.MemberConverter],
     )
 
     # Roles
-    ignore_role = cmd_group("role", parent=logset_ignore, help=i18n("Manage the role ignore list"))
+    ignore_role = cmd_group("role", parent=logset_ignore, help=fi18n("Manage the role ignore list"))
     ignore_role_add = ignore_handler(
         conf_opt="roles",
         parent=ignore_role,
-        help=i18n("Ignore a given role"),
+        help=fi18n("Ignore a given role"),
         converters=[commands.RoleConverter],
     )
     ignore_role_remove = ignore_handler(
         conf_opt="roles",
         parent=ignore_role,
-        help=i18n("Unignore a given role"),
+        help=fi18n("Unignore a given role"),
         converters=[commands.RoleConverter],
         remove=True,
     )
@@ -394,21 +368,21 @@ class Logs:
     ignore_mrole = cmd_group(
         "memberrole",
         aliases=["mrole"],
-        help=i18n("Manage the member role ignore list"),
+        help=fi18n("Manage the member role ignore list"),
         parent=logset_ignore,
     )
     ignore_mrole_add = ignore_handler(
         conf_opt="member_roles",
         converters=[commands.RoleConverter],
         parent=ignore_mrole,
-        help=i18n("Add a member role to the ignore list"),
+        help=fi18n("Add a member role to the ignore list"),
     )
     ignore_mrole_remove = ignore_handler(
         conf_opt="member_roles",
         converters=[commands.RoleConverter],
         remove=True,
         parent=ignore_mrole,
-        help=i18n("Add a member role to the ignore list"),
+        help=fi18n("Add a member role to the ignore list"),
     )
 
     ###################
@@ -426,7 +400,7 @@ class Logs:
         await log_event("message", "edit", before, after)
 
     async def on_raw_bulk_message_delete(self, payload: RawBulkMessageDeleteEvent):
-        channel = self.bot.get_channel(payload.channel_id)  # type: discord.TextChannel
+        channel: discord.TextChannel = self.bot.get_channel(payload.channel_id)
         if not hasattr(channel, "guild") or channel.guild is None:
             return
         await log_event("message", "bulk_delete", channel, payload.message_ids)

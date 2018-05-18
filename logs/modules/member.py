@@ -96,7 +96,7 @@ class MemberModule(Module):
                     "name": i18n("Roles"),
                     "value": "roles",
                     "diff": True,
-                    "converter": lambda x: [str(y) for y in x if not y.is_default()],
+                    "converter": lambda x: [str(y) for y in reversed(x) if not y.is_default()],
                     "config_opt": ["update", "roles"],
                 },
             ],
