@@ -5,20 +5,20 @@ from typing import Dict, List, Optional, Union
 import discord
 from redbot.core.config import Group, Value
 
-from cog_shared.swift_libs import IterQueue
+from cog_shared.swift_libs import IterableQueue
 from starboard.base import StarboardBase
 from starboard.log import log
 from starboard.message import StarboardMessage
 
-_janitors = {}  # type: Dict[int, asyncio.Task]
+_janitors: Dict[int, asyncio.Task] = {}
 
 
 class StarboardGuild(StarboardBase):
 
     def __init__(self, guild: discord.Guild):
         self.guild = guild
-        self.update_queue = IterQueue()
-        self._cache = {}  # type: Dict[int, StarboardMessage]
+        self.update_queue = IterableQueue()
+        self._cache: Dict[int, StarboardMessage] = {}
 
     def __repr__(self):
         return "<GuildStarboard guild={!r} cache_size={}>".format(self.guild, len(self._cache))
@@ -43,10 +43,10 @@ class StarboardGuild(StarboardBase):
         return self.guild_config.selfstar
 
     @property
-    def channel(self):
+    def channel(self) -> Value:
         return self.guild_config.channel
 
-    async def get_channel(self) -> Optional[discord.TextChannel]:
+    async def resolve_starboard(self) -> Optional[discord.TextChannel]:
         return self.bot.get_channel(await self.channel())
 
     @property
@@ -61,6 +61,8 @@ class StarboardGuild(StarboardBase):
         task = _janitors.get(self.guild.id, None)
         if task and task.done():
             try:
+                # no pycharm, Task.exception() does not take
+                # a 'or_None_if_no_exception_was_set' argument.
                 # noinspection PyArgumentList
                 exc = task.exception()
                 if exc:
@@ -79,7 +81,7 @@ class StarboardGuild(StarboardBase):
             if overwrite is False:
                 return
             _janitors.pop(self.guild.id).cancel()
-        if await self.get_channel() is None:
+        if await self.resolve_starboard() is None:
             return
         log.debug("Setting up janitor task for guild {}".format(self.guild.id))
         _janitors[self.guild.id] = self.bot.loop.create_task(self._janitor())
@@ -120,16 +122,28 @@ class StarboardGuild(StarboardBase):
         """Check if the given message is in the message cache"""
         return message.id in self._cache
 
-    async def remove_from_cache(self, message: discord.Message) -> bool:
+    async def remove_from_cache(self, message: discord.Message, *, dump: bool = False) -> bool:
         """Remove the given message from the cache
 
         If the given message has an update queued, it'll be updated before being uncached.
+
+        Parameters
+        -----------
+        message: discord.Message
+            The message to remove from the cache
+        dump: bool
+            If this is True, the given message is dumped from the queue without updating it,
+            instead of being updated and removed from the cache
+
         """
         star = await self.get_message(message=message, cache_only=True)
         if star is None:
             return False
-        if star.in_queue:
-            await star.update_starboard_message()
+        if star in self.update_queue:
+            if dump:
+                self.update_queue.remove(star)
+            else:
+                await star.update_starboard_message()
         self._cache.pop(message.id)
         return True
 
@@ -153,8 +167,8 @@ class StarboardGuild(StarboardBase):
         dry_run: bool
             Whether or not this only counts the amount of messages being removed.
         update_items: bool
-            Whether or not to update messages if they have an update queued before
-            removing them from the cache
+            If this is False, items will just be dumped from the cache without regard
+            for if they have an update queued.
 
         Returns
         --------
@@ -166,8 +180,8 @@ class StarboardGuild(StarboardBase):
         purged = 0
         for item in self._cache.copy().values():
             if item.last_update < check_ts:
-                if not dry_run and update_items:
-                    await self.remove_from_cache(item.message)
+                if not dry_run:
+                    await self.remove_from_cache(item.message, dump=not update_items)
                 purged += 1
         return purged
 
@@ -231,7 +245,7 @@ class StarboardGuild(StarboardBase):
                 data = await self.messages.get_raw(str(message_id), default=None)
                 if data is None:
                     return None
-                channel = self.bot.get_channel(data.get("channel_id", None))
+                channel = self.bot.resolve_starboard(data.get("channel_id", None))
                 if channel is None:
                     return None
 
@@ -261,7 +275,7 @@ class StarboardGuild(StarboardBase):
         if isinstance(obj, discord.Member):
             return obj.id in await self.ignored.members()
         elif isinstance(obj, discord.TextChannel):
-            return obj.id in await self.ignored.channels() or obj == await self.get_channel()
+            return obj.id in await self.ignored.channels() or obj == await self.resolve_starboard()
         else:
             raise TypeError("obj is not of type TextChannel, Member or Message")
 

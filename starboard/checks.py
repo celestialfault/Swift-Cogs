@@ -28,7 +28,7 @@ def can_use_starboard():
 
 async def guild_has_starboard(ctx: Context):
     _starboard = base.get_starboard(ctx.guild)
-    if await _starboard.get_channel() is None:
+    if await _starboard.resolve_starboard() is None:
         await ctx.send(warning(i18n("This server has no starboard channel setup")))
         return False
     return True

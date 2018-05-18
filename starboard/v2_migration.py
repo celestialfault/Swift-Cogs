@@ -7,8 +7,8 @@ from starboard.base import get_starboard, get_starboard_cache
 from starboard.guild import StarboardGuild
 from starboard.log import log
 
-migrate_lock = asyncio.Lock()
-__all__ = ("import_data", "NoMotorError")
+import_lock = asyncio.Lock()
+__all__ = ("import_data", "NoMotorError", "import_lock")
 
 
 r"""
@@ -35,11 +35,6 @@ class NoMotorError(Exception):
     pass
 
 
-async def dump_caches():
-    for starboard in get_starboard_cache().values():
-        await starboard.purge_cache(0, update_items=False)
-
-
 async def import_data(bot: Red, mongo_uri: str):
     try:
         from motor import motor_asyncio as motor
@@ -48,15 +43,17 @@ async def import_data(bot: Red, mongo_uri: str):
 
     log.info("Starting v2 data migration...")
     db = motor.AsyncIOMotorClient(mongo_uri)
-    await dump_caches()
-    async with migrate_lock:
+    for starboard in get_starboard_cache().values():
+        await starboard.purge_cache(0, update_items=False)
+
+    async with import_lock:
         async for item in db.starboard.stars.find({}):
             if not isinstance(item, dict):
                 continue
-            message_id = item.get("message_id", None)
+            message_id = item.get("message_id")
             if message_id is None:
                 continue
-            channel_id = item.get("channel_id", None)
+            channel_id = item.get("channel_id")
             channel = bot.get_channel(int(channel_id))  # type: discord.TextChannel
             if channel is None:
                 continue
@@ -74,5 +71,5 @@ async def import_data(bot: Red, mongo_uri: str):
                     "hidden": item.get("removed", False),
                 },
             )
-    await dump_caches()
+
     log.info("v2 data migration complete.")

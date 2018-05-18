@@ -9,15 +9,7 @@ from redbot.core.i18n import cog_i18n
 from redbot.core.utils.chat_formatting import bold, error, info, inline, pagify, warning
 from tabulate import tabulate
 
-from cog_shared.swift_libs import (
-    ConfirmMenu,
-    cmd_group,
-    cmd_help,
-    fmt,
-    hierarchy_allows,
-    index,
-    tick,
-)
+from cog_shared.swift_libs import cmd_help, confirm, fmt, hierarchy_allows, index, tick
 from starboard import stats, v2_migration
 from starboard.base import StarboardBase, get_starboard, get_starboard_cache
 from starboard.checks import can_use_starboard, guild_has_starboard
@@ -330,7 +322,7 @@ class Starboard(StarboardBase):
             return
 
         elif isinstance(obj, discord.TextChannel):
-            if obj == await starboard.get_channel():
+            if obj == await starboard.resolve_starboard():
                 await ctx.send(
                     warning(
                         i18n(
@@ -386,12 +378,9 @@ class Starboard(StarboardBase):
         if not ctx.invoked_subcommand:
             await ctx.send_help()
 
-    stars_ignore = cmd_group(
-        name="ignore",
-        parent=stars,
-        help=i18n("Manage the current server's starboard ignore list"),
-        aliases=["block"],
-    )
+    @stars.group(name="ignore", aliases=["block"])
+    async def stars_ignore(self, ctx: commands.Context):
+        await cmd_help(ctx, "ignore")
 
     @stars_ignore.command(name="add")
     async def ignore_add(self, ctx: commands.Context, obj: discord.TextChannel or discord.Member):
@@ -445,48 +434,54 @@ class Starboard(StarboardBase):
 
     @starboardset.command(name="v2_import")
     @checks.is_owner()
+    @commands.check(lambda ctx: not v2_migration.import_lock.locked())
     async def starboardset_v2_import(self, ctx: commands.Context, mongo_uri: str):
         """Import Red v2 instance data
+
+        Please note that this is not officially supported, and this import tool
+        is provided as-is.
 
         Only messages are imported currently; guild settings are not imported,
         and must be setup again.
 
         In most cases, `mongodb://localhost:27017` will work just fine
-        if you're importing a local v2 instance."""
-        disclaimer = i18n(
-            "Are you sure you want to import your v2 instances data?\n\n"
-            "Guild settings will not be imported and must be setup again.\n\n"
-            "Any messages starred previous to this import that are also present "
-            "in the v2 data **will be overwritten.**\n\n"
-            "Please click \N{WHITE HEAVY CHECK MARK} if you wish to continue."
-        )
-        disclaimer = discord.Embed(
-            description=disclaimer, colour=discord.Colour.gold(), title=i18n("V2 Data Import")
-        )
+        if you're importing a local v2 instance.
+        """
+        if not await confirm(
+            ctx,
+            timeout=90.0,
+            content=i18n(
+                "**PLEASE READ THIS! UNEXPECTED BAD THINGS MAY HAPPEN IF YOU DON'T!**\n"
+                "Importing from v2 instances is not officially supported, due to the vast "
+                "differences in backend data storage schemas. This command is provided as-is, "
+                "with no guarantee of maintenance nor stability.\n\n"
+                "Server settings will not be imported and must be setup again.\n"
+                "Starred messages data will be imported, but if a message is currently present in "
+                "any of my current data, **it will be overwritten** with the imported data.\n\n\n"
+                "Please click \N{WHITE HEAVY CHECK MARK} to confirm that you wish to continue."
+            ),
+        ):
+            await ctx.send(i18n("Import cancelled."), delete_after=30)
+            return
 
-        async with ConfirmMenu(ctx, embed=disclaimer) as result:
-            if not result:
-                await ctx.send(i18n("Import cancelled."), delete_after=30)
-                return
-            tmp = await ctx.send(i18n("Importing data... (this could take a while)"))
-            try:
-                async with ctx.typing():
-                    await v2_migration.import_data(self.bot, mongo_uri)
-            except v2_migration.NoMotorError:
-                await tmp.delete()
-                await fmt(
-                    ctx,
-                    error(
-                        i18n(
-                            "Motor is not installed; cannot import v2 data.\n\n"
-                            "Please use `{prefix}pipinstall motor` and restart your bot, "
-                            "and re-attempt the import."
-                        )
-                    ),
-                )
-            else:
-                await tmp.delete()
-                await ctx.send(tick(i18n("Successfully imported v2 data")))
+        tmp = await ctx.send(i18n("Importing data... (this could take a while)"))
+        try:
+            async with ctx.typing():
+                await v2_migration.import_data(self.bot, mongo_uri)
+        except v2_migration.NoMotorError:
+            await fmt(
+                ctx,
+                error(
+                    i18n(
+                        "Motor is not installed; cannot import v2 data.\n\n"
+                        "Please do `{prefix}pipinstall motor` and re-attempt the import."
+                    )
+                ),
+            )
+        else:
+            await ctx.send(tick(i18n("Imported successfully.")))
+        finally:
+            await tmp.delete()
 
     ####################
     #   [p]starboard
@@ -512,7 +507,9 @@ class Starboard(StarboardBase):
                     [
                         [
                             i18n("Starboard Channel"),
-                            getattr(await starboard.get_channel(), "name", i18n("No channel set")),
+                            getattr(
+                                await starboard.resolve_starboard(), "name", i18n("No channel set")
+                            ),
                         ],
                         [i18n("Min stars"), await starboard.min_stars()],
                         [i18n("Ignored Channels"), ignores.get("channels", 0)],
@@ -580,6 +577,7 @@ class Starboard(StarboardBase):
 
     @cmd_starboard.command(name="restart_janitor", hidden=True)
     @commands.cooldown(1, 3 * 60, commands.BucketType.guild)
+    @checks.guildowner_or_permissions(administrator=True)
     async def starboard_restart_janitor(self, ctx: commands.Context):
         """Restart the current server's janitor task
 
@@ -588,8 +586,7 @@ class Starboard(StarboardBase):
 
         This command can only be used once every 3 minutes per server.
         """
-        starboard = get_starboard(ctx.guild)
-        await starboard.setup_janitor(overwrite=True)
+        await get_starboard(ctx.guild).setup_janitor(overwrite=True)
         await ctx.tick()
 
     ##################################################################################
@@ -679,7 +676,7 @@ class Starboard(StarboardBase):
 
         guild = channel.guild  # type: discord.Guild
         starboard = get_starboard(guild)  # type: StarboardGuild
-        if await starboard.get_channel() is None:
+        if await starboard.resolve_starboard() is None:
             return
 
         member = guild.get_member(payload.user_id)

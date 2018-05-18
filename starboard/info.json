@@ -1,7 +1,7 @@
 {
   "author": ["odinair"],
   "bot_version": [3, 0, 0],
-  "min_python_version": [3, 5, 1],
+  "min_python_version": [3, 6, 0],
   "description": "It's almost like channel pins, but with stars, and more democracy. (democracy not guaranteed)\n\nThis cog may use a fair amount of memory, due to the various internal caches.",
   "short": "It's almost like channel pins, but with stars",
   "type": "COG",

@@ -25,11 +25,10 @@ class StarboardMessage(base.StarboardBase, commands.Converter):
 
         self.message = kwargs.get("message", None)  # type: discord.Message
         self.starboard_message = None  # type: discord.Message
-        self.starrers = []  # type: List[int]
+        self.starrers: List[int] = []
 
-        self.starboard = kwargs.get("starboard", None)  # type: StarboardGuild
+        self.starboard: StarboardGuild = kwargs.get("starboard", None)
         self.last_update = datetime.utcnow()
-        self.in_queue = False
         self._hidden = False
 
     def __repr__(self):
@@ -71,7 +70,7 @@ class StarboardMessage(base.StarboardBase, commands.Converter):
             self._hidden = entry.get("hidden", False)
 
             if entry.get("starboard_message", None) is not None:
-                channel = await self.starboard.get_channel()
+                channel = await self.starboard.resolve_starboard()
                 if channel is None:
                     self.starboard_message = None
                     return await self._save()
@@ -100,6 +99,10 @@ class StarboardMessage(base.StarboardBase, commands.Converter):
 
     #################################
     #   Message data
+
+    @property
+    def in_queue(self):
+        return self in self.starboard.update_queue
 
     @property
     def hidden(self):
@@ -180,16 +183,13 @@ class StarboardMessage(base.StarboardBase, commands.Converter):
     #   Starboard message management
 
     def queue_for_update(self):
-        if self.in_queue is True:
+        if self.in_queue:
             return
-        self.in_queue = True
         self.last_update = datetime.utcnow()
         self.starboard.update_queue.put_nowait(self)
 
     async def update_starboard_message(self) -> None:
-        self.in_queue = False
-
-        channel = await self.starboard.get_channel()
+        channel = await self.starboard.resolve_starboard()
         if channel is None:
             return
 
