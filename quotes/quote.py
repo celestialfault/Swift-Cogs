@@ -26,17 +26,17 @@ async def ensure_can_modify(member: discord.Member, quote: "Quote"):
 
 
 class Quote(commands.Converter):
-    bot = None  # type: Red
+    bot: Red = None
 
     def __init__(self, **kwargs):
-        self.guild = kwargs.get("guild")  # type: discord.Guild
-        self.id = kwargs.get("id")  # type: int
-        self._text = kwargs.get("text")  # type: str
-        self._message_author = kwargs.get("message_author_id")  # type: int
-        self._creator = kwargs.get("author_id")  # type: int
-        self.timestamp = datetime.fromtimestamp(
+        self.guild: discord.Guild = kwargs.get("guild")
+        self.id: int = kwargs.get("id")
+        self._text: str = kwargs.get("text")
+        self._message_author: int = kwargs.get("message_author_id")
+        self._creator: int = kwargs.get("author_id")
+        self.timestamp: datetime = datetime.fromtimestamp(
             kwargs.get("timestamp", datetime.utcnow().timestamp())
-        )  # type: datetime
+        )
 
     def __int__(self):
         return self.id

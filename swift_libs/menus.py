@@ -3,35 +3,24 @@
 Designed for easy portability with other discord.py bots.
 """
 
-__author__ = "odinair <odinair@odinair.xyz>"
-
 import asyncio
 from enum import IntEnum
-from typing import Dict, Any, Union, Awaitable, Optional, Sequence, Callable, Tuple, Coroutine
+from types import GeneratorType
+from typing import Any, Awaitable, Callable, Coroutine, Dict, Optional, Sequence, Tuple, Union
 
 import discord
 from discord.ext import commands
 
+__author__ = "odinair <odinair@odinair.xyz>"
 __all__ = ["PostAction", "Result", "Menu", "PaginatedMenu", "Page"]
 
 
-# noinspection PyPep8Naming
-class undefined:  # noqa
-    pass
-
-
-undefined = undefined()
-
-
-def try_get(cls, *names: str, kwargs: dict = None):
+def try_get(cls, name: str, kwargs: dict = None):
     if kwargs is None:
         kwargs = {}
-    for name in names:
-        if not name.isidentifier():
-            continue
-        v = getattr(cls, name, kwargs.get(name, undefined))
-        if v is not undefined:
-            return v
+    v = getattr(cls, name, kwargs.get(name, None))
+    if v is not None:
+        return v
     raise TypeError(f"required argument {name} is missing")
 
 
@@ -122,9 +111,15 @@ class Menu(Awaitable):
             Set to `30.0` by default.
         """
 
-        self.channel: discord.TextChannel = try_get(kwargs.get("ctx"), "channel", kwargs=kwargs)
-        self.member: discord.Member = try_get(kwargs.get("ctx"), "member", "author", kwargs=kwargs)
-        self.bot: commands.Bot = try_get(kwargs.get("ctx"), "bot", kwargs=kwargs)
+        if "ctx" in kwargs:
+            ctx: commands.Context = kwargs["ctx"]
+            self.channel = ctx.channel
+            self.member = ctx.author
+            self.bot = ctx.bot
+
+        self.channel: discord.TextChannel = try_get(self, "channel", kwargs=kwargs)
+        self.member: discord.Member = try_get(self, "member", kwargs=kwargs)
+        self.bot: commands.Bot = try_get(self, "bot", kwargs=kwargs)
 
         if not all(isinstance(x, (str, discord.Emoji)) for x in actions.values()):
             raise RuntimeError("not all action values are of type str or discord.Emoji")
@@ -309,6 +304,9 @@ class PaginatedMenu(Menu):
             page respectively.
 
         """
+        if isinstance(pages, GeneratorType):
+            pages = list(pages)
+
         if not pages:
             raise RuntimeError("no pages were given to iterate through")
 

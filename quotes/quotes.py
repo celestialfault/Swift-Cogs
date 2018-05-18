@@ -1,6 +1,5 @@
 from pathlib import Path
 from random import randint
-from typing import Sequence
 
 import discord
 from redbot.core import checks, commands
@@ -9,16 +8,17 @@ from redbot.core.i18n import cog_i18n
 from redbot.core.utils.chat_formatting import error, warning
 
 from cog_shared.swift_libs import (
-    ConfirmMenu,
-    PaginateMenu,
+    Page,
+    PaginatedMenu,
     chunks,
+    confirm,
     fmt,
     tick,
-    trim_to,
     to_lazy_translator,
+    trim_to,
 )
 from quotes.editor import QuoteEditor
-from quotes.quote import Quote, conf, i18n, ensure_can_modify
+from quotes.quote import Quote, conf, ensure_can_modify, i18n
 from quotes.v2_import import import_v2_data
 
 lazyi18n = to_lazy_translator(i18n)
@@ -101,7 +101,7 @@ class Quotes:
     @quote.command(hidden=True, name="clearall")
     @checks.guildowner()
     async def quote_clearall(self, ctx: commands.Context):
-        if not await ConfirmMenu(
+        if not await confirm(
             ctx,
             content=i18n(
                 "Are you sure you want to reset all quotes?\n\nUnless you have a time machine, "
@@ -194,14 +194,16 @@ class Quotes:
 
         per_page = min(per_page, 15)
 
-        def convert(pg: Sequence[Quote], page_id, total_pages):
+        def convert(page: Page):
             embed = discord.Embed(
                 colour=ctx.me.colour,
                 title=i18n("Guild Quotes"),
-                description=i18n("Displaying {} out of {} quotes").format(len(pg), len(quotes)),
+                description=i18n("Displaying {} out of {} quotes").format(
+                    len(page.data), len(quotes)
+                ),
             )
-            embed.set_footer(text=i18n("Page {}/{}").format(page_id + 1, total_pages))
-            for q in pg:
+            embed.set_footer(text=i18n("Page {0.current} out of {0.total}").format(page))
+            for q in page.data:
                 embed.add_field(
                     name=i18n("Quote #{}").format(q.id),
                     value=trim_to(q.text, min(5000 // per_page, 1024)),
@@ -209,8 +211,13 @@ class Quotes:
                 )
             return embed
 
-        async with PaginateMenu(ctx, pages=chunks(quotes, per_page), converter=convert, actions={}):
-            pass
+        await PaginatedMenu(
+            ctx=ctx,
+            pages=list(chunks(quotes, per_page)),
+            converter=convert,
+            actions={},
+            wrap_around=True,
+        )
 
     @quote.command(name="remove", aliases=["rm", "delete"])
     async def quote_remove(self, ctx: commands.Context, quote: Quote):
@@ -221,7 +228,7 @@ class Quotes:
         """
         await ensure_can_modify(ctx.author, quote)
 
-        if await ConfirmMenu(ctx, content=warning(self.DELETE_WARNING)).prompt():
+        if await confirm(ctx, content=warning(self.DELETE_WARNING)):
             await quote.delete()
             await ctx.send(tick(i18n("Quote successfully deleted.")))
         else:

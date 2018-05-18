@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2018-05-12 02:47-0600\n"
+"POT-Creation-Date: 2018-05-18 07:11-0600\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -78,7 +78,7 @@ msgstr ""
 msgid "Quote deleted."
 msgstr ""
 
-#: editor.py:159
+#: editor.py:158
 msgid "Menu timed out, any changes not saved have been discarded."
 msgstr ""
 
@@ -237,7 +237,7 @@ msgstr ""
 msgid "Quote #{}"
 msgstr ""
 
-#: quotes.py:217
+#: quotes.py:218
 #, docstring
 msgid ""
 "Remove a quote by it's ID\n"
@@ -247,11 +247,11 @@ msgid ""
 "        "
 msgstr ""
 
-#: quotes.py:226
+#: quotes.py:227
 msgid "Quote successfully deleted."
 msgstr ""
 
-#: quotes.py:228
+#: quotes.py:229
 msgid "Ok then."
 msgstr ""
 

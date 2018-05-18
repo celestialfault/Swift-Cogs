@@ -6,7 +6,7 @@ from redbot.core.commands import Context
 from redbot.core.bot import Red
 from redbot.core.utils.chat_formatting import warning
 
-from cog_shared.swift_libs import ReactMenu, PostMenuAction, tick, prompt, ConfirmMenu
+from cog_shared.swift_libs import tick, prompt, confirm, Menu, PostAction
 from quotes.quote import Quote, i18n
 
 
@@ -125,7 +125,7 @@ class QuoteEditor:
         await self.send(tick(i18n("Attributed quote to **{}**.").format(str(attribute_to))))
 
     async def delete_quote(self):
-        if await ConfirmMenu(
+        if await confirm(
             self.ctx,
             content=warning(
                 i18n(
@@ -146,15 +146,14 @@ class QuoteEditor:
                     continue
             actions[action] = data
 
-        menu = ReactMenu(
+        menu = Menu(
             ctx=self.ctx,
             actions={x: y["emoji"] for x, y in actions.items()},
             embed=self.parse_embed(actions),
-            post_action=PostMenuAction.DELETE,
         )
 
         while True:
-            result = await menu
+            result = await menu.prompt(post_action=PostAction.DELETE_MESSAGE)
             if result.timed_out:
                 await self.send(i18n("Menu timed out, any changes not saved have been discarded."))
                 try:
