@@ -182,10 +182,10 @@ class CogWhitelist:
 
             for cog, guild_ids in page.items():
                 cog = cog_name(self.bot, cog) or cog
-                status = _("This guild is currently allowed to use this cog") if getattr(
-                    ctx.guild, "id", None
-                ) in guild_ids else _(
-                    "This guild is **not** currently allowed to use this cog"
+                status = (
+                    _("This guild is currently allowed to use this cog")
+                    if getattr(ctx.guild, "id", None) in guild_ids
+                    else _("This guild is **not** currently allowed to use this cog")
                 )
 
                 if cog not in self.bot.cogs:
@@ -196,9 +196,7 @@ class CogWhitelist:
                     "Use `{prefix}cogwhitelist list {cog}` to the whitelisted guild(s).\n"
                     "\n"
                     "{status}"
-                ).format(
-                    guilds=len(guild_ids), status=status, prefix=ctx.prefix, cog=cog
-                )
+                ).format(guilds=len(guild_ids), status=status, prefix=ctx.prefix, cog=cog)
 
                 embed.add_field(name=cog, value=value)
 

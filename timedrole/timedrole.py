@@ -97,13 +97,9 @@ class TimedRole:
 
         def page_convert(x, page, pages):
             return (
-                discord.Embed(
-                    description="\n\n".join(list(convert(x, page))), colour=ctx.me.colour
-                ).set_footer(
-                    text=_("Page {}/{}").format(page + 1, pages)
-                ).set_author(
-                    name=_("Timed Roles"), icon_url=ctx.guild.icon_url
-                )
+                discord.Embed(description="\n\n".join(list(convert(x, page))), colour=ctx.me.colour)
+                .set_footer(text=_("Page {}/{}").format(page + 1, pages))
+                .set_author(name=_("Timed Roles"), icon_url=ctx.guild.icon_url)
             )
 
         async with PaginateMenu(ctx, pages=roles, converter=page_convert, actions={}):

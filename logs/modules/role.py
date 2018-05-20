@@ -26,15 +26,15 @@ class RoleModule(Module):
         if not await self.is_opt_enabled("create"):
             return None
 
-        embed = LogEntry(
-            self,
-            colour=discord.Colour.green(),
-            require_fields=False,
-            description=i18n("Role: {}").format(role.mention),
-        ).set_author(
-            name=i18n("Role Created"), icon_url=self.icon_uri()
-        ).set_footer(
-            text=i18n("Role ID: {}").format(role.id)
+        embed = (
+            LogEntry(
+                self,
+                colour=discord.Colour.green(),
+                require_fields=False,
+                description=i18n("Role: {}").format(role.mention),
+            )
+            .set_author(name=i18n("Role Created"), icon_url=self.icon_uri())
+            .set_footer(text=i18n("Role ID: {}").format(role.id))
         )
 
         embed.add_field(
@@ -63,15 +63,15 @@ class RoleModule(Module):
         if not await self.is_opt_enabled("delete"):
             return None
 
-        return LogEntry(
-            self,
-            colour=discord.Colour.red(),
-            require_fields=False,
-            description=i18n("Role `{}` was deleted").format(role.name),
-        ).set_author(
-            name=i18n("Role Deleted"), icon_url=self.icon_uri()
-        ).set_footer(
-            text=i18n("Role ID: {}").format(role.id)
+        return (
+            LogEntry(
+                self,
+                colour=discord.Colour.red(),
+                require_fields=False,
+                description=i18n("Role `{}` was deleted").format(role.name),
+            )
+            .set_author(name=i18n("Role Deleted"), icon_url=self.icon_uri())
+            .set_footer(text=i18n("Role ID: {}").format(role.id))
         )
 
     async def update(self, before: discord.Role, after: discord.Role):

@@ -23,48 +23,48 @@ class ChannelModule(Module):
     async def create(self, channel: discord.abc.GuildChannel):
         # noinspection PyUnresolvedReferences
         return (
-            LogEntry(
-                self,
-                colour=discord.Color.green(),
-                require_fields=False,
-                description=i18n("Channel {} was created").format(channel.mention),
-            ).set_author(
-                name=i18n("Channel Created"), icon_url=self.icon_uri()
-            ).set_footer(
-                text=i18n("Channel ID: {}").format(channel.id)
+            (
+                LogEntry(
+                    self,
+                    colour=discord.Color.green(),
+                    require_fields=False,
+                    description=i18n("Channel {} was created").format(channel.mention),
+                )
+                .set_author(name=i18n("Channel Created"), icon_url=self.icon_uri())
+                .set_footer(text=i18n("Channel ID: {}").format(channel.id))
             )
-        ) if await self.is_opt_enabled(
-            "create"
-        ) else None
+            if await self.is_opt_enabled("create")
+            else None
+        )
 
     async def delete(self, channel: discord.abc.GuildChannel):
         # noinspection PyUnresolvedReferences
         return (
-            LogEntry(
-                self,
-                colour=discord.Color.red(),
-                require_fields=False,
-                description=i18n("Channel `{}` was deleted").format(
-                    getattr(channel, "name", i18n("Unknown channel"))
-                ),
-            ).set_author(
-                name=i18n("Channel Deleted"), icon_url=self.icon_uri()
-            ).set_footer(
-                text=i18n("Channel ID: {}").format(channel.id)
+            (
+                LogEntry(
+                    self,
+                    colour=discord.Color.red(),
+                    require_fields=False,
+                    description=i18n("Channel `{}` was deleted").format(
+                        getattr(channel, "name", i18n("Unknown channel"))
+                    ),
+                )
+                .set_author(name=i18n("Channel Deleted"), icon_url=self.icon_uri())
+                .set_footer(text=i18n("Channel ID: {}").format(channel.id))
             )
-        ) if await self.is_opt_enabled(
-            "delete"
-        ) else None
+            if await self.is_opt_enabled("delete")
+            else None
+        )
 
     async def update(self, before: discord.abc.GuildChannel, after: discord.abc.GuildChannel):
-        embed = LogEntry(
-            self,
-            colour=discord.Color.blurple(),
-            description=i18n("Channel: {}").format(after.mention),
-        ).set_footer(
-            text=i18n("Channel ID: {}").format(getattr(after, "id"))
-        ).set_author(
-            name=i18n("Channel Updated"), icon_url=self.icon_uri()
+        embed = (
+            LogEntry(
+                self,
+                colour=discord.Color.blurple(),
+                description=i18n("Channel: {}").format(after.mention),
+            )
+            .set_footer(text=i18n("Channel ID: {}").format(getattr(after, "id")))
+            .set_author(name=i18n("Channel Updated"), icon_url=self.icon_uri())
         )
 
         checks = [

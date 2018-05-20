@@ -74,9 +74,7 @@ class Quotes:
                     i18n(
                         "Failed to import the `loremipsum` module; please do `{prefix}pipinstall "
                         "loremipsum` and use this command again."
-                    ).format(
-                        prefix=ctx.prefix
-                    )
+                    ).format(prefix=ctx.prefix)
                 )
             )
             return

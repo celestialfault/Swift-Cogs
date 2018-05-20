@@ -51,50 +51,56 @@ class MessageModule(Module):
 
     async def delete(self, message: discord.Message):
         return (
-            LogEntry(
-                self, colour=discord.Colour.red(), ignore_fields=["Message Author", "Channel"]
-            ).set_author(
-                name=i18n("Message Deleted"), icon_url=self.icon_uri(message.author)
-            ).set_footer(
-                text=i18n("Message ID: {}").format(message.id)
-            ).add_field(
-                name=i18n("Message Author"),
-                inline=True,
-                value="{message.author.mention} ({message.author.id})".format(message=message),
-            ).add_field(
-                name=i18n("Channel"),
-                inline=True,
-                value="{message.channel.mention} ({message.channel.id})".format(message=message),
-            ).add_field(
-                name=i18n("Content"), value=message.content or inline(i18n("No message content"))
+            (
+                LogEntry(
+                    self, colour=discord.Colour.red(), ignore_fields=["Message Author", "Channel"]
+                )
+                .set_author(name=i18n("Message Deleted"), icon_url=self.icon_uri(message.author))
+                .set_footer(text=i18n("Message ID: {}").format(message.id))
+                .add_field(
+                    name=i18n("Message Author"),
+                    inline=True,
+                    value="{message.author.mention} ({message.author.id})".format(message=message),
+                )
+                .add_field(
+                    name=i18n("Channel"),
+                    inline=True,
+                    value="{message.channel.mention} ({message.channel.id})".format(
+                        message=message
+                    ),
+                )
+                .add_field(
+                    name=i18n("Content"),
+                    value=message.content or inline(i18n("No message content")),
+                )
+                # due to how LogEntry.add_field works, this will only display if value is not None
+                .add_field(
+                    name=i18n("Attachments"),
+                    value=(
+                        "\n".join([f"<{x.url}>" for x in message.attachments])
+                        if message.attachments
+                        else None
+                    ),
+                )
             )
-            # due to how LogEntry.add_field works, this will only display if value is not None
-            .add_field(
-                name=i18n("Attachments"),
-                value=(
-                    "\n".join([f"<{x.url}>" for x in message.attachments])
-                    if message.attachments
-                    else None
-                ),
-            )
-        ) if all(
-            [await self.is_opt_enabled("delete"), not message.author.bot]
-        ) else None
+            if all([await self.is_opt_enabled("delete"), not message.author.bot])
+            else None
+        )
 
     async def bulk_delete(self, channel: discord.TextChannel, message_ids: List[int]):
         if not message_ids:
             return None
         return (
-            LogEntry(
-                self,
-                colour=discord.Colour.dark_red(),
-                description=i18n("{count} messages were deleted from {channel}").format(
-                    count=len(message_ids), channel=channel.mention
-                ),
-                require_fields=False,
-            ).set_author(
-                name=i18n("Message Bulk Deletion"), icon_url=self.icon_uri()
+            (
+                LogEntry(
+                    self,
+                    colour=discord.Colour.dark_red(),
+                    description=i18n("{count} messages were deleted from {channel}").format(
+                        count=len(message_ids), channel=channel.mention
+                    ),
+                    require_fields=False,
+                ).set_author(name=i18n("Message Bulk Deletion"), icon_url=self.icon_uri())
             )
-        ) if await self.is_opt_enabled(
-            "bulkdelete"
-        ) else None
+            if await self.is_opt_enabled("bulkdelete")
+            else None
+        )

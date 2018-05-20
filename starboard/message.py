@@ -150,14 +150,12 @@ class StarboardMessage(base.StarboardBase, commands.Converter):
         if not self.is_message_valid:
             return None
 
-        embed = (
-            discord.Embed(
-                colour=discord.Colour.gold(),
-                timestamp=self.message.created_at,
-                description=self.message.content or discord.Embed.Empty,
-            ).set_author(
-                name=self.author.display_name, icon_url=self.author.avatar_url_as(format="png")
-            )
+        embed = discord.Embed(
+            colour=discord.Colour.gold(),
+            timestamp=self.message.created_at,
+            description=self.message.content or discord.Embed.Empty,
+        ).set_author(
+            name=self.author.display_name, icon_url=self.author.avatar_url_as(format="png")
         )
 
         if self.attachment_url:

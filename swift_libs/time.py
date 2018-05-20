@@ -58,9 +58,9 @@ def td_format(td_object: timedelta, milliseconds: bool = False, append_str: bool
         if ms > 0:
             if milliseconds is False:
                 return (
-                    i18n("less than a second ago") if past else i18n("in less than a second")
-                ) if append_str else i18n(
-                    "less than a second"
+                    (i18n("less than a second ago") if past else i18n("in less than a second"))
+                    if append_str
+                    else i18n("less than a second")
                 )
         else:
             return i18n("just now")

@@ -34,38 +34,38 @@ class MemberModule(Module):
 
     async def join(self, member: discord.Member):
         return (
-            LogEntry(
-                self,
-                colour=discord.Color.green(),
-                require_fields=False,
-                description=i18n("Member {} joined\n\nAccount was created {}").format(
-                    member.mention,
-                    td_format(member.created_at - datetime.utcnow(), append_str=True),
-                ),
-            ).set_author(
-                name=i18n("Member Joined"), icon_url=self.icon_uri(member)
-            ).set_footer(
-                text=i18n("Member ID: {}").format(member.id)
+            (
+                LogEntry(
+                    self,
+                    colour=discord.Color.green(),
+                    require_fields=False,
+                    description=i18n("Member {} joined\n\nAccount was created {}").format(
+                        member.mention,
+                        td_format(member.created_at - datetime.utcnow(), append_str=True),
+                    ),
+                )
+                .set_author(name=i18n("Member Joined"), icon_url=self.icon_uri(member))
+                .set_footer(text=i18n("Member ID: {}").format(member.id))
             )
-        ) if await self.is_opt_enabled(
-            "join"
-        ) else None
+            if await self.is_opt_enabled("join")
+            else None
+        )
 
     async def leave(self, member: discord.Member):
         return (
-            LogEntry(
-                self,
-                colour=discord.Color.red(),
-                require_fields=False,
-                description=i18n("Member {} left").format(member.mention),
-            ).set_author(
-                name=i18n("Member Left"), icon_url=self.icon_uri(member)
-            ).set_footer(
-                text=i18n("Member ID: {}").format(member.id)
+            (
+                LogEntry(
+                    self,
+                    colour=discord.Color.red(),
+                    require_fields=False,
+                    description=i18n("Member {} left").format(member.mention),
+                )
+                .set_author(name=i18n("Member Left"), icon_url=self.icon_uri(member))
+                .set_footer(text=i18n("Member ID: {}").format(member.id))
             )
-        ) if await self.is_opt_enabled(
-            "leave"
-        ) else None
+            if await self.is_opt_enabled("leave")
+            else None
+        )
 
     async def update(self, before: discord.Member, after: discord.Member):
         embed = LogEntry(

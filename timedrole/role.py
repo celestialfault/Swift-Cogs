@@ -21,9 +21,7 @@ class TempRole:
     def __repr__(self):
         return (
             "<TempRole role={self.role!r} member={self.member!r} duration={self.duration!r}>"
-        ).format(
-            self=self
-        )
+        ).format(self=self)
 
     @property
     def guild(self) -> discord.Guild:

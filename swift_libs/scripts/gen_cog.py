@@ -103,18 +103,15 @@ def create_cog(cog_name: str, *, allow_erasing: bool = False):
     cog_dir = root / cog_name.lower()
 
     if cog_dir.exists():
-        if (
-            not allow_erasing
-            and (
-                not input(
-                    "Please confirm that you wish to overwrite the following "
-                    "directory (y/N): '{}'\nThis will irreversibly remove this directory, and all "
-                    "files and/or directories contained within."
-                    "\n".format(cog_dir)
-                ).lower().startswith(
-                    "y"
-                )
+        if not allow_erasing and (
+            not input(
+                "Please confirm that you wish to overwrite the following "
+                "directory (y/N): '{}'\nThis will irreversibly remove this directory, and all "
+                "files and/or directories contained within."
+                "\n".format(cog_dir)
             )
+            .lower()
+            .startswith("y")
         ):
             print("Not overwriting.")
             return

@@ -240,17 +240,20 @@ class Module(ABC):
             discord.Embed(
                 colour=discord.Colour.blurple(),
                 description="{}\n\n{}".format(self.descriptions["module"], dest),
-            ).set_author(
+            )
+            .set_author(
                 name=i18n("{friendly_name} Logging Module").format(
                     friendly_name=self.friendly_name
                 ),
                 icon_url=self.icon_uri(),
-            ).add_field(
+            )
+            .add_field(
                 name=i18n("Enabled"),
                 value=enabled
                 or i18n("**None** \N{EM DASH} All of this module's options are disabled"),
                 inline=False,
-            ).add_field(
+            )
+            .add_field(
                 name=i18n("Disabled"),
                 value=disabled
                 or i18n("**None** \N{EM DASH} All of this module's options are enabled"),

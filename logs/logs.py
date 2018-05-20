@@ -130,22 +130,22 @@ class Logs:
         modules = await retrieve_all_modules(ctx)
 
         async def converter(pg: Page):
-            return discord.Embed(
-                description=i18n(
-                    "**{mod.friendly_name} Settings**\nLogging to: {destination}\n\n"
-                    "\N{GEAR} \N{EM DASH} Update module log settings\n"
-                    "\N{HEADPHONE} \N{EM DASH} Set log channel\n"
-                    "\N{CROSS MARK} \N{EM DASH} Close menu"
-                ).format(
-                    mod=pg.data,
-                    destination=getattr(
-                        await pg.data.log_destination(), "mention", i18n("No log channel setup")
-                    ),
+            return (
+                discord.Embed(
+                    description=i18n(
+                        "**{mod.friendly_name} Settings**\nLogging to: {destination}\n\n"
+                        "\N{GEAR} \N{EM DASH} Update module log settings\n"
+                        "\N{HEADPHONE} \N{EM DASH} Set log channel\n"
+                        "\N{CROSS MARK} \N{EM DASH} Close menu"
+                    ).format(
+                        mod=pg.data,
+                        destination=getattr(
+                            await pg.data.log_destination(), "mention", i18n("No log channel setup")
+                        ),
+                    )
                 )
-            ).set_author(
-                name="Logs Setup", icon_url=ctx.guild.icon_url
-            ).set_footer(
-                text=i18n("Module {0.current} out of {0.total}").format(pg)
+                .set_author(name="Logs Setup", icon_url=ctx.guild.icon_url)
+                .set_footer(text=i18n("Module {0.current} out of {0.total}").format(pg))
             )
 
         last_page = 0
@@ -153,15 +153,15 @@ class Logs:
             result = await PaginatedMenu(
                 ctx=ctx,
                 actions={
-                    "settings": "\N{GEAR}", "channel": "\N{HEADPHONE}", "close": "\N{CROSS MARK}"
+                    "settings": "\N{GEAR}",
+                    "channel": "\N{HEADPHONE}",
+                    "close": "\N{CROSS MARK}",
                 },
                 pages=modules,
                 converter=converter,
                 wrap_around=True,
                 page=last_page,
-            ).prompt(
-                post_action=PostAction.NO_ACTION
-            )
+            ).prompt(post_action=PostAction.NO_ACTION)
             module = result.page
             last_page = modules.index(module)
 

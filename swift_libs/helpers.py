@@ -46,9 +46,7 @@ async def confirm(ctx, default: bool = False, **kwargs):
             actions={True: "\N{WHITE HEAVY CHECK MARK}", False: "\N{CROSS MARK}"},
             default=default,
             **kwargs,
-        ).prompt(
-            post_action=PostAction.DELETE_MESSAGE
-        )
+        ).prompt(post_action=PostAction.DELETE_MESSAGE)
     ).item
 
 

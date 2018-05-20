@@ -49,7 +49,10 @@ async def user_stats(member: discord.Member, *, messages: Iterable = None) -> Di
     )
 
     return {
-        "given": given, "received": received, "messages": messages, "max_received": received_max
+        "given": given,
+        "received": received,
+        "messages": messages,
+        "max_received": received_max,
     }
 
 
@@ -91,7 +94,10 @@ async def leaderboard(
         )
 
     return {
-        "given": given, "received": received, "messages": messages, "max_received": max_received
+        "given": given,
+        "received": received,
+        "messages": messages,
+        "max_received": max_received,
     }
 
 

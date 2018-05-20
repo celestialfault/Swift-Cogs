@@ -69,12 +69,12 @@ def trim_to(text: str, max_len: int):
         # and split on the last possible character without regard for if it's actually possible
         # without breaking language semantics
         if len(s) >= max_len and not built:
-            return "{}\N{HORIZONTAL ELLIPSIS}".format(s[:max_len - 1])
+            return "{}\N{HORIZONTAL ELLIPSIS}".format(s[: max_len - 1])
 
         built.append(s)
 
         if len(" ".join(built)) >= max_len:
-            return " ".join(built)[:max_len - 1] + "\N{HORIZONTAL ELLIPSIS}"
+            return " ".join(built)[: max_len - 1] + "\N{HORIZONTAL ELLIPSIS}"
 
     return " ".join(built)
 
@@ -195,4 +195,4 @@ def normalize(text, *, title_case: bool = True, underscores: bool = True, **kwar
 def chunks(l: Sequence, n: int):  # https://stackoverflow.com/a/312464
     """Yield successive n-sized chunks from l."""
     for i in range(0, len(l), n):
-        yield l[i:i + n]
+        yield l[i : i + n]

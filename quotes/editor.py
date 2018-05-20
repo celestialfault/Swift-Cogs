@@ -63,7 +63,8 @@ class QuoteEditor:
 
         return {
             "change_attributed": {
-                "emoji": "\N{BUST IN SILHOUETTE}", "description": i18n("Change attributed author")
+                "emoji": "\N{BUST IN SILHOUETTE}",
+                "description": i18n("Change attributed author"),
             },
             "change_creator": {
                 "emoji": "\N{PERSON WITH BALL}",

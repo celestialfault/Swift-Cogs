@@ -53,9 +53,7 @@ class UInfo:
             if isinstance(member.activity, discord.Spotify):
                 game = _(
                     "\N{MUSICAL NOTE} Listening to **{}** \N{EM DASH} **{}** on **Spotify**"
-                ).format(
-                    ", ".join(member.activity.artists), member.activity.title
-                )
+                ).format(", ".join(member.activity.artists), member.activity.title)
         elif member.activity.type == discord.ActivityType.watching:
             game = _("\N{FILM PROJECTOR} Watching **{}**").format(member.activity.name)
 

@@ -34,9 +34,7 @@ class MenuResult:
     def __repr__(self):
         return (
             "<MenuResult action={self.action!r} timed_out={self.timed_out} menu={self.menu!r}>"
-        ).format(
-            self=self
-        )
+        ).format(self=self)
 
     def __str__(self):
         return str(self.action)
@@ -102,9 +100,7 @@ class ReactMenu(Awaitable):
             "<ReactMenu content={self.content!r} embed={self.embed!r} message={self.message!r} "
             "default={self.default!r} action_count={actions} post_action={self.post_action} "
             "member={self.member!r}>"
-        ).format(
-            self=self, actions=len(self.actions)
-        )
+        ).format(self=self, actions=len(self.actions))
 
     async def _add_reactions(self):
         """Internal task to add reactions to sent messages"""
