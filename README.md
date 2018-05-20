@@ -129,6 +129,10 @@ Quickly mention a role, without allowing your average Joe to mention it.
 
 This cog has yet to be extensively tested.
 
+### Requirements
+
+- tabulate
+
 ### Install Cog
 
 ```

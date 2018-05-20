@@ -1,20 +1,22 @@
 import asyncio
 import re
+from typing import Optional, Union
 
 import discord
 from redbot.core import Config, checks, commands
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator, cog_i18n
-from redbot.core.utils.chat_formatting import escape, warning
+from redbot.core.utils.chat_formatting import escape, warning, pagify
+from tabulate import tabulate
 
-from cog_shared.swift_libs import cmd_help, tick
+from cog_shared.swift_libs import cmd_help, tick, PaginatedMenu, chunks
 
 _ = Translator("RoleMention", __file__)
 
 
 @cog_i18n(_)
 class RoleMention:
-    MENTION_REGEX = re.compile(r"{{mention role: ?@?(?P<NAME>[\W\w]+)}}", re.IGNORECASE)
+    MENTION_REGEX = re.compile(r"{{@(?P<NAME>[\w\d\s@><\-_]+)}}", re.IGNORECASE)
 
     __author__ = "odinair <odinair@odinair.xyz>"
 
@@ -23,42 +25,7 @@ class RoleMention:
         self.config = Config.get_conf(self, identifier=21312234, force_registration=True)
         self.config.register_guild(roles=[])
 
-    async def _can_mention(self, message: discord.Message):
-        try:
-            guild = message.guild  # type: discord.Guild
-            if guild is None:
-                return False
-        except AttributeError:
-            return False
-
-        try:
-            me = guild.me
-            my_cperms = message.channel.permissions_for(me)
-            my_gperms = me.guild_permissions
-            return all(
-                [
-                    not message.author.bot,
-                    my_gperms.manage_roles,
-                    my_cperms.send_messages,
-                    any(
-                        [
-                            guild.me.guild_permissions.manage_roles,
-                            await self.bot.is_admin(message.author),
-                        ]
-                    ),
-                ]
-            )
-        except AttributeError:
-            # This can happen as a result of Red.is_admin() being passed a user object, instead
-            # of a member. I'm not sure how or why, but it somehow can happen.
-            # Of course, this is purely going off of my system logs.
-            # So I don't know how it happened, and by extension I don't know how to reproduce the
-            # bug. But what I do know is that it happened, somehow.
-            return False
-
-    async def _make_mentionable(
-        self, *roles: discord.Role, mod: discord.Member, mentionable: bool = True
-    ):
+    async def _make_mentionable(self, *roles: discord.Role, mod: discord.Member, mentionable: bool):
         if not roles:
             raise ValueError("no roles were given to make mentionable")
         allowed_roles = await self.config.guild(roles[0].guild).roles()
@@ -87,7 +54,9 @@ class RoleMention:
     async def rolemention(self, ctx: commands.Context):
         """Manage role mention settings
 
-        Role mentions can be sent by using `{{mention role: Role Name}}`
+        Role mentions can be sent by using `{{@Role Name}}`, where `Role Name`
+        is the name or snowflake ID for a role that has been
+        setup to be mentionable.
 
         Only users with the bot's Administrator role or with the Manage Roles permission
         may use the above mention syntax.
@@ -135,44 +104,100 @@ class RoleMention:
     @rolemention.command(name="list")
     async def rolemention_list(self, ctx: commands.Context):
         """List all roles setup to allow role mentions for"""
-        roles = []
-        for rid in await self.config.guild(ctx.guild).roles():
-            role = discord.utils.get(ctx.guild.roles, id=rid)
-            if role is None:
-                continue
-            roles.append(role)
-        await ctx.send(
-            embed=discord.Embed(
-                title=_("Mentionable roles"),
-                colour=discord.Colour.blurple(),
-                description=" ".join([x.mention for x in roles] or [_("No mentionable roles")]),
+        roles = [
+            x
+            for x in [
+                discord.utils.get(ctx.guild.roles, id=y)
+                for y in await self.config.guild(ctx.guild).roles()
+            ]
+            if x
+        ]
+
+        if await ctx.embed_requested():
+            await PaginatedMenu(
+                ctx=ctx,
+                pages=list(chunks(roles, 15)),
+                converter=lambda page: (
+                    discord.Embed(
+                        colour=ctx.me.colour,
+                        description="\n".join(
+                            [
+                                _("{}: {} members").format(y.mention, len(y.members))
+                                for y in page.data
+                            ]
+                        ),
+                    )
+                    .set_author(name=_("Mentionable Roles"), icon_url=ctx.guild.icon_url)
+                    .set_footer(text=_("Page {} out of {}").format(page.current, page.total))
+                ),
             )
-        )
+
+        else:
+            await ctx.send_interactive(
+                pagify(
+                    tabulate(
+                        [[x.name, len(x.members)] for x in roles],
+                        headers=[_("Name"), _("# of Members")],
+                        tablefmt="psql",
+                    )
+                ),
+                box_lang="",
+            )
 
     async def on_message(self, message: discord.Message):
         try:
-            guild = message.guild  # type: discord.Guild
+            guild: discord.Guild = message.guild
             if guild is None:
                 return
         except AttributeError:
             return
 
-        if not await self._can_mention(message):
+        try:
+            me = guild.me
+            my_cperms = message.channel.permissions_for(me)
+            my_gperms = me.guild_permissions
+            if not all(
+                [
+                    not message.author.bot,
+                    my_gperms.manage_roles,
+                    my_cperms.send_messages,
+                    any(
+                        [
+                            guild.me.guild_permissions.manage_roles,
+                            await self.bot.is_admin(message.author),
+                            await self.bot.is_owner(message.author),
+                        ]
+                    ),
+                ]
+            ):
+                return
+        except AttributeError:
+            # This can happen as a result of Red.is_admin() being passed a user object, instead
+            # of a member. I'm not sure how or why, but it somehow can happen.
+            # Of course, this is purely going off of my system logs.
+            # So I don't know how it happened, and by extension I don't know how to reproduce the
+            # bug. But what I do know is that it happened, somehow.
             return
 
         roles = set()
         message_content = message.content
         allowed_roles = await self.config.guild(guild).roles()
+
         for match in self.MENTION_REGEX.finditer(message.content):
-            name = match.group("NAME")
-            full_match = match.group(0)
-            role = discord.utils.get(guild.roles, name=name)  # type: discord.Role
+            name: Union[str, int] = match.group("NAME")
+            try:
+                name = int(name)
+            except ValueError:
+                pass
 
-            message_content = message_content.replace(
-                full_match, getattr(role, "mention", full_match)
+            role: Optional[discord.Role] = discord.utils.find(
+                lambda x: (x.name == name if isinstance(name, str) else x.id == name), guild.roles
             )
+            if role is None:
+                continue
 
-            if role is None or role.id not in allowed_roles:
+            message_content = message_content.replace(match.group(0), role.mention)
+            if role.id not in allowed_roles:
                 continue
             roles.add(role)
 
@@ -187,5 +212,5 @@ class RoleMention:
             await message.delete()
         except discord.HTTPException:
             pass
-        await asyncio.sleep(5)
+        await asyncio.sleep(7)
         await self._make_mentionable(*roles, mentionable=False, mod=message.author)

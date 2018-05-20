@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2018-05-12 02:47-0600\n"
+"POT-Creation-Date: 2018-05-20 05:31-0600\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -15,58 +15,72 @@ msgstr ""
 "Generated-By: redgettext 1.0\n"
 
 
-#: rolemention.py:71
+#: rolemention.py:38
 msgid "Role mention by {}"
 msgstr ""
 
-#: rolemention.py:88
+#: rolemention.py:55
 #, docstring
 msgid ""
 "Manage role mention settings\n"
 "\n"
-"        Role mentions can be sent by using `{{mention role: Role Name}}`\n"
+"        Role mentions can be sent by using `{{@Role Name}}`, where `Role Name`\n"
+"        is the name or snowflake ID for a role that has been\n"
+"        setup to be mentionable.\n"
 "\n"
 "        Only users with the bot's Administrator role or with the Manage Roles permission\n"
 "        may use the above mention syntax.\n"
 "        "
 msgstr ""
 
-#: rolemention.py:103
+#: rolemention.py:72
 msgid "That role is already mentionable"
 msgstr ""
 
-#: rolemention.py:109
+#: rolemention.py:78
 msgid "That role is not currently mentionable"
 msgstr ""
 
-#: rolemention.py:115
+#: rolemention.py:84
 msgid "`{}` is now allowed to be mentioned"
 msgstr ""
 
-#: rolemention.py:120
+#: rolemention.py:89
 msgid "`{}` is no longer allowed to be mentioned"
 msgstr ""
 
-#: rolemention.py:127
+#: rolemention.py:96
 #, docstring
 msgid "Allow a role to be mentioned"
 msgstr ""
 
-#: rolemention.py:132
+#: rolemention.py:101
 #, docstring
 msgid "Disallow a role from being mentioned"
 msgstr ""
 
-#: rolemention.py:137
+#: rolemention.py:106
 #, docstring
 msgid "List all roles setup to allow role mentions for"
 msgstr ""
 
-#: rolemention.py:146
-msgid "Mentionable roles"
+#: rolemention.py:125
+msgid "{}: {} members"
 msgstr ""
 
-#: rolemention.py:148
-msgid "No mentionable roles"
+#: rolemention.py:130
+msgid "Mentionable Roles"
+msgstr ""
+
+#: rolemention.py:131
+msgid "Page {} out of {}"
+msgstr ""
+
+#: rolemention.py:140
+msgid "# of Members"
+msgstr ""
+
+#: rolemention.py:140
+msgid "Name"
 msgstr ""
 
