@@ -280,7 +280,7 @@ class StarboardGuild(StarboardBase):
         if await self.is_ignored(obj):
             return False
         ignore_type = "members" if isinstance(obj, discord.Member) else "channels"
-        async with self.guild_config.ignored.get_attr(ignore_type) as i:
+        async with self.guild_config.ignored.get_attr(ignore_type)() as i:
             i.append(obj.id)
         return True
 
@@ -289,6 +289,6 @@ class StarboardGuild(StarboardBase):
         if not await self.is_ignored(obj):
             return False
         ignore_type = "members" if isinstance(obj, discord.Member) else "channels"
-        async with self.guild_config.ignored.get_attr(ignore_type) as i:
+        async with self.guild_config.ignored.get_attr(ignore_type)() as i:
             i.remove(obj.id)
         return True

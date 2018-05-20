@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2018-05-18 07:11-0600\n"
+"POT-Creation-Date: 2018-05-20 04:08-0600\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,16 +17,6 @@ msgstr ""
 
 #: checks.py:32
 msgid "This server has no starboard channel setup"
-msgstr ""
-
-#: starboard.py:25
-#, docstring
-msgid "It's almost like pinning messages, except with stars"
-msgstr ""
-
-#: starboard.py:53
-#, docstring
-msgid "Star a message by it's ID"
 msgstr ""
 
 #: starboard.py:59
@@ -52,18 +42,8 @@ msgstr ""
 msgid "Failed to add star"
 msgstr ""
 
-#: starboard.py:102
-#, docstring
-msgid "Show the starboard message for the message given"
-msgstr ""
-
 #: starboard.py:108
 msgid "That message cannot be displayed on the starboard"
-msgstr ""
-
-#: starboard.py:114
-#, docstring
-msgid "Remove a previously added star"
 msgstr ""
 
 #: starboard.py:118
@@ -79,11 +59,6 @@ msgstr ""
 
 #: starboard.py:146
 msgid "Failed to remove star"
-msgstr ""
-
-#: starboard.py:152
-#, docstring
-msgid "Get your or a specified member's stats"
 msgstr ""
 
 #: starboard.py:161
@@ -124,11 +99,6 @@ msgstr ""
 msgid "**{} messages** (position {})"
 msgstr ""
 
-#: starboard.py:211
-#, docstring
-msgid "Retrieve the star leaderboard for the current guild"
-msgstr ""
-
 #: starboard.py:214
 msgid "There's nothing here yet..."
 msgstr ""
@@ -165,26 +135,6 @@ msgstr ""
 msgid "**{}** is no longer ignored from this server's starboard"
 msgstr ""
 
-#: starboard.py:377
-#, docstring
-msgid "Manage starboard messages"
-msgstr ""
-
-#: starboard.py:387
-#, docstring
-msgid "Add a channel or member to the server's ignore list"
-msgstr ""
-
-#: starboard.py:394
-#, docstring
-msgid "Remove a channel or member from the server's ignore list"
-msgstr ""
-
-#: starboard.py:399
-#, docstring
-msgid "Hide a message from the starboard"
-msgstr ""
-
 #: starboard.py:401
 msgid "That message is already hidden"
 msgstr ""
@@ -193,43 +143,12 @@ msgstr ""
 msgid "The message sent by **{}** is now hidden."
 msgstr ""
 
-#: starboard.py:410
-#, docstring
-msgid "Unhide a previously hidden message"
-msgstr ""
-
 #: starboard.py:412
 msgid "That message hasn't been hidden"
 msgstr ""
 
 #: starboard.py:416
 msgid "The message sent by **{}** is no longer hidden."
-msgstr ""
-
-#: starboard.py:421
-#, docstring
-msgid "Forcefully update a starboard message"
-msgstr ""
-
-#: starboard.py:432
-#, docstring
-msgid "Core Starboard cog management"
-msgstr ""
-
-#: starboard.py:439
-#, docstring
-msgid ""
-"Import Red v2 instance data\n"
-"\n"
-"        Please note that this is not officially supported, and this import tool\n"
-"        is provided as-is.\n"
-"\n"
-"        Only messages are imported currently; guild settings are not imported,\n"
-"        and must be setup again.\n"
-"\n"
-"        In most cases, `mongodb://localhost:27017` will work just fine\n"
-"        if you're importing a local v2 instance.\n"
-"        "
 msgstr ""
 
 #: starboard.py:453
@@ -261,16 +180,6 @@ msgstr ""
 
 #: starboard.py:482
 msgid "Imported successfully."
-msgstr ""
-
-#: starboard.py:493
-#, docstring
-msgid "Manage the guild's starboard"
-msgstr ""
-
-#: starboard.py:499
-#, docstring
-msgid "Get the current settings for this guild's starboard"
 msgstr ""
 
 #: starboard.py:509
@@ -309,27 +218,12 @@ msgstr ""
 msgid "Messages cached"
 msgstr ""
 
-#: starboard.py:531
-#, docstring
-msgid ""
-"Toggles if members can star their own messages\n"
-"\n"
-"        Member statistics do not respect this setting, and always ignore self-stars\n"
-"        when totaling stars given/received.\n"
-"        "
-msgstr ""
-
 #: starboard.py:541
 msgid "Members can now star their own messages"
 msgstr ""
 
 #: starboard.py:543
 msgid "Members can no longer star their own messages"
-msgstr ""
-
-#: starboard.py:549
-#, docstring
-msgid "Set or clear the server's starboard channel"
 msgstr ""
 
 #: starboard.py:551
@@ -344,29 +238,12 @@ msgstr ""
 msgid "Set the starboard channel to {}"
 msgstr ""
 
-#: starboard.py:563
-#, docstring
-msgid "Set the amount of stars required for a message to be sent to this guild's starboard"
-msgstr ""
-
 #: starboard.py:565
 msgid "The amount of stars must be a non-zero number"
 msgstr ""
 
 #: starboard.py:570
 msgid "There aren't enough members in this server to reach that amount of stars"
-msgstr ""
-
-#: starboard.py:582
-#, docstring
-msgid ""
-"Restart the current server's janitor task\n"
-"\n"
-"        This can be useful if the current server's janitor erroneously exited,\n"
-"        and the root janitor task hasn't restarted it yet.\n"
-"\n"
-"        This command can only be used once every 3 minutes per server.\n"
-"        "
 msgstr ""
 
 #: stats.py:103

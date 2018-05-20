@@ -1,5 +1,5 @@
 import asyncio
-from typing import Dict, Tuple, Union
+from typing import Dict, Tuple
 
 import discord
 from discord.raw_models import RawMessageUpdateEvent, RawReactionActionEvent, RawReactionClearEvent
@@ -81,9 +81,7 @@ class Starboard(StarboardBase):
                     i18n(
                         "You've already starred that message\n\n"
                         "(you can use `{}star remove` to remove your star)"
-                    ).format(
-                        ctx.prefix
-                    )
+                    ).format(ctx.prefix)
                 ),
                 delete_after=15,
             )
@@ -294,9 +292,7 @@ class Starboard(StarboardBase):
             message = (
                 "{headers[0]}\n\n{tables[0]}{divider}{headers[1]}\n\n{tables[1]}"
                 "{divider}{headers[2]}\n\n{tables[2]}{divider}{headers[3]}\n\n{tables[3]}"
-            ).format(
-                **format_args
-            )
+            ).format(**format_args)
             await ctx.send_interactive(
                 pagify(message, delims=["\n"], page_length=1024), box_lang=""
             )
@@ -307,16 +303,20 @@ class Starboard(StarboardBase):
     async def ignore(
         self,
         ctx: commands.Context,
-        obj: Union[discord.Member, discord.TextChannel],
+        obj: str,
         *,
         modlog_case: bool = False,
         reason: str = None,
         unignore: bool = False,
     ):
+        try:
+            obj = await commands.MemberConverter().convert(ctx, obj)
+        except commands.BadArgument:
+            obj = await commands.TextChannelConverter().convert(ctx, obj)
+
         starboard = get_starboard(obj.guild)  # type: StarboardGuild
-        if (
-            isinstance(obj, discord.Member)
-            and not await hierarchy_allows(self.bot, ctx.author, obj)
+        if isinstance(obj, discord.Member) and not await hierarchy_allows(
+            self.bot, ctx.author, obj
         ):
             await ctx.send(error(i18n("You aren't allowed to ignore that member")))
             return
@@ -349,9 +349,7 @@ class Starboard(StarboardBase):
                     i18n("**{}** is now ignored from this server's starboard")
                     if unignore is False
                     else i18n("**{}** is no longer ignored from this server's starboard")
-                ).format(
-                    obj
-                )
+                ).format(obj)
             )
 
             if isinstance(obj, discord.Member) and modlog_case:
@@ -378,21 +376,21 @@ class Starboard(StarboardBase):
         if not ctx.invoked_subcommand:
             await ctx.send_help()
 
-    @stars.group(name="ignore", aliases=["block"])
-    async def stars_ignore(self, ctx: commands.Context):
-        await cmd_help(ctx, "ignore")
+    @stars.command(name="ignore", aliases=["block"])
+    async def stars_ignore(self, ctx: commands.Context, obj: str, *, reason: str = None):
+        """Add a channel or member to the server's ignore list
 
-    @stars_ignore.command(name="add")
-    async def ignore_add(self, ctx: commands.Context, obj: discord.TextChannel or discord.Member):
-        """Add a channel or member to the server's ignore list"""
-        await self.ignore(ctx, obj)
+        `reason` is only used if ignoring a member
+        """
+        await self.ignore(ctx, obj, reason=reason)
 
-    @stars_ignore.command(name="remove")
-    async def ignore_remove(
-        self, ctx: commands.Context, obj: discord.TextChannel or discord.Member
-    ):
-        """Remove a channel or member from the server's ignore list"""
-        await self.ignore(ctx, obj, unignore=True)
+    @stars.command(name="unignore", aliases=["unblock"])
+    async def stars_unignore(self, ctx: commands.Context, obj: str, *, reason: str = None):
+        """Remove a channel or member from the server's ignore list
+
+        `reason` is only used if unignoring a member
+        """
+        await self.ignore(ctx, obj, unignore=True, reason=reason)
 
     @stars.command(name="hide")
     async def stars_hide(self, ctx: commands.Context, message: StarboardMessage):
