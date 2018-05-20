@@ -216,9 +216,7 @@ class RNDActivity:
             content=_(
                 "Are you sure you want to clear {amount} statuses?\n\n"
                 "**This action is irreversible!**"
-            ).format(
-                amount=amount
-            ),
+            ).format(amount=amount),
         ):
             await self.config.statuses.set([])
             await self.bot.change_presence(activity=None, status=self.bot.guilds[0].me.status)

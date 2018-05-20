@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2018-05-12 02:47-0600\n"
+"POT-Creation-Date: 2018-05-20 04:08-0600\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -14,49 +14,6 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: redgettext 1.0\n"
 
-
-#: rndactivity.py:20
-#, docstring
-msgid "Random bot playing statuses"
-msgstr ""
-
-#: rndactivity.py:36
-#, docstring
-msgid ""
-"Manage random statuses\n"
-"\n"
-"        Available status string placeholders:\n"
-"\n"
-"        **{GUILDS}**  Replaced with the amount of guilds the bot is in\n"
-"        **{MEMBERS}**  Replaced with the amount of members in all guilds the bot is in\n"
-"        **{USERS}**  Replaced with the amount of unique users the bot can see\n"
-"        **{CHANNELS}**  Replaced with the total amount of channels in all guilds the bot is in\n"
-"        **{SHARD}**  Replaced with the bot's shard ID\n"
-"        **{SHARDS}**  Replaced with the total amount of shards the bot has loaded\n"
-"        **{COMMANDS}**  Replaced with the amount of commands loaded\n"
-"        **{COGS}**  Replaced with the amount of cogs loaded\n"
-"\n"
-"        The guilds that a shard contains will be used to parse a status,\n"
-"        instead of every guild the bot is in.\n"
-"\n"
-"        Any invalid placeholders will cause the status to be ignored when switching statuses\n"
-"        "
-msgstr ""
-
-#: rndactivity.py:66
-#, docstring
-msgid ""
-"Set the amount of time required to pass to change the bot's playing status\n"
-"\n"
-"        Duration can be formatted in any of the following ways:\n"
-"        • `5m`\n"
-"        • `1h3.5m`\n"
-"        • `5 minutes`\n"
-"        • `1 hour 3.5 minutes`\n"
-"\n"
-"        Minimum duration between changes is 5 minutes. Default delay is every 10 minutes.\n"
-"        "
-msgstr ""
 
 #: rndactivity.py:80
 msgid ""
@@ -70,26 +27,6 @@ msgstr ""
 
 #: rndactivity.py:105
 msgid "Added status **#{id}** successfully."
-msgstr ""
-
-#: rndactivity.py:109
-#, docstring
-msgid "Add a playing status"
-msgstr ""
-
-#: rndactivity.py:114
-#, docstring
-msgid "Add a watching status"
-msgstr ""
-
-#: rndactivity.py:119
-#, docstring
-msgid "Add a listening status"
-msgstr ""
-
-#: rndactivity.py:124
-#, docstring
-msgid "Attempt to parse a given status string"
 msgstr ""
 
 #: rndactivity.py:133
@@ -106,15 +43,6 @@ msgid ""
 "📤 **Result:** {result}"
 msgstr ""
 
-#: rndactivity.py:150
-#, docstring
-msgid ""
-"Remove one or more statuses by their IDs\n"
-"\n"
-"        You can retrieve the ID for a status with [p]rndactivity list\n"
-"        "
-msgstr ""
-
 #: rndactivity.py:156
 msgid "No status with the ID `{id}` exists"
 msgstr ""
@@ -123,28 +51,12 @@ msgstr ""
 msgid "Removed status **#{id}** (`{status}`) successfully."
 msgstr ""
 
-#: rndactivity.py:172
-#, docstring
-msgid ""
-"Lists all set statuses\n"
-"\n"
-"        If parse is passed, all status strings are shown as their parsed output,\n"
-"        similarly to `[p]rndactivity parse`. Invalid placeholders will still be identified and\n"
-"        marked without enabling parse mode\n"
-"        "
-msgstr ""
-
 #: rndactivity.py:183
 msgid "I have no statuses setup yet! Use `{prefix}rndactivity add` to add some!"
 msgstr ""
 
 #: rndactivity.py:201
 msgid "Placeholder {} doesn't exist"
-msgstr ""
-
-#: rndactivity.py:212
-#, docstring
-msgid "Clears all set statuses"
 msgstr ""
 
 #: rndactivity.py:216
