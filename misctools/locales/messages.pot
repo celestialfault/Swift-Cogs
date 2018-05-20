@@ -5,7 +5,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2018-05-12 02:47-0600\n"
+"POT-Creation-Date: 2018-05-20 04:08-0600\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -15,49 +15,11 @@ msgstr ""
 "Generated-By: redgettext 1.0\n"
 
 
-#: misctools.py:31
-#, docstring
-msgid "A collection of small utilities that don't fit in any other cog"
-msgstr ""
-
-#: misctools.py:40
-#, docstring
-msgid "Get the source for a command or sub command"
-msgstr ""
-
-#: misctools.py:43
+#: misctools.py:44
 msgid "That command doesn't exist"
 msgstr ""
 
-#: misctools.py:49
-#, docstring
-msgid ""
-"Get the unicode name for characters\n"
-"\n"
-"        Up to 25 characters can be given at one time\n"
-"        "
-msgstr ""
-
-#: misctools.py:65
-#, docstring
-msgid ""
-"Update Red to the latest version\n"
-"\n"
-"        This command uses CLI-like flags to determine how to update Red.\n"
-"\n"
-"        Available flags:\n"
-"        ```\n"
-"        --dev     Pulls the latest changes from GitHub\n"
-"        --audio   Installs optional audio packages\n"
-"        --mongo   Installs optional MongoDB packages\n"
-"        ```\n"
-"\n"
-"        These flags can also be used in shorthand fashion, meaning `-da`\n"
-"        is effectively the same as passing `--dev --audio`.\n"
-"        "
-msgstr ""
-
-#: misctools.py:108
+#: misctools.py:114
 msgid ""
 "By continuing with this action, this I will execute the following command on your host machine:\n"
 "```\n"
@@ -70,57 +32,39 @@ msgid ""
 "**Please confirm that you wish to continue with this action.**"
 msgstr ""
 
-#: misctools.py:126
+#: misctools.py:132
 msgid "Update aborted."
 msgstr ""
 
-#: misctools.py:131
+#: misctools.py:137
 msgid ""
 "Updating Red...\n"
 "\n"
 "This may take a while, so go get yourself a cup of coffee, tea, or whatever other choice of beverage you may prefer."
 msgstr ""
 
-#: misctools.py:145
+#: misctools.py:151
 msgid "Red has been updated. Please restart the bot for any updates to take affect."
 msgstr ""
 
-#: misctools.py:149
+#: misctools.py:155
 msgid "Something went wrong while updating. Please attempt an update manually."
 msgstr ""
 
-#: misctools.py:154
-#, docstring
+#: misctools.py:166
 msgid ""
-"Get the time it takes the bot to respond to a command\n"
+"**Server shard latency** is {formatted[0]}.\n"
 "\n"
-"        This is by no means fully accurate, and should be treated similarly to rough estimate\n"
-"\n"
-"        Time to command execution means how long it took for the bot to receive the command message\n"
-"        and execute the command\n"
-"        "
+"**Global latency:**\n"
+"• **Average:** {formatted[1]}\n"
+"• **Max:** {formatted[2]}"
 msgstr ""
 
-#: misctools.py:167
-msgid ""
-"🏓 Pong!\n"
-"Time to command execution: {}\n"
-"Typing indicator: {}\n"
-"\n"
-"Full round trip: {}"
+#: misctools.py:185
+msgid "**Current latency** is {latency}."
 msgstr ""
 
-#: misctools.py:179
-#, docstring
-msgid "Retrieve when one or more snowflake IDs were created at"
-msgstr ""
-
-#: misctools.py:197
-#, docstring
-msgid "Get the time difference between two snowflake IDs"
-msgstr ""
-
-#: misctools.py:202
+#: misctools.py:218
 msgid ""
 "**Starting snowflake:** {start[0]} — `{start[1]}`\n"
 "**Ending snowflake:** {end[0]} — `{end[1]}`\n"
@@ -128,36 +72,23 @@ msgid ""
 "**Time difference:** {difference}"
 msgstr ""
 
-#: misctools.py:219
-#, docstring
-msgid ""
-"Break down the permissions for a given member\n"
-"\n"
-"        This command does not take channel overrides into account, and only\n"
-"        checks for server role permissions.\n"
-"\n"
-"        If more than three roles grant a single permission, only the first three are shown\n"
-"        for each permission.\n"
-"        "
-msgstr ""
-
-#: misctools.py:238
+#: misctools.py:257
 msgid "Permission Breakdown"
 msgstr ""
 
-#: misctools.py:243
+#: misctools.py:262
 msgid "Granted by default role"
 msgstr ""
 
-#: misctools.py:246
+#: misctools.py:265
 msgid "Not granted by any role"
 msgstr ""
 
-#: misctools.py:253
+#: misctools.py:272
 msgid "Granted By"
 msgstr ""
 
-#: misctools.py:253
+#: misctools.py:272
 msgid "Permission"
 msgstr ""
 

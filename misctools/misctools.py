@@ -3,8 +3,9 @@ import asyncio
 import shlex
 import sys
 import unicodedata
-from datetime import datetime
+from datetime import datetime, timedelta
 from inspect import getsource
+from statistics import mean
 from textwrap import dedent
 from typing import Dict, List
 
@@ -15,7 +16,7 @@ from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import info, pagify, warning
 from tabulate import tabulate
 
-from cog_shared.swift_libs import ConfirmMenu, formatting, td_format
+from cog_shared.swift_libs import confirm, formatting, td_format
 
 _ = Translator("MiscTools", __file__)
 
@@ -66,20 +67,23 @@ class MiscTools:
 
         This command uses CLI-like flags to determine how to update Red.
 
-        Available flags:
-        ```
-        --dev     Pulls the latest changes from GitHub
-        --audio   Installs optional audio packages
-        --mongo   Installs optional MongoDB packages
-        ```
+        **Available flags:**
+        (these flags can also be used in shorthand fashion, meaning `-am`
+        is effectively the same as passing `--audio --mongo`)
 
-        These flags can also be used in shorthand fashion, meaning `-da`
-        is effectively the same as passing `--dev --audio`.
+        **--audio|voice** — Installs optional audio packages
+        **--mongo** — Installs optional MongoDB packages
+
+        **Advanced options:**
+          **--dev** — Pulls the latest changes from GitHub
+          **--style** — Installs the Black code formatter
         """
         parser = Arguments(add_help=False)
         parser.add_argument("-d", "--dev", action="store_true")
         parser.add_argument("-a", "--audio", action="store_true")
+        parser.add_argument("-v", "--voice", action="store_true")  # alias for --audio
         parser.add_argument("-m", "--mongo", action="store_true")
+        parser.add_argument("-s", "--style", action="store_true")
 
         try:
             args = parser.parse_args(shlex.split(args))
@@ -89,10 +93,12 @@ class MiscTools:
 
         # The following is mostly ripped from the Red launcher update function
         eggs = []
-        if args.audio:
+        if args.audio or args.voice:
             eggs.append("voice")
         if args.mongo:
             eggs.append("mongo")
+        if args.style:
+            eggs.append("style")
 
         if args.dev:
             package = "git+https://github.com/Cog-Creators/Red-DiscordBot@V3/develop"
@@ -122,7 +128,7 @@ class MiscTools:
             " ".join(["python"] + args[1:])
         )
 
-        if not await ConfirmMenu(ctx, message=warning(confirm_str)):
+        if not await confirm(ctx, content=warning(confirm_str)):
             await ctx.send(info(_("Update aborted.")))
             return
 
@@ -149,30 +155,37 @@ class MiscTools:
                 _("Something went wrong while updating. Please attempt an update manually.")
             )
 
-    @commands.command(aliases=["pingt"])
+    @commands.command(aliases=["pingt", "latency"])
     async def pingtime(self, ctx: commands.Context):
-        """Get the time it takes the bot to respond to a command
-
-        This is by no means fully accurate, and should be treated similarly to rough estimate
-
-        Time to command execution means how long it took for the bot to receive the command message
-        and execute the command
-        """
-        time_to_execution = td_format(datetime.utcnow() - ctx.message.created_at, milliseconds=True)
-        now = datetime.utcnow()
-        await ctx.trigger_typing()
-        time_to_typing = td_format(datetime.utcnow() - now, milliseconds=True)
-        full_round_trip = td_format(datetime.utcnow() - ctx.message.created_at, milliseconds=True)
-        await ctx.send(
-            _(
-                "\N{TABLE TENNIS PADDLE AND BALL} Pong!\n"
-                "Time to command execution: {}\n"
-                "Typing indicator: {}\n\n"
-                "Full round trip: {}"
-            ).format(
-                time_to_execution, time_to_typing, full_round_trip
+        """Get the bot's latency to Discord"""
+        latency = dict(self.bot.latencies)
+        if self.bot.shard_count > 1:
+            # on bots with more than one shard, display the local server's shard latency
+            # and the average/max global latency
+            await ctx.send(
+                _(
+                    "**Server shard latency** is {formatted[0]}.\n\n"
+                    "**Global latency:**\n"
+                    "\N{BULLET} **Average:** {formatted[1]}\n"
+                    "\N{BULLET} **Max:** {formatted[2]}"
+                ).format(
+                    formatted=[
+                        td_format(
+                            timedelta(seconds=latency[ctx.guild.shard_id]), milliseconds=True
+                        ),
+                        td_format(timedelta(seconds=mean(latency.values())), milliseconds=True),
+                        td_format(timedelta(seconds=max(latency.values())), milliseconds=True),
+                    ]
+                )
             )
-        )
+        else:
+            # show a simple response on bots with only one shard, since there's no need
+            # for global stats except to duplicate the same data multiple times
+            await ctx.send(
+                _("**Current latency** is {latency}.").format(
+                    latency=td_format(timedelta(seconds=self.bot.latency), milliseconds=True)
+                )
+            )
 
     @commands.group(aliases=["snowflake"], invoke_without_command=True)
     async def snowflaketime(self, ctx: commands.Context, *snowflakes: int):
@@ -193,9 +206,12 @@ class MiscTools:
         await ctx.send_interactive(pagify("\n".join(strs)))
 
     @snowflaketime.command(name="delta")
-    async def snowflake_delta(self, ctx: commands.Context, start: int, end: int):
+    async def snowflake_delta(self, ctx: commands.Context, starting: int, ending: int):
         """Get the time difference between two snowflake IDs"""
-        start, end = (discord.utils.snowflake_time(start), discord.utils.snowflake_time(end))
+        starting, ending = (
+            discord.utils.snowflake_time(starting),
+            discord.utils.snowflake_time(ending),
+        )
         now = datetime.utcnow()
 
         await ctx.send(
@@ -205,11 +221,14 @@ class MiscTools:
                 "**Time difference:** {difference}"
             ).format(
                 start=[
-                    td_format(start - now, append_str=True),
-                    start.strftime("%A %B %d, %Y at %X UTC"),
+                    td_format(starting - now, append_str=True),
+                    starting.strftime("%A %B %d, %Y at %X UTC"),
                 ],
-                end=[td_format(end - now, append_str=True), end.strftime("%A %B %d, %Y at %X UTC")],
-                difference=td_format(end - start),
+                end=[
+                    td_format(ending - now, append_str=True),
+                    ending.strftime("%A %B %d, %Y at %X UTC"),
+                ],
+                difference=td_format(ending - starting),
             )
         )
 
