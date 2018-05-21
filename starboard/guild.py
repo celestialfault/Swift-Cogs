@@ -241,7 +241,7 @@ class StarboardGuild(StarboardBase):
                 data = await self.messages.get_raw(str(message_id), default=None)
                 if data is None:
                     return None
-                channel = self.bot.resolve_starboard(data.get("channel_id", None))
+                channel = self.bot.get_channel(data.get("channel_id", None))
                 if channel is None:
                     return None
 
