@@ -12,17 +12,23 @@ jobs:
 
       - restore_cache:
           keys:
-          - v2-dependencies-{{ checksum "requirements-dev.txt" }}
+          - v2-dependencies-{{ checksum "requirements-test.txt" }}
+
+      - run:
+          name: Install test dependencies
+          command: |
+            python3 -m venv venv
+            . venv/bin/activate
+            pip install -r requirements-test.txt
+
+      - save_cache:
+          paths:
+            - ./venv
+          key: v2-dependencies-{{ checksum "requirements-test.txt" }}
 
       - run:
           name: Run tests
           command: |
             python3 -m venv venv
             . venv/bin/activate
-            pip install -r requirements-dev.txt
             ./swift_libs/scripts/test.sh
-
-      - save_cache:
-          paths:
-            - ./venv
-          key: v2-dependencies-{{ checksum "requirements-dev.txt" }}

@@ -1,3 +1,0 @@
-black>=15.8b0
-flake8
-pre-commit
