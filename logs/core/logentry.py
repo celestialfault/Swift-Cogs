@@ -1,5 +1,5 @@
 from datetime import datetime
-from difflib import Differ
+from difflib import Differ, SequenceMatcher
 from typing import List, Any, Dict, Sequence, Callable
 
 import discord
@@ -9,6 +9,27 @@ from redbot.core.utils.chat_formatting import box
 from logs.core.i18n import i18n
 
 __all__ = ["LogEntry"]
+
+
+class SimpleDiffer(Differ):
+    """Differ variation without a fancy replace"""
+
+    def compare(self, a, b):
+        cruncher = SequenceMatcher(self.linejunk, a, b)
+        for tag, alo, ahi, blo, bhi in cruncher.get_opcodes():
+            if tag == "replace":
+                yield from self._dump("-", a, alo, ahi)
+                g = self._dump("+", b, blo, bhi)
+            elif tag == "delete":
+                g = self._dump("-", a, alo, ahi)
+            elif tag == "insert":
+                g = self._dump("+", b, blo, bhi)
+            elif tag == "equal":
+                g = self._dump(" ", a, alo, ahi)
+            else:
+                raise ValueError("unknown tag %r" % (tag,))
+
+            yield from g
 
 
 def translate_common_types(var):
@@ -103,7 +124,7 @@ class LogEntry(discord.Embed):
             if isinstance(after, str):
                 after = after.splitlines()
 
-            changed = Differ().compare(before, after)
+            changed = SimpleDiffer().compare(before, after)
             if not changed:
                 return self
             return self.add_field(
