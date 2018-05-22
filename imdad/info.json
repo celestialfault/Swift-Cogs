@@ -5,5 +5,6 @@
   "tags": [],
   "description": "High quality dad jokes.\n\nThis was a dumb cog I made in about 10 minutes for a silly joke. You definitely don't want to use this.",
   "short": "High quality dad jokes.",
-  "install_msg": "No support will be provided for this cog, since this is just a stupid joke cog I made in 10 minutes for an equally stupid joke."
+  "install_msg": "No support will be provided for this cog, since this is just a stupid joke cog I made in 10 minutes for an equally stupid joke.",
+  "_cog_list_name": "I'm Dad"
 }
