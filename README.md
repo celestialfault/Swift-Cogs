@@ -50,6 +50,21 @@ Require a per-server whitelist from the bot owner to use specified cogs
 </details>
 
 <details>
+<summary>imdad</summary>
+
+High quality dad jokes.
+
+This was a dumb cog I made in about 10 minutes for a silly joke. You definitely don't want to use this.
+
+### Install Cog
+
+```
+[p]cog install swift-cogs imdad
+[p]load imdad
+```
+</details>
+
+<details>
 <summary>Logs</summary>
 
 Log anything and everything that happens in your Discord guild.
