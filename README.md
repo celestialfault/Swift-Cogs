@@ -218,3 +218,24 @@ Yet another [p]userinfo variation
 [p]load uinfo
 ```
 </details>
+
+<details>
+<summary>YT Feed</summary>
+
+**This cog is currently in an alpha stage**, and shouldn't be considered completely stable yet.
+
+Follow YouTube channels and post newly uploaded videos.
+
+Partially inspired by Will's RSS cog, and entirely by YouTube's shitty algorithmic subscription feeds.
+
+### Requirements
+
+- lxml
+
+### Install Cog
+
+```
+[p]cog install swift-cogs ytfeed
+[p]load ytfeed
+```
+</details>

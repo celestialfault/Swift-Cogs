@@ -1,0 +1,78 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR ORGANIZATION
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2018-05-24 07:40-0600\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 1.0\n"
+
+
+#: config.py:8
+msgid "**{channel.name}** has uploaded a new video!"
+msgstr ""
+
+#: feeds.py:38
+msgid "{:,} views"
+msgstr ""
+
+#: ytfeed.py:74
+#, docstring
+msgid "Manage YouTube feed subscriptions"
+msgstr ""
+
+#: ytfeed.py:79
+#, docstring
+msgid ""
+"Follow a YouTube channel's feed\n"
+"\n"
+"        The channel ID must be used (not a custom channel URL or the channel name!)\n"
+"        "
+msgstr ""
+
+#: ytfeed.py:88 ytfeed.py:123
+msgid "Failed to validate the given channel ID (did you accidentally use the channel URL instead?)"
+msgstr ""
+
+#: ytfeed.py:101
+msgid "The given channel is already setup to follow that channel"
+msgstr ""
+
+#: ytfeed.py:110
+msgid "Now following uploads from {channel}"
+msgstr ""
+
+#: ytfeed.py:117
+#, docstring
+msgid "Unfollow a YouTube channel's feed"
+msgstr ""
+
+#: ytfeed.py:132
+msgid "The given channel is not setup to follow that channel"
+msgstr ""
+
+#: ytfeed.py:138
+msgid "No longer following uploads from {channel}"
+msgstr ""
+
+#: ytfeed.py:146
+#, docstring
+msgid ""
+"Set the message to be used for new uploads\n"
+"\n"
+"        Available placeholders:\n"
+"        `{channel}`, `{video}`\n"
+"        "
+msgstr ""
+
+#: ytfeed.py:156
+msgid "Set upload message to `{}`"
+msgstr ""
+
