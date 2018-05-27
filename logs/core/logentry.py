@@ -12,7 +12,7 @@ __all__ = ["LogEntry"]
 
 
 class SimpleDiffer(Differ):
-    """Differ variation without a fancy replace"""
+    """A variation of Differ without a fancy replace"""
 
     def compare(self, a, b):
         cruncher = SequenceMatcher(self.linejunk, a, b)
@@ -27,7 +27,7 @@ class SimpleDiffer(Differ):
             elif tag == "equal":
                 g = self._dump(" ", a, alo, ahi)
             else:
-                raise ValueError("unknown tag %r" % (tag,))
+                raise ValueError("unknown tag {!r}".format(tag))
 
             yield from g
 
@@ -39,8 +39,7 @@ def translate_common_types(var):
         return i18n("False")
     elif var is True:
         return i18n("True")
-    else:
-        return str(var)
+    return str(var)
 
 
 class LogEntry(discord.Embed):
@@ -93,7 +92,11 @@ class LogEntry(discord.Embed):
         converter: Callable[[Any], str] = translate_common_types,
         config_opt: Sequence[str]
     ):
-        if diff and not (isinstance(before, (List, str)) and isinstance(after, (List, str))):
+        if (
+            diff
+            and not (isinstance(before, (list, str)) and isinstance(after, (list, str)))
+            and not converter
+        ):
             raise ValueError(
                 "diff rendering is enabled and before and/or after are not of either "
                 "list or str types"
