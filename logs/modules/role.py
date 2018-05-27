@@ -106,7 +106,9 @@ class RoleModule(Module):
                     "name": i18n("Permissions"),
                     "value": "permissions",
                     "diff": True,
-                    "converter": lambda x: (str(permissions.get(z, z)) for z, y in x if y),
+                    "converter": lambda x: [
+                        str(permissions.get(name, name)) for name, val in x if val
+                    ],
                     "config_opt": ("update", "permissions"),
                 },
                 {
