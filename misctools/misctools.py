@@ -7,16 +7,23 @@ from datetime import datetime, timedelta
 from inspect import getsource
 from statistics import mean
 from textwrap import dedent
-from typing import Dict, List
+from typing import Dict, List, Optional, Union
 
 import discord
 from redbot.core import checks, commands
 from redbot.core.bot import Red
 from redbot.core.i18n import Translator, cog_i18n
-from redbot.core.utils.chat_formatting import info, pagify, warning
-from tabulate import tabulate
+from redbot.core.utils.chat_formatting import info, pagify, warning, error
 
-from cog_shared.swift_libs import confirm, formatting, td_format
+from cog_shared.swift_libs import (
+    confirm,
+    td_format,
+    PaginatedMenu,
+    Page,
+    format_permission,
+    chunks,
+    mention,
+)
 
 _ = Translator("MiscTools", __file__)
 
@@ -43,7 +50,19 @@ class MiscTools:
         if command is None:
             await ctx.send(warning(_("That command doesn't exist")))
             return
-        await ctx.send_interactive(pagify(dedent(getsource(command.callback))), box_lang="py")
+        try:
+            source = pagify(dedent(getsource(command.callback)))
+        except OSError:
+            await ctx.send(
+                error(
+                    _(
+                        "Failed to retrieve the source for the given command"
+                        " (was it created in an eval statement?)"
+                    )
+                )
+            )
+            return
+        await ctx.send_interactive(source, box_lang="py")
 
     @commands.command()
     async def charinfo(self, ctx: commands.Context, *, characters: str):
@@ -75,15 +94,13 @@ class MiscTools:
         **--mongo** — Installs optional MongoDB packages
 
         **Advanced options:**
-          **--dev** — Pulls the latest changes from GitHub
-          **--style** — Installs the Black code formatter
+        **--dev** — Pulls the latest changes from GitHub
         """
         parser = Arguments(add_help=False)
         parser.add_argument("-d", "--dev", action="store_true")
         parser.add_argument("-a", "--audio", action="store_true")
         parser.add_argument("-v", "--voice", action="store_true")  # alias for --audio
         parser.add_argument("-m", "--mongo", action="store_true")
-        parser.add_argument("-s", "--style", action="store_true")
 
         try:
             args = parser.parse_args(shlex.split(args))
@@ -97,8 +114,6 @@ class MiscTools:
             eggs.append("voice")
         if args.mongo:
             eggs.append("mongo")
-        if args.style:
-            eggs.append("style")
 
         if args.dev:
             package = "git+https://github.com/Cog-Creators/Red-DiscordBot@V3/develop"
@@ -111,24 +126,28 @@ class MiscTools:
 
         args = [sys.executable, "-m", "pip", "install", "-U", "--process-dependency-links", package]
 
-        confirm_str = _(
-            "By continuing with this action, this I will execute the following command "
-            "on your host machine:\n```\n{}\n```\n"
-            "**Please note that this command has not been extensively tested, has not been "
-            "reviewed by the core Red development team, and may have the potential to break your "
-            "install of Red, no matter how unlikely it may be.**\n\n"
-            "If you'd prefer to play it safe, cancel this action and perform the update manually, "
-            "either through the Red launcher, or by executing the above command manually.\n\n"
-            "**Please confirm that you wish to continue with this action.**"
-        ).format(
-            # the full executable path is masked to hide the root directory,
-            # since some users may use a venv in a directory that they wouldn't
-            # want to reveal through an update command, such as on Windows
-            # with a real name as their account name
-            " ".join(["python"] + args[1:])
-        )
-
-        if not await confirm(ctx, content=warning(confirm_str)):
+        if not await confirm(
+            ctx,
+            content=warning(
+                _(
+                    "By continuing with this action, this I will execute the following command "
+                    "on your host machine:\n```\n{}\n```\n"
+                    "**Please note that this command has not been extensively tested, has not been "
+                    "reviewed by the core Red development team, and may have the potential to"
+                    " break your install of Red, no matter how unlikely it may be.**\n\n"
+                    "If you'd prefer to play it safe, cancel this action and perform the"
+                    " update manually, either through the Red launcher, or by executing the above"
+                    " command manually.\n\n"
+                    "**Please confirm that you wish to continue with this action.**"
+                ).format(
+                    # the full executable path is masked to hide the root directory,
+                    # since some users may use a venv in a directory that they wouldn't
+                    # want to reveal through an update command, such as on Windows
+                    # with a real name as their account name
+                    " ".join(["python"] + args[1:])
+                )
+            ),
+        ):
             await ctx.send(info(_("Update aborted.")))
             return
 
@@ -148,41 +167,43 @@ class MiscTools:
 
         if p.returncode == 0:
             await ctx.send(
-                _("Red has been updated. Please restart the bot for any updates to take affect.")
+                _("Red has been updated. Please restart the bot for the updates to take affect.")
             )
         else:
             await ctx.send(
-                _("Something went wrong while updating. Please attempt an update manually.")
+                _(
+                    "Something went wrong while updating. Check your logs,"
+                    " and attempt an update manually."
+                )
             )
 
     @commands.command(aliases=["pingt", "latency"])
     async def pingtime(self, ctx: commands.Context):
         """Get the bot's latency to Discord"""
-        latency = dict(self.bot.latencies)
         if self.bot.shard_count > 1:
-            # on bots with more than one shard, display the local server's shard latency
-            # and the average/max global latency
+            latency = dict(self.bot.latencies)
             await ctx.send(
                 _(
-                    "**Server shard latency** is {formatted[0]}.\n\n"
+                    "**Server shard latency** is {local}.\n\n"
                     "**Global latency:**\n"
-                    "\N{BULLET} **Average:** {formatted[1]}\n"
-                    "\N{BULLET} **Max:** {formatted[2]}"
+                    "\N{BULLET} **Average:** {global_avg}\n"
+                    "\N{BULLET} **Max:** {global_max}"
                 ).format(
-                    formatted=[
-                        td_format(
-                            timedelta(seconds=latency[ctx.guild.shard_id]), milliseconds=True
-                        ),
-                        td_format(timedelta(seconds=mean(latency.values())), milliseconds=True),
-                        td_format(timedelta(seconds=max(latency.values())), milliseconds=True),
-                    ]
+                    local=td_format(
+                        timedelta(seconds=latency[ctx.guild.shard_id]), milliseconds=True
+                    ),
+                    global_avg=td_format(
+                        timedelta(seconds=mean(latency.values())), milliseconds=True
+                    ),
+                    global_max=td_format(
+                        timedelta(seconds=max(latency.values())), milliseconds=True
+                    ),
                 )
             )
+
         else:
-            # show a simple response on bots with only one shard, since there's no need
-            # for global stats except to duplicate the same data multiple times
             await ctx.send(
-                _("**Current latency** is {latency}.").format(
+                _("**Current latency:** {latency}").format(
                     latency=td_format(timedelta(seconds=self.bot.latency), milliseconds=True)
                 )
             )
@@ -216,63 +237,112 @@ class MiscTools:
 
         await ctx.send(
             _(
-                "**Starting snowflake:** {start[0]} \N{EM DASH} `{start[1]}`\n"
-                "**Ending snowflake:** {end[0]} \N{EM DASH} `{end[1]}`\n\n"
+                "**Starting snowflake:** {start_delta} \N{EM DASH} `{start_date}`\n"
+                "**Ending snowflake:** {end_delta} \N{EM DASH} `{end_date}`\n\n"
                 "**Time difference:** {difference}"
             ).format(
-                start=[
-                    td_format(starting - now, append_str=True),
-                    starting.strftime("%A %B %d, %Y at %X UTC"),
-                ],
-                end=[
-                    td_format(ending - now, append_str=True),
-                    ending.strftime("%A %B %d, %Y at %X UTC"),
-                ],
+                start_delta=td_format(starting - now, append_str=True),
+                start_date=starting.strftime("%A %B %d, %Y at %X UTC"),
+                end_delta=td_format(ending - now, append_str=True),
+                end_date=ending.strftime("%A %B %d, %Y at %X UTC"),
                 difference=td_format(ending - starting),
             )
         )
 
     @commands.command(aliases=["permbd"])
     @commands.guild_only()
-    async def permissionbreakdown(self, ctx: commands.Context, *, member: discord.Member = None):
+    async def permissionbreakdown(
+        self,
+        ctx: commands.Context,
+        member: discord.Member = None,
+        channel: discord.TextChannel = None,
+    ):
         """Break down the permissions for a given member
 
-        This command does not take channel overrides into account, and only
-        checks for server role permissions.
-
-        If more than three roles grant a single permission, only the first three are shown
-        for each permission.
+        If more than three roles grant a single permission, only the member's top three
+        roles are shown for each permission.
         """
         member = member or ctx.author
-        perms = {x: [] for x, y in discord.Permissions()}  # type: Dict[str, List[discord.Role]]
-        for role in reversed(member.roles):
-            for perm, value in role.permissions:
-                if value is False:
-                    continue
-                perms[perm].append(role)
+        channel = channel or ctx.channel
+        perms: Dict[str, List[discord.Role]] = {
+            x: [r for r in reversed(member.roles) if getattr(r.permissions, str(x), False) is True]
+            for x, y in discord.Permissions()
+        }
 
-        await ctx.send_interactive(
-            pagify(
-                "{}\n\n{}".format(
-                    _("Permission Breakdown").center(50),
-                    tabulate(
-                        [
+        def converter(pg: Page):
+            embed = discord.Embed(
+                colour=ctx.me.colour,
+                title=_("Permission Breakdown"),
+                description=_("Displaying permissions for member {}").format(member.mention),
+            )
+
+            # noinspection PyShadowingNames
+            for perm, roles in pg.data:
+                roles = [mention(x) for x in roles[:3]]
+                if not roles:
+                    value = [
+                        _("This permission is not granted by any of {}'s roles").format(
+                            member.mention
+                        )
+                    ]
+                else:
+                    value = [
+                        " \N{EM DASH} ".join(
                             [
-                                x,
-                                _("Granted by default role")
-                                if ctx.guild.default_role in y
-                                else ", ".join(str(v) for v in y[:3])
-                                or _("Not granted by any role"),
+                                (
+                                    _("Granted by {} roles")
+                                    if len(roles) != 1
+                                    else _("Granted by {} role")
+                                ).format(len(roles)),
+                                ", ".join(roles),
                             ]
-                            for x, y in {
-                                formatting.permissions.get(x, lambda: x)(): y
-                                for x, y in perms.items()
-                            }.items()
-                        ],
-                        headers=[_("Permission"), _("Granted By")],
-                        tablefmt="psql",
-                    ),
-                )
-            ),
-            box_lang="",
+                        )
+                    ]
+
+                overwrites: Dict[Union[discord.Member, discord.Role], Optional[bool]] = {
+                    x: getattr(y, perm, None)
+                    for x, y in channel.overwrites
+                    if x == member or x in member.roles and getattr(y, perm, None) is not None
+                }
+                if overwrites:
+                    granted = [x for x, y in overwrites.items() if y is True]
+                    denied = [x for x, y in overwrites.items() if y is False]
+                    if granted:
+                        value.append(
+                            " ".join(
+                                [
+                                    (
+                                        _("Granted by {} overwrites for \N{EM DASH}")
+                                        if len(granted) != 1
+                                        else _("Granted by {} overwrite for \N{EM DASH}")
+                                    ).format(len(granted)),
+                                    ", ".join(mention(x) for x in granted[:3]),
+                                ]
+                            )
+                        )
+                    if denied:
+                        value.append(
+                            " ".join(
+                                [
+                                    (
+                                        _("Denied by {} overwrites for \N{EM DASH}")
+                                        if len(denied) != 1
+                                        else _("Denied by {} overwrite for \N{EM DASH}")
+                                    ).format(len(denied)),
+                                    ", ".join(mention(x) for x in denied[:3]),
+                                ]
+                            )
+                        )
+
+                embed.add_field(name=format_permission(perm), value="\n".join(value), inline=False)
+
+            return embed.set_footer(
+                text=_("Page {current} out of {total}").format(current=pg.current, total=pg.total)
+            )
+
+        await PaginatedMenu(
+            ctx=ctx,
+            pages=list(chunks(list(perms.items()), round(len(perms) / 4))),
+            converter=converter,
+            wrap_around=True,
         )

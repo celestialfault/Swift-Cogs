@@ -5,7 +5,6 @@
   "description": "A collection of small utilities that don't fit in any other cog, and don't necessarily warrant their own specialized cog.",
   "short": "A collection of small utilities that don't fit in any other specific cog",
   "type": "COG",
-  "requirements": ["tabulate"],
   "tags": [
     "utility"
   ],

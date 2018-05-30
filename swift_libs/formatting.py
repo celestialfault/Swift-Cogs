@@ -18,6 +18,8 @@ __all__ = (
     "permissions",
     "cog_name",
     "flatten_values",
+    "format_permission",
+    "mention",
 )
 
 # The values in this dict may act somewhat differently to how you expect:
@@ -54,6 +56,17 @@ permissions = {
     "use_voice_activation": lazyi18n("Use Voice Activation"),
     "view_audit_log": lazyi18n("View Audit Log"),
 }  # type: Dict[str, LazyString]
+
+
+def format_permission(perm: str):
+    return str(permissions.get(perm, perm.replace("_", " ").title()))
+
+
+def mention(item):
+    if isinstance(item, discord.Role):
+        return item.mention if not item.is_default() else item.name
+    else:
+        return item.mention
 
 
 def trim_to(text: str, max_len: int):
