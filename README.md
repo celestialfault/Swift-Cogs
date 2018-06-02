@@ -84,10 +84,6 @@ Inspired by Paddo's Grenzpolizei, created for more fine-tuned control of what an
 
 A collection of small utilities that don't fit in any other cog, and don't necessarily warrant their own specialized cog.
 
-### Requirements
-
-- tabulate
-
 ### Install Cog
 
 ```
@@ -162,10 +158,6 @@ This cog has yet to be extensively tested.
 It's almost like channel pins, but with stars, and more democracy. (democracy not guaranteed)
 
 This cog may use a fair amount of memory, due to the various internal caches.
-
-### Requirements
-
-- tabulate
 
 ### Install Cog
 

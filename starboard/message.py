@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Optional, Union
+from typing import List, Optional, Iterable
 
 import discord
 from discord.ext import commands
@@ -12,33 +12,51 @@ from starboard.exceptions import (
     SelfStarException,
     StarException,
 )
-from starboard.log import log
+from starboard.shared import log
 
-__all__ = ("StarboardMessage", "AutoStarboardMessage")
+__all__ = ("StarboardMessage", "AutoStarboardMessage", "resolve_starred_by")
+
+
+def resolve_starred_by(data: dict):
+    # boy I sure do love backwards compatibility
+    return data.get("starred_by", data.get("starrers", data.get("members", [])))
 
 
 class StarboardMessage(base.StarboardBase, commands.Converter):
-    STARBOARD_FORMAT = "\N{WHITE MEDIUM STAR} **{stars}** {channel} \N{EM DASH} ID: {id}"
 
     def __init__(self, **kwargs):
         from starboard.guild import StarboardGuild
 
-        self.message = kwargs.get("message", None)  # type: discord.Message
-        self.starboard_message = None  # type: discord.Message
-        self.starrers: List[int] = []
+        # these are optional for the purpose of being able to use a d.py Converter
+        # instead of manually calling get_starboard().get_message() in every command
+        self.message: discord.Message = kwargs.get("message")
+        self.starboard: StarboardGuild = kwargs.get("starboard")
 
-        self.starboard: StarboardGuild = kwargs.get("starboard", None)
+        self.starboard_message: Optional[discord.Message] = None
+        self.starred_by: List[int] = []
         self.last_update = datetime.utcnow()
         self._hidden = False
 
     def __repr__(self):
         return (
-            "<StarboardMessage stars={self.stars} hidden={self.hidden} message={self.message!r}"
-            " update_queued={self.in_queue}>".format(self=self)
+            f"<StarboardMessage stars={self.stars} hidden={self.hidden} message={self.message!r}"
+            f" update_queued={self.in_queue}>"
         )
 
-    @staticmethod
-    async def _convert(ctx: Context, argument: str, **kwargs):
+    @property
+    def as_dict(self) -> dict:
+        return {
+            "channel_id": self.channel.id,
+            "author_id": self.author.id,
+            "starred_by": self.starred_by,
+            "starboard_message": getattr(self.starboard_message, "id", None),
+            "hidden": self.hidden,
+        }
+
+    @classmethod
+    async def convert(cls, ctx: Context, argument: str, **kwargs) -> "StarboardMessage":
+        if not ctx.guild:
+            raise commands.NoPrivateMessage
         from starboard.guild import StarboardGuild
 
         try:
@@ -46,7 +64,13 @@ class StarboardMessage(base.StarboardBase, commands.Converter):
         except ValueError:
             raise commands.BadArgument("Failed to convert the given argument to a snowflake ID")
 
-        starboard = base.get_starboard(ctx.guild)  # type: StarboardGuild
+        starboard: StarboardGuild = ctx.starboard if hasattr(
+            ctx, "starboard"
+        ) else base.get_starboard(ctx.guild)
+
+        if not await starboard.resolve_starboard():
+            raise commands.BadArgument("The current server has no starboard channel setup")
+
         message = await starboard.get_message(message_id=argument, channel=ctx.channel, **kwargs)
         if message is None:
             raise commands.BadArgument(
@@ -54,11 +78,17 @@ class StarboardMessage(base.StarboardBase, commands.Converter):
                 "or are you in the wrong channel?"
             )
 
-        return message
+        if not message.is_message_valid:
+            raise commands.BadArgument(
+                "The given message does not have any valid content that can be used"
+            )
 
-    @classmethod
-    async def convert(cls, ctx: Context, argument: str):
-        return await cls._convert(ctx, argument)
+        if await starboard.is_ignored(message.author):
+            raise commands.BadArgument("The author of that message is ignored")
+        if await starboard.is_ignored(message.channel):
+            raise commands.BadArgument("The channel that message is in is ignored")
+
+        return message
 
     async def load_data(self, *, auto_create: bool = False) -> None:
         entry = await self.starboard.messages.get_raw(str(self.message.id), default=None)
@@ -66,7 +96,7 @@ class StarboardMessage(base.StarboardBase, commands.Converter):
             await self._save()
 
         if entry is not None:
-            self.starrers = entry.get("starrers", entry.get("members", []))
+            self.starred_by = resolve_starred_by(entry)
             self._hidden = entry.get("hidden", False)
 
             if entry.get("starboard_message", None) is not None:
@@ -84,17 +114,8 @@ class StarboardMessage(base.StarboardBase, commands.Converter):
                     self.queue_for_update()
 
     async def _save(self) -> None:
-        log.debug("Saving data for message {}".format(self.message.id))
-        await self.starboard.messages.set_raw(
-            str(self.message.id),
-            value={
-                "channel_id": self.channel.id,
-                "author_id": self.author.id,
-                "starrers": self.starrers,
-                "starboard_message": getattr(self.starboard_message, "id", None),
-                "hidden": self.hidden,
-            },
-        )
+        log.debug(f"Saving data for message {self.message.id}")
+        await self.starboard.messages.set_raw(str(self.message.id), value=self.as_dict)
         self.last_update = datetime.utcnow()
 
     #################################
@@ -124,26 +145,27 @@ class StarboardMessage(base.StarboardBase, commands.Converter):
         return self.message.channel
 
     @property
-    def attachments(self) -> List[Union[discord.Attachment, discord.Embed]]:
-        embeds = self.message.embeds  # type: List[discord.Embed]
-        image_embeds = [x for x in embeds if x.thumbnail or x.image]
-        return [*self.message.attachments, *image_embeds]
+    def attachments(self) -> Iterable[str]:
+        attachs = [
+            *self.message.attachments,
+            *[x for x in self.message.embeds if x.thumbnail or x.image],
+        ]
+
+        for attach in attachs:
+            if isinstance(attach, discord.Attachment):
+                yield attach.url
+            elif isinstance(attach, discord.Embed):
+                if attach.image:
+                    yield attach.image.url
+                if attach.thumbnail:
+                    yield attach.thumbnail.url
 
     @property
     def attachment_url(self) -> Optional[str]:
         try:
-            attach = self.attachments[0]
+            return list(self.attachments)[0]
         except IndexError:
             return discord.Embed.Empty
-        else:
-            if isinstance(attach, discord.Attachment):
-                return attach.url
-            elif isinstance(attach, discord.Embed):
-                if attach.image:
-                    return attach.image.url
-                elif attach.thumbnail:
-                    return attach.thumbnail.url
-        return discord.Embed.Empty
 
     @property
     def starboard_message_contents(self) -> Optional[dict]:
@@ -162,8 +184,9 @@ class StarboardMessage(base.StarboardBase, commands.Converter):
             embed.set_image(url=self.attachment_url)
 
         return {
-            "content": self.STARBOARD_FORMAT.format(
-                stars=self.stars, channel=self.channel.mention, id=self.message.id
+            "content": (
+                f"\N{WHITE MEDIUM STAR} **{self.stars}** {self.channel.mention} \N{EM DASH}"
+                f" ID: {self.message.id}"
             ),
             "embed": embed,
         }
@@ -223,34 +246,34 @@ class StarboardMessage(base.StarboardBase, commands.Converter):
 
     @property
     def stars(self) -> int:
-        return len(self.starrers)
+        return len(self.starred_by)
 
     def has_starred(self, member: discord.Member) -> bool:
-        return member.id in self.starrers
+        return member.id in self.starred_by
 
     async def add_star(self, member: discord.Member) -> None:
-        if not self.is_message_valid or member.id in self.starrers:
+        if not self.is_message_valid or member.id in self.starred_by:
             raise StarException
         if await self.starboard.is_ignored(self.author):
             raise BlockedAuthorException
         if await self.starboard.is_ignored(member) or member.bot:
             raise BlockedException
 
-        if member == self.author and not self.starboard.selfstar:
-            raise SelfStarException()
+        if member == self.author and not await self.starboard.selfstar():
+            raise SelfStarException
 
-        self.starrers.append(member.id)
+        self.starred_by.append(member.id)
         self.queue_for_update()
 
     async def remove_star(self, member: discord.Member) -> None:
-        if member.id not in self.starrers:
+        if member.id not in self.starred_by:
             raise StarException
         if await self.starboard.is_ignored(self.author):
             raise BlockedAuthorException
         if await self.starboard.is_ignored(member):
             raise BlockedException
 
-        self.starrers.remove(member.id)
+        self.starred_by.remove(member.id)
         self.queue_for_update()
 
 
@@ -258,5 +281,5 @@ class AutoStarboardMessage(StarboardMessage):
     """Alternate converter for StarboardMessage, which creates message data if it doesn't exist"""
 
     @classmethod
-    async def convert(cls, ctx: Context, argument: str):
-        return await cls._convert(ctx, argument, auto_create=True)
+    async def convert(cls, ctx: Context, argument: str, **kwargs) -> StarboardMessage:
+        return await super().convert(ctx, argument, auto_create=True)

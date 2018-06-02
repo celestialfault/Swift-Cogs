@@ -6,8 +6,8 @@ from redbot.core.bot import Red
 __all__ = ("get_starboard", "get_starboard_cache", "StarboardBase")
 
 _guild_cache = {}
-bot = None  # type: Red
-config = None  # type: Config
+bot: Red = None
+config: Config = None
 
 
 def get_starboard(guild: discord.Guild):

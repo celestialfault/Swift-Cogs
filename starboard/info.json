@@ -5,7 +5,6 @@
   "description": "It's almost like channel pins, but with stars, and more democracy. (democracy not guaranteed)\n\nThis cog may use a fair amount of memory, due to the various internal caches.",
   "short": "It's almost like channel pins, but with stars",
   "type": "COG",
-  "requirements": ["tabulate"],
   "tags": [
     "fun"
   ],

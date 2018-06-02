@@ -9,13 +9,13 @@ class StarException(StarboardException):
     pass
 
 
-class SelfStarException(StarException):
-    pass
-
-
 class BlockedException(StarboardException):
     pass
 
 
 class BlockedAuthorException(BlockedException):
+    pass
+
+
+class SelfStarException(BlockedException):
     pass

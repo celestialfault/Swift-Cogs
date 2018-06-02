@@ -7,7 +7,7 @@ from redbot.core.config import Group, Value
 
 from cog_shared.swift_libs import IterableQueue
 from starboard.base import StarboardBase
-from starboard.log import log
+from starboard.shared import log
 from starboard.message import StarboardMessage
 
 _janitors: Dict[int, asyncio.Task] = {}
@@ -21,7 +21,7 @@ class StarboardGuild(StarboardBase):
         self._cache: Dict[int, StarboardMessage] = {}
 
     def __repr__(self):
-        return "<GuildStarboard guild={!r} cache_size={}>".format(self.guild, len(self._cache))
+        return f"<GuildStarboard guild={self.guild!r} cache_size={len(self._cache)}>"
 
     @property
     def guild_config(self) -> Group:
@@ -108,7 +108,11 @@ class StarboardGuild(StarboardBase):
         for item in self.update_queue:
             if not isinstance(item, StarboardMessage):
                 continue
-            await item.update_starboard_message()
+
+            try:
+                await item.update_starboard_message()
+            except Exception as exc:
+                log.exception("Failed to update a starboard message", exc_info=exc)
             await asyncio.sleep(0.6)
 
     ###############################
@@ -118,7 +122,9 @@ class StarboardGuild(StarboardBase):
         """Check if the given message is in the message cache"""
         return message.id in self._cache
 
-    async def remove_from_cache(self, message: discord.Message, *, dump: bool = False) -> bool:
+    async def remove_from_cache(
+        self, *, message: discord.Message = None, message_id: int = None, dump: bool = False
+    ) -> bool:
         """Remove the given message from the cache
 
         If the given message has an update queued, it'll be updated before being uncached.
@@ -126,13 +132,17 @@ class StarboardGuild(StarboardBase):
         Parameters
         -----------
         message: discord.Message
-            The message to remove from the cache
+            The message to remove from the cache. Either this or `message_id` must be given.
+        message_id: int
+            The message snowflake ID to remove from the cache. Either this or `message`
+            must be given.
         dump: bool
-            If this is True, the given message is dumped from the queue without updating it,
-            instead of being updated and removed from the cache
+            If this is True, the given message is dumped from the queue instead of the
+            default behaviour of updating messages in the queue before removing
+            from the cache.
 
         """
-        star = await self.get_message(message=message, cache_only=True)
+        star = await self.get_message(message=message, message_id=message_id, cache_only=True)
         if star is None:
             return False
         if star in self.update_queue:
@@ -140,7 +150,7 @@ class StarboardGuild(StarboardBase):
                 self.update_queue.remove(star)
             else:
                 await star.update_starboard_message()
-        self._cache.pop(message.id)
+        self._cache.pop(star.message.id)
         return True
 
     async def purge_cache(
@@ -148,7 +158,7 @@ class StarboardGuild(StarboardBase):
         seconds_since_update: int = 30 * 60,
         *,
         dry_run: bool = False,
-        update_items: bool = True
+        update_items: bool = True,
     ) -> int:
         """Purge the message cache of stale items
 
@@ -177,7 +187,7 @@ class StarboardGuild(StarboardBase):
         for item in self._cache.copy().values():
             if item.last_update < check_ts:
                 if not dry_run:
-                    await self.remove_from_cache(item.message, dump=not update_items)
+                    await self.remove_from_cache(message=item.message, dump=not update_items)
                 purged += 1
         return purged
 
@@ -196,7 +206,7 @@ class StarboardGuild(StarboardBase):
         message_id: int = None,
         channel: discord.TextChannel = None,
         auto_create: bool = False,
-        cache_only: bool = False
+        cache_only: bool = False,
     ) -> Optional[StarboardMessage]:
         """Get a starboard message for the given message
 

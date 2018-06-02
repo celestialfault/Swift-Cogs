@@ -5,7 +5,7 @@ from redbot.core.bot import Red
 
 from starboard.base import get_starboard, get_starboard_cache
 from starboard.guild import StarboardGuild
-from starboard.log import log
+from starboard.shared import log
 
 import_lock = asyncio.Lock()
 __all__ = ("import_data", "NoMotorError", "import_lock")
@@ -54,19 +54,19 @@ async def import_data(bot: Red, mongo_uri: str):
             if message_id is None:
                 continue
             channel_id = item.get("channel_id")
-            channel = bot.get_channel(int(channel_id))  # type: discord.TextChannel
+            channel: discord.TextChannel = bot.get_channel(int(channel_id))
             if channel is None:
                 continue
-            guild = getattr(channel, "guild", None)  # type: discord.Guild
+            guild: discord.Guild = getattr(channel, "guild", None)
             if guild is None:
                 continue
-            starboard = get_starboard(guild)  # type: StarboardGuild
+            starboard: StarboardGuild = get_starboard(guild)
             await starboard.messages.set_raw(
                 str(message_id),
                 value={
                     "channel_id": channel.id,
                     "author_id": None,
-                    "starrers": [item.get("starrers", [])],
+                    "starred_by": [item.get("starrers", [])],
                     "starboard_message": item.get("starboard_message", None),
                     "hidden": item.get("removed", False),
                 },
