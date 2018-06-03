@@ -164,7 +164,7 @@ class QuoteEditor:
                 break
 
             try:
-                await getattr(self, result.action)()
+                await getattr(self, result.item)()
             except StopLoop:
                 break
             except ContinueLoop:
