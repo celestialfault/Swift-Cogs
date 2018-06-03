@@ -67,6 +67,8 @@ async def leaderboard(
 
     data: Dict[str, Dict[discord.Member, int]] = {}
     for member in guild.members:
+        if member.bot:
+            continue
         mdata = await user_stats(member, messages=message_data)
         for indx, val in mdata.items():
             if indx not in data:
