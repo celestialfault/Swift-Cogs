@@ -9,7 +9,7 @@ from redbot.core.bot import Red
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils.chat_formatting import escape, pagify, warning
 
-from cog_shared.swift_libs import ConfirmMenu, FutureTime, fmt, tick
+from cog_shared.swift_libs import FutureTime, fmt, tick, confirm
 
 log = logging.getLogger("red.rndactivity")
 _ = Translator("RNDActivity", __file__)
@@ -211,7 +211,7 @@ class RNDActivity:
     async def rndactivity_clear(self, ctx: commands.Context):
         """Clears all set statuses"""
         amount = len(await self.config.statuses())
-        if await ConfirmMenu(
+        if await confirm(
             ctx,
             content=_(
                 "Are you sure you want to clear {amount} statuses?\n\n"
@@ -229,8 +229,8 @@ class RNDActivity:
     ) -> Union[str, Tuple[str, int]]:
         game_type = 0
         if isinstance(status, dict):
-            game_type = status.get("type", 0)
-            status = status.get("game")  # type: str
+            game_type: int = status.get("type", 0)
+            status: str = status.get("game")
         formatted = status.format(
             GUILDS=len(self.bot.guilds),
             SHARDS=self.bot.shard_count,
