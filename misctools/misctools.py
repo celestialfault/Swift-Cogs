@@ -23,6 +23,7 @@ from cog_shared.swift_libs import (
     format_permission,
     chunks,
     mention,
+    resolve_any,
 )
 
 _ = Translator("MiscTools", __file__)
@@ -252,10 +253,7 @@ class MiscTools:
     @commands.command(aliases=["permbd"])
     @commands.guild_only()
     async def permissionbreakdown(
-        self,
-        ctx: commands.Context,
-        member: discord.Member = None,
-        channel: discord.TextChannel = None,
+        self, ctx: commands.Context, member: discord.Member = None, channel=None
     ):
         """Break down the permissions for a given member
 
@@ -263,7 +261,16 @@ class MiscTools:
         roles are shown for each permission.
         """
         member = member or ctx.author
-        channel = channel or ctx.channel
+        if channel is not None:
+            channel = await resolve_any(
+                ctx,
+                channel,
+                commands.TextChannelConverter,
+                commands.VoiceChannelConverter,
+                commands.CategoryChannelConverter,
+            )
+        else:
+            channel = ctx.channel
         perms: Dict[str, List[discord.Role]] = {
             x: [r for r in reversed(member.roles) if getattr(r.permissions, str(x), False) is True]
             for x, y in discord.Permissions()
