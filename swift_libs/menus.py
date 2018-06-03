@@ -239,6 +239,7 @@ class Menu(Awaitable):
 
             if post_action == PostAction.DELETE_MESSAGE and self.message:
                 await self.message.delete()
+                self.message = None
         except (AttributeError, discord.HTTPException):
             pass
 
